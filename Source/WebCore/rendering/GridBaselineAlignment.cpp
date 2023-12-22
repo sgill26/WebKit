@@ -54,7 +54,10 @@ LayoutUnit GridBaselineAlignment::logicalAscentForChild(const RenderBox& child, 
         extraMarginsFromAncestorSubgrids = GridLayoutFunctions::extraMarginForSubgridAncestors(GridTrackSizingDirection::ForRows, child);
 
     LayoutUnit ascent = ascentForChild(child, alignmentAxis, position) + extraMarginsFromAncestorSubgrids.extraTrackStartMargin();
-    return (isDescentBaselineForChild(child, alignmentAxis) || position == ItemPosition::LastBaseline) ? descentForChild(child, ascent, alignmentAxis, extraMarginsFromAncestorSubgrids) : ascent;
+    // If the grid item is not fallback aligned towards the end of the axis but it is
+    // last baseline aligned, we still need its descent value. That is because the block
+    // flow direction must have been opposite of the direction of the alignment axis.
+    return isFallbackAlignedTowardsEnd(child, alignmentAxis, position) || position == ItemPosition::LastBaseline ? descentForChild(child, ascent, baselineAxis, extraMarginsFromAncestorSubgrids) : ascent;
 }
 
 LayoutUnit GridBaselineAlignment::ascentForChild(const RenderBox& child, GridAxis alignmentAxis, ItemPosition position) const
@@ -102,11 +105,38 @@ LayoutUnit GridBaselineAlignment::descentForChild(const RenderBox& child, Layout
     return child.marginLogicalWidth() + child.logicalWidth() - ascent;
 }
 
-bool GridBaselineAlignment::isDescentBaselineForChild(const RenderBox& child, GridAxis alignmentAxis) const
+bool GridBaselineAlignment::isFallbackAlignedTowardsEnd(const RenderBox& child, GridAxis alignmentAxis, ItemPosition alignmentType) const
 {
-    return isVerticalAlignmentContext(alignmentAxis)
-        && ((child.style().isFlippedBlocksWritingMode() && !isFlippedWritingMode(m_writingMode))
-            || (child.style().isFlippedLinesWritingMode() && isFlippedWritingMode(m_writingMode)));
+    ASSERT(alignmentType == ItemPosition::Baseline || alignmentType == ItemPosition::LastBaseline);
+
+    auto alignmentContextLogicalAxis= alignmentAxis == GridAxis::GridColumnAxis ? LogicalBoxAxis::Inline : LogicalBoxAxis::Block;
+    auto gridItemLogicalBlockFlowDirection = writingModeToLogicalBlockFlowDirection(child.style().writingMode());
+
+    
+    auto writingModeForBaselineAlignment = [&] {
+        auto isGridItemBlockFlowDirectionParallelToAlignmentContextAxis = [&] {
+            if (alignmentContextLogicalAxis == LogicalBoxAxis::Inline)
+                return isInlineAxis(gridItemLogicalBlockFlowDirection);
+            return isBlockAxis(gridItemLogicalBlockFlowDirection);
+        }();
+
+        if (!isGridItemBlockFlowDirectionParallelToAlignmentContextAxis)
+            return child.style().writingMode();
+
+        // If the box establishing the alignment context has a block flow direction that is 
+        // orthogonal to the axis of the alignment context, use its writing mode.
+        if (alignmentContextLogicalAxis == LogicalBoxAxis::Inline)
+            return m_writingMode;
+
+        if (!child.isHorizontalWritingMode())
+            return WritingMode::HorizontalTb;
+        return child.style().direction() == TextDirection::LTR ? WritingMode::VerticalLr : WritingMode::VerticalRl;
+    }();
+
+    auto blockFlowDirection = writingModeToLogicalBlockFlowDirection(writingModeForBaselineAlignment);
+    if (alignmentType == ItemPosition::Baseline)
+        return blockFlowDirection == LogicalBlockFlowDirection::BlockEndToBlockStart || blockFlowDirection ==  LogicalBlockFlowDirection::InlineEndToInlineStart;
+    return blockFlowDirection == LogicalBlockFlowDirection::BlockStartToBlockEnd || blockFlowDirection == LogicalBlockFlowDirection::InlineStartToInlineEnd;
 }
 
 bool GridBaselineAlignment::isVerticalAlignmentContext(GridAxis alignmentAxis) const

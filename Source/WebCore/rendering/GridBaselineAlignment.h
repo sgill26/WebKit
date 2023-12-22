@@ -69,10 +69,57 @@ private:
     LayoutUnit logicalAscentForChild(const RenderBox&, GridAxis, ItemPosition) const;
     LayoutUnit ascentForChild(const RenderBox&, GridAxis, ItemPosition) const;
     LayoutUnit descentForChild(const RenderBox&, LayoutUnit, GridAxis, ExtraMarginsFromSubgrids) const;
-    bool isDescentBaselineForChild(const RenderBox&, GridAxis) const;
+    bool isFallbackAlignedTowardsEnd(const RenderBox&, GridAxis, ItemPosition alignmentType) const;
     bool isVerticalAlignmentContext(GridAxis) const;
     bool isOrthogonalChildForBaseline(const RenderBox&) const;
     bool isParallelToAlignmentAxisForChild(const RenderBox&, GridAxis) const;
+    LogicalBlockFlowDirection writingModeToLogicalBlockFlowDirection(const WritingMode& writingMode) const
+    {
+        if (isHorizontalWritingMode(m_writingMode)) {
+            switch (writingMode) {
+            case WritingMode::HorizontalTb:
+                return LogicalBlockFlowDirection::BlockStartToBlockEnd;
+            case WritingMode::HorizontalBt:
+                return LogicalBlockFlowDirection::BlockEndToBlockStart;
+            case WritingMode::VerticalLr:
+            case WritingMode::SidewaysLr:
+                return LogicalBlockFlowDirection::InlineStartToInlineEnd;
+            case WritingMode::VerticalRl:
+            case WritingMode::SidewaysRl:
+                return LogicalBlockFlowDirection::InlineEndToInlineStart;
+            }
+        }
+        if (m_writingMode == WritingMode::VerticalLr || m_writingMode == WritingMode::SidewaysLr) {
+            switch (writingMode) {
+                case WritingMode::HorizontalTb:
+                    return LogicalBlockFlowDirection::InlineStartToInlineEnd;
+                case WritingMode::HorizontalBt:
+                    return LogicalBlockFlowDirection::InlineEndToInlineStart;
+                case WritingMode::VerticalLr:
+                case WritingMode::SidewaysLr:
+                    return LogicalBlockFlowDirection::BlockStartToBlockEnd;
+                case WritingMode::VerticalRl:
+                case WritingMode::SidewaysRl:
+                    return LogicalBlockFlowDirection::BlockEndToBlockStart;
+            }
+        }
+        if (m_writingMode == WritingMode::VerticalRl || m_writingMode == WritingMode::SidewaysRl) {
+            switch (writingMode) {
+                case WritingMode::HorizontalTb:
+                    return LogicalBlockFlowDirection::InlineStartToInlineEnd;
+                case WritingMode::HorizontalBt:
+                    return LogicalBlockFlowDirection::InlineEndToInlineStart;
+                case WritingMode::VerticalLr:
+                case WritingMode::SidewaysLr:
+                    return LogicalBlockFlowDirection::BlockEndToBlockStart;
+                case WritingMode::VerticalRl:
+                case WritingMode::SidewaysRl:
+                return LogicalBlockFlowDirection::BlockStartToBlockEnd;
+            }
+        }
+        ASSERT_NOT_REACHED();
+        return LogicalBlockFlowDirection::BlockStartToBlockEnd;
+    }
 
     typedef HashMap<unsigned, std::unique_ptr<BaselineAlignmentState>, DefaultHash<unsigned>, WTF::UnsignedWithZeroKeyHashTraits<unsigned>> BaselineAlignmentStateMap;
 

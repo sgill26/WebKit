@@ -48,6 +48,16 @@ enum class BlockFlowDirection : uint8_t {
     RightToLeft,
 };
 
+enum class LogicalBlockFlowDirection : uint8_t {
+    BlockStartToBlockEnd,
+    BlockEndToBlockStart,
+    InlineStartToInlineEnd,
+    InlineEndToInlineStart
+};
+
+bool inline isInlineAxis(LogicalBlockFlowDirection direction) { return direction == LogicalBlockFlowDirection::InlineStartToInlineEnd || direction == LogicalBlockFlowDirection::InlineEndToInlineStart; }
+bool inline isBlockAxis(LogicalBlockFlowDirection direction) { return direction == LogicalBlockFlowDirection::BlockStartToBlockEnd || direction == LogicalBlockFlowDirection::BlockEndToBlockStart; }
+
 enum class WritingMode : uint8_t {
     HorizontalTb,
     HorizontalBt, // Non-standard
