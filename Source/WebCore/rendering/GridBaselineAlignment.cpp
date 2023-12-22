@@ -39,26 +39,6 @@
 
 namespace WebCore {
 
-// This function gives the margin 'over' based on the baseline-axis, since in grid we can have 2-dimensional
-// alignment by baseline. In horizontal writing-mode, the row-axis is the horizontal axis. When we use this
-// axis to move the grid items so that they are baseline-aligned, we want their "horizontal" margin (right);
-// the same will happen when using the column-axis under vertical writing mode, we also want in this case the
-// 'right' margin.
-LayoutUnit GridBaselineAlignment::marginOverForChild(const RenderBox& child, GridAxis alignmentAxis) const
-{
-    return isVerticalAlignmentContext(alignmentAxis) ? child.marginRight() : child.marginTop();
-}
-
-// This function gives the margin 'under' based on the baseline-axis, since in grid we can can 2-dimensional
-// alignment by baseline. In horizontal writing-mode, the row-axis is the horizontal axis. When we use this
-// axis to move the grid items so that they are baseline-aligned, we want their "horizontal" margin (left);
-// the same will happen when using the column-axis under vertical writing mode, we also want in this case the
-// 'left' margin.
-LayoutUnit GridBaselineAlignment::marginUnderForChild(const RenderBox& child, GridAxis alignmentAxis) const
-{
-    return isVerticalAlignmentContext(alignmentAxis) ? child.marginLeft() : child.marginBottom();
-}
-
 LayoutUnit GridBaselineAlignment::logicalAscentForChild(const RenderBox& child, GridAxis alignmentAxis, ItemPosition position) const
 {
     auto hasOrthogonalAncestorSubgrids = [&] {
@@ -83,7 +63,7 @@ LayoutUnit GridBaselineAlignment::ascentForChild(const RenderBox& child, GridAxi
 
     ASSERT(position == ItemPosition::Baseline || position == ItemPosition::LastBaseline);
     auto baseline = 0_lu;
-    LayoutUnit margin = isDescentBaselineForChild(child, alignmentAxis) ? marginUnderForChild(child, alignmentAxis) : marginOverForChild(child, alignmentAxis);
+    auto margin = alignmentAxis == GridAxis::GridColumnAxis ? child.marginBefore(m_writingMode) : child.marginStart(m_writingMode);
 
     if (alignmentAxis == GridAxis::GridColumnAxis) {
         ASSERT(child.parentStyle());
