@@ -289,6 +289,11 @@ private:
         SingleThreadWeakHashSet<const RenderBox> m_itemsOnLastFlexLine;
     } m_marginTrimItems;
 
+    struct Baselines {
+        std::optional<LayoutUnit> m_firstBaseline;
+        std::optional<LayoutUnit> m_lastBaseline;
+    } m_baselines;
+
     // This is SizeIsUnknown outside of layoutBlock()
     SizeDefiniteness m_hasDefiniteHeight { SizeDefiniteness::Unknown };
     bool m_inLayout { false };

@@ -276,52 +276,12 @@ LayoutUnit RenderFlexibleBox::baselinePosition(FontBaseline, bool, LineDirection
 
 std::optional<LayoutUnit> RenderFlexibleBox::firstLineBaseline() const
 {
-    if ((isWritingModeRoot() && !isFlexItem()) || !m_numberOfInFlowChildrenOnFirstLine || shouldApplyLayoutContainment())
-        return std::optional<LayoutUnit>();
-    RenderBox* baselineChild = getBaselineChild(ItemPosition::Baseline);
-    
-    if (!baselineChild)
-        return std::optional<LayoutUnit>();
-
-    if (!isColumnFlow() && !mainAxisIsChildInlineAxis(*baselineChild))
-        return LayoutUnit { (crossAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
-    if (isColumnFlow() && mainAxisIsChildInlineAxis(*baselineChild))
-        return LayoutUnit { (mainAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
-
-    std::optional<LayoutUnit> baseline = baselineChild->firstLineBaseline();
-    if (!baseline) {
-        // FIXME: We should pass |direction| into firstLineBoxBaseline and stop bailing out if we're a writing mode root.
-        // This would also fix some cases where the flexbox is orthogonal to its container.
-        LineDirectionMode direction = isHorizontalWritingMode() ? HorizontalLine : VerticalLine;
-        return synthesizedBaseline(*baselineChild, style(), direction, BorderBox) + baselineChild->logicalTop();
-    }
-
-    return LayoutUnit { (baseline.value() + baselineChild->logicalTop()).toInt() };
+    return m_baselines.m_firstBaseline;
 }
 
 std::optional <LayoutUnit> RenderFlexibleBox::lastLineBaseline() const
 {
-    if (isWritingModeRoot() || !m_numberOfInFlowChildrenOnLastLine || shouldApplyLayoutContainment())
-        return std::optional<LayoutUnit>();
-    RenderBox* baselineChild = getBaselineChild(ItemPosition::LastBaseline);
-    
-    if (!baselineChild)
-        return std::optional<LayoutUnit>();
-
-    if (!isColumnFlow() && !mainAxisIsChildInlineAxis(*baselineChild))
-        return LayoutUnit { (crossAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
-    if (isColumnFlow() && mainAxisIsChildInlineAxis(*baselineChild))
-        return LayoutUnit { (mainAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
-
-    auto baseline = baselineChild->lastLineBaseline();
-    if (!baseline) {
-        // FIXME: We should pass |direction| into firstLineBoxBaseline and stop bailing out if we're a writing mode root.
-        // This would also fix some cases where the flexbox is orthogonal to its container.
-        LineDirectionMode direction = isHorizontalWritingMode() ? HorizontalLine : VerticalLine;
-        return synthesizedBaseline(*baselineChild, style(), direction, BorderBox) + baselineChild->logicalTop();
-    }
-
-    return LayoutUnit { (baseline.value() + baselineChild->logicalTop()).toInt() }; 
+    return m_baselines.m_lastBaseline;
 }
 
 RenderBox* RenderFlexibleBox::getBaselineChild(ItemPosition alignment) const
@@ -1299,6 +1259,8 @@ LayoutUnit RenderFlexibleBox::computeFlexBaseSizeForChild(RenderBox& child, Layo
 
 void RenderFlexibleBox::layoutFlexItems(bool relayoutChildren)
 {
+    m_baselines.m_firstBaseline = std::nullopt;
+    m_baselines.m_lastBaseline = std::nullopt;
     if (LayoutIntegration::canUseForFlexLayout(*this))
         return layoutUsingFlexFormattingContext();
     FlexLineStates lineStates;
@@ -1393,6 +1355,56 @@ void RenderFlexibleBox::layoutFlexItems(bool relayoutChildren)
 
     updateLogicalHeight();
     repositionLogicalHeightDependentFlexItems(lineStates, gapBetweenLines);
+
+    ASSERT(m_baselines.m_firstBaseline == std::nullopt && m_baselines.m_lastBaseline == std::nullopt);
+    auto firstLineBaseline = [&]() -> std::optional<LayoutUnit> {
+        if ((isWritingModeRoot() && !isFlexItem()) || !m_numberOfInFlowChildrenOnFirstLine || shouldApplyLayoutContainment())
+            return std::optional<LayoutUnit>();
+        RenderBox* baselineChild = getBaselineChild(ItemPosition::Baseline);
+        
+        if (!baselineChild)
+            return std::optional<LayoutUnit>();
+
+        if (!isColumnFlow() && !mainAxisIsChildInlineAxis(*baselineChild))
+            return LayoutUnit { (crossAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
+        if (isColumnFlow() && mainAxisIsChildInlineAxis(*baselineChild))
+            return LayoutUnit { (mainAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
+
+        std::optional<LayoutUnit> baseline = baselineChild->firstLineBaseline();
+        if (!baseline) {
+            // FIXME: We should pass |direction| into firstLineBoxBaseline and stop bailing out if we're a writing mode root.
+            // This would also fix some cases where the flexbox is orthogonal to its container.
+            LineDirectionMode direction = isHorizontalWritingMode() ? HorizontalLine : VerticalLine;
+            return synthesizedBaseline(*baselineChild, style(), direction, BorderBox) + baselineChild->logicalTop();
+        }
+
+        return LayoutUnit { (baseline.value() + baselineChild->logicalTop()).toInt() };
+    }();
+    auto lastLineBaseline = [&]() -> std::optional<LayoutUnit> {
+        if (isWritingModeRoot() || !m_numberOfInFlowChildrenOnLastLine || shouldApplyLayoutContainment())
+            return std::optional<LayoutUnit>();
+        RenderBox* baselineChild = getBaselineChild(ItemPosition::LastBaseline);
+        
+        if (!baselineChild)
+            return std::optional<LayoutUnit>();
+
+        if (!isColumnFlow() && !mainAxisIsChildInlineAxis(*baselineChild))
+            return LayoutUnit { (crossAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
+        if (isColumnFlow() && mainAxisIsChildInlineAxis(*baselineChild))
+            return LayoutUnit { (mainAxisExtentForChild(*baselineChild) + baselineChild->logicalTop()).toInt() };
+
+        auto baseline = baselineChild->lastLineBaseline();
+        if (!baseline) {
+            // FIXME: We should pass |direction| into firstLineBoxBaseline and stop bailing out if we're a writing mode root.
+            // This would also fix some cases where the flexbox is orthogonal to its container.
+            LineDirectionMode direction = isHorizontalWritingMode() ? HorizontalLine : VerticalLine;
+            return synthesizedBaseline(*baselineChild, style(), direction, BorderBox) + baselineChild->logicalTop();
+        }
+
+        return LayoutUnit { (baseline.value() + baselineChild->logicalTop()).toInt() }; 
+    }();
+    m_baselines.m_firstBaseline = firstLineBaseline;
+    m_baselines.m_lastBaseline = lastLineBaseline;
 }
 
 LayoutUnit RenderFlexibleBox::autoMarginOffsetInMainAxis(const FlexItems& flexItems, LayoutUnit& availableFreeSpace)
