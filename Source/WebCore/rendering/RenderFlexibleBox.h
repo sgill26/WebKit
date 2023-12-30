@@ -49,7 +49,12 @@ public:
     RenderFlexibleBox(Type, Document&, RenderStyle&&);
     virtual ~RenderFlexibleBox();
 
+    struct LineState;
+
     using Direction = BlockFlowDirection;
+    using FlexItems = Vector<FlexItem>;
+    using FlexLineStates = Vector<LineState>;
+
 
     ASCIILiteral renderName() const override;
 
@@ -60,7 +65,6 @@ public:
     LayoutUnit baselinePosition(FontBaseline, bool firstLine, LineDirectionMode, LinePositionMode = PositionOnContainingLine) const override;
     std::optional<LayoutUnit> firstLineBaseline() const override;
     std::optional<LayoutUnit> lastLineBaseline() const override;
-    RenderBox* getBaselineChild(ItemPosition alignment) const;
     std::optional<LayoutUnit> inlineBlockBaseline(LineDirectionMode) const override;
 
     void styleDidChange(StyleDifference, const RenderStyle*) override;
@@ -143,11 +147,6 @@ private:
     
     // Use an inline capacity of 8, since flexbox containers usually have less than 8 children.
     typedef Vector<LayoutRect, 8> ChildFrameRects;
-
-    struct LineState;
-
-    using FlexLineStates = Vector<LineState>;
-    using FlexItems = Vector<FlexItem>;
 
     bool mainAxisIsChildInlineAxis(const RenderBox&) const;
     bool isColumnFlow() const;
@@ -251,6 +250,7 @@ private:
     void alignChildren(FlexLineStates&);
     void applyStretchAlignmentToChild(RenderBox& child, LayoutUnit lineCrossAxisExtent);
     void performBaselineAlignment(LineState&);
+    RenderBox* getBaselineChild(ItemPosition alignment, const FlexLineStates&) const;
     void flipForRightToLeftColumn(const FlexLineStates& linesState);
     void flipForWrapReverse(const FlexLineStates&, LayoutUnit crossAxisStartEdge);
     
