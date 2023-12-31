@@ -308,6 +308,8 @@ static const FlexItem& getStartmostFlexItem(const LineState& lineState, WritingM
     ASSERT(lineState.flexItems.size());
     if (flexboxWritingMode == WritingMode::HorizontalTb && flexDirection == FlexDirection::Row)
         return lineState.flexItems.first();
+    if (flexboxWritingMode == WritingMode::HorizontalTb && flexWrap != FlexWrap::Reverse && flexDirection == FlexDirection::RowReverse)
+        return lineState.flexItems.last();
     ASSERT_NOT_IMPLEMENTED_YET();
     return lineState.flexItems.first();
 }
@@ -317,6 +319,8 @@ static const FlexItem& getEndmostFlexItem(const LineState& lineState, WritingMod
     ASSERT(lineState.flexItems.size());
     if (flexboxWritingMode == WritingMode::HorizontalTb && flexDirection == FlexDirection::Row)
         return lineState.flexItems.last();
+    if (flexboxWritingMode == WritingMode::HorizontalTb && flexWrap != FlexWrap::Reverse && flexDirection == FlexDirection::RowReverse)
+        return lineState.flexItems.first();
     ASSERT_NOT_IMPLEMENTED_YET();
     return lineState.flexItems.last();
 }
@@ -325,7 +329,7 @@ RenderBox* RenderFlexibleBox::getBaselineChild(ItemPosition alignment, const Fle
 {
     ASSERT(alignment == ItemPosition::Baseline || alignment == ItemPosition::LastBaseline);
 
-    if (style().flexDirection() == FlexDirection::Row
+    if (style().isRowFlexDirection()
         && style().flexWrap() != FlexWrap::Reverse && isHorizontalWritingMode()) {
 
         auto participatesInBaselineAlignment = [this](const FlexItem& flexItem) {
