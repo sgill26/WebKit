@@ -306,9 +306,10 @@ static std::optional<const LineState> getEndmostFlexLine(const FlexLineStates& l
 static const FlexItem& getStartmostFlexItem(const LineState& lineState, WritingMode flexboxWritingMode, FlexDirection flexDirection)
 {
     ASSERT(lineState.flexItems.size());
-    if (flexboxWritingMode == WritingMode::HorizontalTb && flexDirection == FlexDirection::Row)
+    auto isReverseMainAxisDirection = isReverseFlexDirection(flexDirection);
+    if (flexboxWritingMode == WritingMode::HorizontalTb && !isReverseMainAxisDirection)
         return lineState.flexItems.first();
-    if (flexboxWritingMode == WritingMode::HorizontalTb && flexWrap != FlexWrap::Reverse && flexDirection == FlexDirection::RowReverse)
+    if (flexboxWritingMode == WritingMode::HorizontalTb && isReverseMainAxisDirection)
         return lineState.flexItems.last();
     ASSERT_NOT_IMPLEMENTED_YET();
     return lineState.flexItems.first();
@@ -317,9 +318,10 @@ static const FlexItem& getStartmostFlexItem(const LineState& lineState, WritingM
 static const FlexItem& getEndmostFlexItem(const LineState& lineState, WritingMode flexboxWritingMode, FlexDirection flexDirection)
 {
     ASSERT(lineState.flexItems.size());
-    if (flexboxWritingMode == WritingMode::HorizontalTb && flexDirection == FlexDirection::Row)
+    auto isReverseMainAxisDirection = isReverseFlexDirection(flexDirection);
+    if (flexboxWritingMode == WritingMode::HorizontalTb && !isReverseMainAxisDirection)
         return lineState.flexItems.last();
-    if (flexboxWritingMode == WritingMode::HorizontalTb && flexWrap != FlexWrap::Reverse && flexDirection == FlexDirection::RowReverse)
+    if (flexboxWritingMode == WritingMode::HorizontalTb && isReverseMainAxisDirection)
         return lineState.flexItems.first();
     ASSERT_NOT_IMPLEMENTED_YET();
     return lineState.flexItems.last();
@@ -329,8 +331,7 @@ RenderBox* RenderFlexibleBox::getBaselineChild(ItemPosition alignment, const Fle
 {
     ASSERT(alignment == ItemPosition::Baseline || alignment == ItemPosition::LastBaseline);
 
-    if (style().isRowFlexDirection()
-        && style().flexWrap() != FlexWrap::Reverse && isHorizontalWritingMode()) {
+    if (style().flexWrap() != FlexWrap::Reverse && isHorizontalWritingMode()) {
 
         auto participatesInBaselineAlignment = [this](const FlexItem& flexItem) {
             auto flexItemAlignment = alignmentForChild(flexItem.box);
