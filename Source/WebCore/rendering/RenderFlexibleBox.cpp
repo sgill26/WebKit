@@ -584,11 +584,6 @@ bool RenderFlexibleBox::isColumnFlow() const
     return style().isColumnFlexDirection();
 }
 
-bool RenderFlexibleBox::isColumnOrRowReverse() const
-{
-    return style().flexDirection() == FlexDirection::ColumnReverse || style().flexDirection() == FlexDirection::RowReverse;
-}
-
 bool RenderFlexibleBox::isHorizontalFlow() const
 {
     if (isHorizontalWritingMode())
@@ -2005,7 +2000,7 @@ LayoutUnit RenderFlexibleBox::staticMainAxisPositionForPositionedChild(const Ren
 {
     auto childMainExtent = mainAxisMarginExtentForChild(child) + mainAxisExtentForChild(child);
     auto availableSpace = mainAxisContentExtent(contentLogicalHeight()) - childMainExtent;
-    auto isReverse = isColumnOrRowReverse();
+    auto isReverse = isReverseFlexDirection(style().flexDirection());
     LayoutUnit offset = initialJustifyContentOffset(style(), availableSpace, 1, isReverse);
     if (isReverse)
         offset = availableSpace - offset;
@@ -2266,7 +2261,7 @@ void RenderFlexibleBox::layoutAndPlaceChildren(LayoutUnit& crossAxisOffset, Flex
 {
     LayoutUnit autoMarginOffset = autoMarginOffsetInMainAxis(flexItems, availableFreeSpace);
     LayoutUnit mainAxisOffset = flowAwareBorderStart() + flowAwarePaddingStart();
-    mainAxisOffset += initialJustifyContentOffset(style(), availableFreeSpace, flexItems.size(), isColumnOrRowReverse());
+    mainAxisOffset += initialJustifyContentOffset(style(), availableFreeSpace, flexItems.size(), isReverseFlexDirection(style().flexDirection()));
     if (style().flexDirection() == FlexDirection::RowReverse)
         mainAxisOffset += isHorizontalFlow() ? verticalScrollbarWidth() : horizontalScrollbarHeight();
 
@@ -2386,7 +2381,7 @@ void RenderFlexibleBox::layoutColumnReverse(const FlexItems& flexItems, LayoutUn
     // the children starting from the end of the flexbox. We also don't need to
     // layout anything since we're just moving the children to a new position.
     LayoutUnit mainAxisOffset = logicalHeight() - flowAwareBorderEnd() - flowAwarePaddingEnd();
-    mainAxisOffset -= initialJustifyContentOffset(style(), availableFreeSpace, flexItems.size(), isColumnOrRowReverse());
+    mainAxisOffset -= initialJustifyContentOffset(style(), availableFreeSpace, flexItems.size(), isReverseFlexDirection(style().flexDirection()));
     mainAxisOffset -= isHorizontalFlow() ? verticalScrollbarWidth() : horizontalScrollbarHeight();
 
     ContentDistribution distribution = style().resolvedJustifyContentDistribution(contentAlignmentNormalBehavior());
@@ -2665,7 +2660,7 @@ void RenderFlexibleBox::flipForWrapReverse(const FlexLineStates& lineStates, Lay
 bool RenderFlexibleBox::isTopLayoutOverflowAllowed() const
 {
     bool hasTopOverflow = RenderBlock::isTopLayoutOverflowAllowed();
-    if (hasTopOverflow || !style().isReverseFlexDirection())
+    if (hasTopOverflow || !isReverseFlexDirection(style().flexDirection()))
         return hasTopOverflow;
     
     return !isHorizontalFlow();
@@ -2674,7 +2669,7 @@ bool RenderFlexibleBox::isTopLayoutOverflowAllowed() const
 bool RenderFlexibleBox::isLeftLayoutOverflowAllowed() const
 {
     bool hasLeftOverflow = RenderBlock::isLeftLayoutOverflowAllowed();
-    if (hasLeftOverflow || !style().isReverseFlexDirection())
+    if (hasLeftOverflow || !isReverseFlexDirection(style().flexDirection()))
         return hasLeftOverflow;
     
     return isHorizontalFlow();

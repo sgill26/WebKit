@@ -150,7 +150,6 @@ private:
 
     bool mainAxisIsChildInlineAxis(const RenderBox&) const;
     bool isColumnFlow() const;
-    bool isColumnOrRowReverse() const;
     bool isLeftToRightFlow() const;
     bool isMultiline() const;
     Length flexBasisForChild(const RenderBox& child) const;
@@ -302,6 +301,11 @@ private:
 
     std::unique_ptr<LayoutIntegration::FlexLayout> m_modernFlexLayout;
 };
+
+inline bool isReverseFlexDirection(const FlexDirection& flexDirection)
+{
+    return flexDirection == FlexDirection::RowReverse || flexDirection == FlexDirection::ColumnReverse;
+}
 
 } // namespace WebCore
 
