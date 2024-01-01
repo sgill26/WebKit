@@ -290,16 +290,16 @@ std::optional <LayoutUnit> RenderFlexibleBox::lastLineBaseline() const
 static std::optional<const LineState> getStartmostFlexLine(const FlexLineStates& lineStates, WritingMode flexboxWritingMode, FlexWrap flexWrap)
 {
     ASSERT(lineStates.size());
-    if (flexboxWritingMode == WritingMode::HorizontalTb && flexWrap != FlexWrap::Reverse)
-        return lineStates[0];
+    if (flexboxWritingMode == WritingMode::HorizontalTb)
+        return flexWrap != FlexWrap::Reverse ? lineStates.first() : lineStates.last();
     ASSERT_NOT_IMPLEMENTED_YET();
 }
 
 static std::optional<const LineState> getEndmostFlexLine(const FlexLineStates& lineStates, WritingMode flexboxWritingMode, FlexWrap flexWrap)
 {
     ASSERT(lineStates.size());
-    if (flexboxWritingMode == WritingMode::HorizontalTb && flexWrap != FlexWrap::Reverse)
-        return lineStates.last();
+    if (flexboxWritingMode == WritingMode::HorizontalTb)
+        return flexWrap != FlexWrap::Reverse ? lineStates.last() : lineStates.first();
     ASSERT_NOT_IMPLEMENTED_YET();
 }
 
@@ -331,7 +331,7 @@ RenderBox* RenderFlexibleBox::getBaselineChild(ItemPosition alignment, const Fle
 {
     ASSERT(alignment == ItemPosition::Baseline || alignment == ItemPosition::LastBaseline);
 
-    if (style().flexWrap() != FlexWrap::Reverse && isHorizontalWritingMode()) {
+    if (isHorizontalWritingMode()) {
 
         auto participatesInBaselineAlignment = [this](const FlexItem& flexItem) {
             auto flexItemAlignment = alignmentForChild(flexItem.box);
