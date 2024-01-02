@@ -287,97 +287,52 @@ std::optional <LayoutUnit> RenderFlexibleBox::lastLineBaseline() const
     return m_baselines.m_lastBaseline;
 }
 
-static std::optional<const LineState> getStartmostFlexLine(const FlexLineStates& lineStates, WritingMode flexboxWritingMode, FlexWrap flexWrap)
+static std::optional<const LineState> getStartmostFlexLine(const FlexLineStates& lineStates, FlexWrap flexWrap)
 {
     ASSERT(lineStates.size());
-    if (flexboxWritingMode == WritingMode::HorizontalTb)
-        return flexWrap != FlexWrap::Reverse ? lineStates.first() : lineStates.last();
-    ASSERT_NOT_IMPLEMENTED_YET();
+    return flexWrap != FlexWrap::Reverse ? lineStates.first() : lineStates.last();
 }
 
-static std::optional<const LineState> getEndmostFlexLine(const FlexLineStates& lineStates, WritingMode flexboxWritingMode, FlexWrap flexWrap)
+static std::optional<const LineState> getEndmostFlexLine(const FlexLineStates& lineStates, FlexWrap flexWrap)
 {
     ASSERT(lineStates.size());
-    if (flexboxWritingMode == WritingMode::HorizontalTb)
-        return flexWrap != FlexWrap::Reverse ? lineStates.last() : lineStates.first();
-    ASSERT_NOT_IMPLEMENTED_YET();
+    return flexWrap != FlexWrap::Reverse ? lineStates.last() : lineStates.first();
 }
 
-static const FlexItem& getStartmostFlexItem(const LineState& lineState, WritingMode flexboxWritingMode, FlexDirection flexDirection)
+static const FlexItem& getStartmostFlexItem(const LineState& lineState, FlexDirection flexDirection)
 {
     ASSERT(lineState.flexItems.size());
-    auto isReverseMainAxisDirection = isReverseFlexDirection(flexDirection);
-    if (flexboxWritingMode == WritingMode::HorizontalTb && !isReverseMainAxisDirection)
-        return lineState.flexItems.first();
-    if (flexboxWritingMode == WritingMode::HorizontalTb && isReverseMainAxisDirection)
-        return lineState.flexItems.last();
-    ASSERT_NOT_IMPLEMENTED_YET();
-    return lineState.flexItems.first();
+    return !isReverseFlexDirection(flexDirection) ? lineState.flexItems.first() : lineState.flexItems.last();
 }
 
-static const FlexItem& getEndmostFlexItem(const LineState& lineState, WritingMode flexboxWritingMode, FlexDirection flexDirection)
+static const FlexItem& getEndmostFlexItem(const LineState& lineState, FlexDirection flexDirection)
 {
     ASSERT(lineState.flexItems.size());
-    auto isReverseMainAxisDirection = isReverseFlexDirection(flexDirection);
-    if (flexboxWritingMode == WritingMode::HorizontalTb && !isReverseMainAxisDirection)
-        return lineState.flexItems.last();
-    if (flexboxWritingMode == WritingMode::HorizontalTb && isReverseMainAxisDirection)
-        return lineState.flexItems.first();
-    ASSERT_NOT_IMPLEMENTED_YET();
-    return lineState.flexItems.last();
+    return !isReverseFlexDirection(flexDirection) ? lineState.flexItems.last(): lineState.flexItems.first();
 }
 
 RenderBox* RenderFlexibleBox::getBaselineChild(ItemPosition alignment, const FlexLineStates& lineStates) const
 {
     ASSERT(alignment == ItemPosition::Baseline || alignment == ItemPosition::LastBaseline);
 
-    if (isHorizontalWritingMode()) {
+    auto participatesInBaselineAlignment = [this](const FlexItem& flexItem) {
+        auto flexItemAlignment = alignmentForChild(flexItem.box);
+        return (flexItemAlignment == ItemPosition::Baseline
+            || flexItemAlignment == ItemPosition::LastBaseline)
+            && !hasAutoMarginsInCrossAxis(flexItem.box);
+    };
 
-        auto participatesInBaselineAlignment = [this](const FlexItem& flexItem) {
-            auto flexItemAlignment = alignmentForChild(flexItem.box);
-            return (flexItemAlignment == ItemPosition::Baseline
-                || flexItemAlignment == ItemPosition::LastBaseline)
-                && !hasAutoMarginsInCrossAxis(flexItem.box);
-        };
-
-        const auto& flexLine = alignment == ItemPosition::Baseline ? getStartmostFlexLine(lineStates, style().writingMode(), style().flexWrap()) : getEndmostFlexLine(lineStates, style().writingMode(), style().flexWrap());
-        if (!flexLine)
-            return nullptr;
-        
-        for (auto& flexItem : flexLine->flexItems) {
-            if (participatesInBaselineAlignment(flexItem))
-                return &flexItem.box;
-        }
-        if (alignment == ItemPosition::Baseline)
-            return &getStartmostFlexItem(flexLine.value(), style().writingMode(), style().flexDirection()).box;
-        return &getEndmostFlexItem(flexLine.value(), style().writingMode(), style().flexDirection()).box;
+    const auto& flexLine = alignment == ItemPosition::Baseline ? getStartmostFlexLine(lineStates, style().flexWrap()) : getEndmostFlexLine(lineStates, style().flexWrap());
+    if (!flexLine)
+        return nullptr;
+    
+    for (auto& flexItem : flexLine->flexItems) {
+        if (participatesInBaselineAlignment(flexItem))
+            return &flexItem.box;
     }
-
-    // FIXME: https://drafts.csswg.org/css-flexbox-1/#flex-baselines
-    // We should be able to determine the flex item that will represent the flexbox's
-    // baseline from the flex lines in the code path above. Once all types of flex 
-    // content is supported above, all of the code below this comment will be dead code
-    // and can be deleted.
-    RenderBox* baselineChild = nullptr;
-    auto childIterator = (alignment == ItemPosition::Baseline) ? m_orderIterator : m_orderIterator.reverse();
-
-    size_t childNumber = 0;
-    for (auto* child = childIterator.first(); child; child = childIterator.next()) {
-        if (m_orderIterator.shouldSkipChild(*child))
-            continue;
-        if (alignmentForChild(*child) == alignment && !hasAutoMarginsInCrossAxis(*child)) {
-            baselineChild = child;
-            break;
-        }
-        if (!baselineChild)
-            baselineChild = child;
-
-        ++childNumber;
-        auto numberOfChildrenOnLine = alignment == ItemPosition::Baseline ? m_numberOfInFlowChildrenOnFirstLine : m_numberOfInFlowChildrenOnLastLine;
-        if (numberOfChildrenOnLine && childNumber == numberOfChildrenOnLine.value())
-            break;
-    }
-    return baselineChild;
+    if (alignment == ItemPosition::Baseline)
+        return &getStartmostFlexItem(flexLine.value(), style().flexDirection()).box;
+    return &getEndmostFlexItem(flexLine.value(), style().flexDirection()).box;
 }
 
 std::optional<LayoutUnit> RenderFlexibleBox::inlineBlockBaseline(LineDirectionMode) const
