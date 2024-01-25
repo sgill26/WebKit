@@ -60,6 +60,8 @@
 
 #include "PDFKitSoftLink.h"
 
+#include "PDFPluginAnnotation.h"
+
 #if PLATFORM(IOS_FAMILY)
 #import <UIKit/UIColor.h>
 #endif
@@ -935,7 +937,7 @@ bool UnifiedPDFPlugin::handleMouseEvent(const WebMouseEvent& event)
                 if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()]) {
                     startAnnotationTracking(annotation);
                 } else if ([annotation isKindOfClass:getPDFAnnotationTextWidgetClass()] || [annotation isKindOfClass: getPDFAnnotationChoiceWidgetClass()]) {
-                    setActiveAnnotation(annotation);
+                    setActivePDFPluginAnnotation(annotation);
                     return true;
                 } else
                     return false;
@@ -1187,13 +1189,51 @@ CGRect UnifiedPDFPlugin::boundsForAnnotation(RetainPtr<PDFAnnotation>& annotatio
 
 void UnifiedPDFPlugin::focusNextAnnotation()
 {
+    if (!m_activePDFPluginAnnotation)
+        return;
+    RetainPtr<PDFAnnotation> currentAnnotation = m_activePDFPluginAnnotation->annotation();
+
+    auto annotationsForPage = [&](RetainPtr<PDFPage>& page) -> RetainPtr<NSArray> {
+        RetainPtr<NSArray> annotations = [page annotations];
+        if (!annotations)
+            return nullptr;
+        return annotations;
+    };
+
+    auto nextAnnotation = [&]() -> RetainPtr<PDFAnnotation> {
+        RetainPtr<PDFPage> currentPage = [currentAnnotation page];
+        if (!currentPage)
+            return nullptr;
+
+        RetainPtr<NSArray> annotationsForCurrentPage = annotationsForPage(currentPage);
+        if (!annotationsForCurrentPage)
+            return nullptr;
+
+        auto indexForCurrentAnnotation = [annotationsForCurrentPage indexOfObject: currentAnnotation.get()];
+        if ((indexForCurrentAnnotation + 1) < [annotationsForCurrentPage count])
+            return [annotationsForCurrentPage objectAtIndex: indexForCurrentAnnotation + 1]; 
+        auto indexForCurrentPage = m_documentLayout.indexForPage(currentPage);
+        if (!indexForCurrentPage)
+            return nullptr;
+        if (RetainPtr<PDFPage> nextPage = m_documentLayout.pageAtIndex(indexForCurrentPage.value() + 1)) {
+            if (RetainPtr<NSArray> annotationsForNextPage = annotationsForPage(nextPage); annotationsForNextPage && [annotationsForNextPage count])
+                return [annotationsForNextPage firstObject];
+        }
+        return nullptr;
+    }();
+
+    if (nextAnnotation == currentAnnotation || !nextAnnotation)
+        return;
+    
+    setActivePDFPluginAnnotation(nextAnnotation.get());
+
 }
 
 void UnifiedPDFPlugin::focusPreviousAnnotation()
 {
 }
 
-void UnifiedPDFPlugin::setActiveAnnotation(RetainPtr<PDFAnnotation>&& annotation)
+void UnifiedPDFPlugin::setActivePDFPluginAnnotation(RetainPtr<PDFAnnotation>&& annotation)
 {
 #if PLATFORM(MAC)
     if (!supportsForms())

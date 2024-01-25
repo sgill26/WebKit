@@ -473,7 +473,7 @@ static WebCore::Cursor::Type toWebCoreCursorType(PDFLayerControllerCursorType cu
 
 - (void)pdfLayerController:(PDFLayerController *)pdfLayerController didChangeActiveAnnotation:(PDFAnnotation *)annotation
 {
-    _pdfPlugin->setActiveAnnotation(annotation);
+    _pdfPlugin->setActivePDFPluginAnnotation(annotation);
 }
 
 - (void)pdfLayerController:(PDFLayerController *)pdfLayerController didChangeContentScaleFactor:(CGFloat)scaleFactor
@@ -1866,7 +1866,7 @@ void PDFPlugin::clickedLink(NSURL *url)
     frame->loader().changeLocation(coreURL, emptyAtom(), coreEvent.get(), ReferrerPolicy::NoReferrer, ShouldOpenExternalURLsPolicy::ShouldAllow);
 }
 
-void PDFPlugin::setActiveAnnotation(RetainPtr<PDFAnnotation>&& annotation)
+void PDFPlugin::setActivePDFPluginAnnotation(RetainPtr<PDFAnnotation>&& annotation)
 {
     if (!supportsForms())
         return;
