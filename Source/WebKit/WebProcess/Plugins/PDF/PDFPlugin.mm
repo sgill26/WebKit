@@ -1386,7 +1386,7 @@ void PDFPlugin::teardown()
     if (auto* frameView = m_frame && m_frame->coreLocalFrame() ? m_frame->coreLocalFrame()->view() : nullptr)
         frameView->removeScrollableArea(this);
 
-    m_activeAnnotation = nullptr;
+    m_activePDFPluginAnnotation = nullptr;
     m_annotationContainer = nullptr;
     
     [m_scrollCornerLayer removeFromSuperlayer];
@@ -1472,8 +1472,8 @@ void PDFPlugin::geometryDidChange(const IntSize& pluginSize, const AffineTransfo
     updatePDFHUDLocation();
     updateScrollbars();
 
-    if (m_activeAnnotation)
-        m_activeAnnotation->updateGeometry();
+    if (m_activePDFPluginAnnotation)
+        m_activePDFPluginAnnotation->updateGeometry();
 
     [m_contentLayer setSublayerTransform:transform];
     [CATransaction commit];
@@ -1830,8 +1830,8 @@ void PDFPlugin::didChangeScrollOffset()
     [CATransaction begin];
     [m_pdfLayerController setScrollPosition:IntPoint(m_scrollOffset.width(), m_scrollOffset.height())];
 
-    if (m_activeAnnotation)
-        m_activeAnnotation->updateGeometry();
+    if (m_activePDFPluginAnnotation)
+        m_activePDFPluginAnnotation->updateGeometry();
 
     [CATransaction commit];
 }
@@ -1871,22 +1871,22 @@ void PDFPlugin::setActiveAnnotation(RetainPtr<PDFAnnotation>&& annotation)
     if (!supportsForms())
         return;
 
-    if (m_activeAnnotation)
-        m_activeAnnotation->commit();
+    if (m_activePDFPluginAnnotation)
+        m_activePDFPluginAnnotation->commit();
 
     if (annotation) {
 ALLOW_DEPRECATED_DECLARATIONS_BEGIN
         if ([annotation isKindOfClass:getPDFAnnotationTextWidgetClass()] && static_cast<PDFAnnotationTextWidget *>(annotation).isReadOnly) {
-            m_activeAnnotation = nullptr;
+            m_activePDFPluginAnnotation = nullptr;
             return;
         }
 ALLOW_DEPRECATED_DECLARATIONS_END
 
         auto activeAnnotation = PDFPluginAnnotation::create(annotation.get(), this);
-        m_activeAnnotation = activeAnnotation.get();
+        m_activePDFPluginAnnotation = activeAnnotation.get();
         activeAnnotation->attach(m_annotationContainer.get());
     } else
-        m_activeAnnotation = nullptr;
+        m_activePDFPluginAnnotation = nullptr;
 }
 
 void PDFPlugin::notifyContentScaleFactorChanged(CGFloat scaleFactor)
@@ -2303,8 +2303,8 @@ bool PDFPlugin::handleWheelEvent(const WebWheelEvent& event)
 
 NSData *PDFPlugin::liveData() const
 {
-    if (m_activeAnnotation)
-        m_activeAnnotation->commit();
+    if (m_activePDFPluginAnnotation)
+        m_activePDFPluginAnnotation->commit();
 
     // Save data straight from the resource instead of PDFKit if the document is
     // untouched by the user, so that PDFs which PDFKit can't display will still be downloadable.
@@ -2316,13 +2316,13 @@ NSData *PDFPlugin::liveData() const
 
 id PDFPlugin::accessibilityAssociatedPluginParentForElement(WebCore::Element* element) const
 {
-    if (!m_activeAnnotation)
+    if (!m_activePDFPluginAnnotation)
         return nil;
 
-    if (m_activeAnnotation->element() != element)
+    if (m_activePDFPluginAnnotation->element() != element)
         return nil;
 
-    return [m_activeAnnotation->annotation() accessibilityNode];
+    return [m_activePDFPluginAnnotation->annotation() accessibilityNode];
 }
 
 id PDFPlugin::accessibilityHitTest(const WebCore::IntPoint& point) const

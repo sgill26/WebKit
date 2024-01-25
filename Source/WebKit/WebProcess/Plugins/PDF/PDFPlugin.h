@@ -86,7 +86,7 @@ public:
 
 
     void paintControlForLayerInContext(CALayer *, CGContextRef);
-    void setActiveAnnotation(RetainPtr<PDFAnnotation>&&) final;
+    void setActivePDFPluginAnnotation(RetainPtr<PDFAnnotation>&&) final;
 
     void notifyContentScaleFactorChanged(CGFloat scaleFactor);
     void notifyDisplayModeChanged(int);
@@ -114,7 +114,7 @@ public:
 
     bool showContextMenuAtPoint(const WebCore::IntPoint&);
 
-    PDFPluginAnnotation* activeAnnotation() const { return m_activeAnnotation.get(); }
+    PDFPluginAnnotation* activeAnnotation() const { return m_activePDFPluginAnnotation.get(); }
     WebCore::AXObjectCache* axObjectCache() const;
 
 #if HAVE(INCREMENTAL_PDF_APIS)

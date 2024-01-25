@@ -182,7 +182,7 @@ public:
 
     WebCore::ScrollPosition scrollPosition() const final;
 
-    virtual void setActiveAnnotation(RetainPtr<PDFAnnotation>&&) = 0;
+    virtual void setActivePDFPluginAnnotation(RetainPtr<PDFAnnotation>&&) = 0;
     void didMutatePDFDocument() { m_pdfDocumentWasMutated = true; }
 
     virtual CGRect boundsForAnnotation(RetainPtr<PDFAnnotation>&) const = 0;
@@ -291,7 +291,7 @@ protected:
     bool m_didRunScripts { false };
 
 #if PLATFORM(MAC)
-    RefPtr<PDFPluginAnnotation> m_activeAnnotation;
+    RefPtr<PDFPluginAnnotation> m_activePDFPluginAnnotation;
 #endif
     RefPtr<WebCore::Element> m_annotationContainer;
     bool m_pdfDocumentWasMutated { false };

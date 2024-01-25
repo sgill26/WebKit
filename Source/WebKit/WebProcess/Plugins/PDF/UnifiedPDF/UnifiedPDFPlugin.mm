@@ -909,6 +909,15 @@ bool UnifiedPDFPlugin::handleMouseEvent(const WebMouseEvent& event)
             notifyCursorChanged(toWebCoreCursorType(pdfElementTypes, altKeyIsActive));
             return true;
         }
+        case WebMouseEventButton::Left: {
+            if (m_trackedAnnotation &&  !pdfElementTypesForPluginPoint(m_lastMousePositionInPluginCoordinates).contains(PDFElementType::Annotation)) {
+                [m_trackedAnnotation setHighlighted: NO];
+                m_trackedAnnotation = nullptr;
+                updateLayerHierarchy();
+                return true;
+            }
+            return false;
+        }
         default:
             return false;
         }
@@ -919,15 +928,31 @@ bool UnifiedPDFPlugin::handleMouseEvent(const WebMouseEvent& event)
             auto nearestPageIndex = nearestPageIndexForDocumentPoint(pointInDocumentSpace);
             if (!nearestPageIndex)
                 return false;
-
+            
             auto page = m_documentLayout.pageAtIndex(nearestPageIndex.value());
             auto pointInPDFPageSpace = convertFromDocumentToPage(pointInDocumentSpace, nearestPageIndex.value());
-            if (auto annotation = [page annotationAtPoint:pointInPDFPageSpace]; annotation && [annotation isKindOfClass:getPDFAnnotationTextWidgetClass()]) {
-                setActiveAnnotation(annotation);
-                return true;
+            if (auto annotation = [page annotationAtPoint:pointInPDFPageSpace]) {
+                if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()]) {
+                    startAnnotationTracking(annotation);
+                } else if ([annotation isKindOfClass:getPDFAnnotationTextWidgetClass()] || [annotation isKindOfClass: getPDFAnnotationChoiceWidgetClass()]) {
+                    setActiveAnnotation(annotation);
+                    return true;
+                } else
+                    return false;
             }
             return false;
         }
+        default:
+            return false;
+        }
+    case WebEventType::MouseUp:
+        switch (event.button()) {
+        case WebMouseEventButton::Left:
+            if (m_trackedAnnotation) {
+                finishAnnotationTracking();
+                return true;
+            }
+            return false;
         default:
             return false;
         }
@@ -1174,24 +1199,49 @@ void UnifiedPDFPlugin::setActiveAnnotation(RetainPtr<PDFAnnotation>&& annotation
     if (!supportsForms())
         return;
 
-    if (m_activeAnnotation)
-        m_activeAnnotation->commit();
+    if (m_activePDFPluginAnnotation)
+        m_activePDFPluginAnnotation->commit();
 
     if (annotation) {
 ALLOW_DEPRECATED_DECLARATIONS_BEGIN
         if ([annotation isKindOfClass:getPDFAnnotationTextWidgetClass()] && static_cast<PDFAnnotationTextWidget *>(annotation).isReadOnly) {
-            m_activeAnnotation = nullptr;
+            m_activePDFPluginAnnotation = nullptr;
             return;
         }
 ALLOW_DEPRECATED_DECLARATIONS_END
 
         auto activeAnnotation = PDFPluginAnnotation::create(annotation.get(), this);
-        m_activeAnnotation = activeAnnotation.get();
+        m_activePDFPluginAnnotation = activeAnnotation.get();
         activeAnnotation->attach(m_annotationContainer.get());
     } else
-        m_activeAnnotation = nullptr;
+        m_activePDFPluginAnnotation = nullptr;
     updateLayerHierarchy();
 #endif
+}
+
+void UnifiedPDFPlugin::startAnnotationTracking(RetainPtr<PDFAnnotation>&& annotation)
+{
+    ASSERT(!m_trackedAnnotation);
+    m_trackedAnnotation = annotation;
+
+    if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()])
+        [annotation setHighlighted: YES];
+
+    updateLayerHierarchy();
+}
+
+void UnifiedPDFPlugin::finishAnnotationTracking()
+{
+    ASSERT(m_trackedAnnotation);
+    
+    if ([m_trackedAnnotation isKindOfClass:getPDFAnnotationButtonWidgetClass()]) {
+        [m_trackedAnnotation setHighlighted: NO];
+        [m_trackedAnnotation buttonWidgetState] == NSControlStateValueOff ? [m_trackedAnnotation setButtonWidgetState: PDFWidgetCellState::kPDFWidgetOnState] : [m_trackedAnnotation setButtonWidgetState: PDFWidgetCellState::kPDFWidgetOffState];
+    }
+
+    m_trackedAnnotation = nullptr;
+
+    updateLayerHierarchy();
 }
 
 void UnifiedPDFPlugin::attemptToUnlockPDF(const String& password)

@@ -60,7 +60,9 @@ public:
     using PDFElementTypes = OptionSet<PDFElementType>;
 
     CGRect boundsForAnnotation(RetainPtr<PDFAnnotation>&) const final;
-    void setActiveAnnotation(RetainPtr<PDFAnnotation>&&) final;
+    void setActivePDFPluginAnnotation(RetainPtr<PDFAnnotation>&&) final;
+    void startAnnotationTracking(RetainPtr<PDFAnnotation>&&);
+    void finishAnnotationTracking();
     void focusNextAnnotation() final;
     void focusPreviousAnnotation() final;
 
@@ -235,6 +237,9 @@ private:
 
     float m_scaleFactor { 1 };
     bool m_inMagnificationGesture { false };
+
+    RetainPtr<PDFAnnotation> m_trackedAnnotation;
+
 };
 
 } // namespace WebKit
