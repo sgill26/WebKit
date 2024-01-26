@@ -1,0 +1,17 @@
+<!-- webkit-test-runner [ UnifiedPDFEnabled=true ] -->
+<!DOCTYPE html>
+<html class="reftest-wait">
+<script src="../resources/ui-helper.js"></script>
+<embed style="width: 500px; height: 800px;" type="application/pdf" src="Forms.pdf">
+<script>
+window.onload = () => {
+    setTimeout(() => {
+        let x = 165;
+        let y = 163;
+        let coordinates = internals.pdfButtonLocations();
+        UIHelper.activateAt(x, y);
+        document.documentElement.removeAttribute("class");
+    }, 500);
+};
+</script>
+</html>

@@ -924,6 +924,7 @@ bool UnifiedPDFPlugin::handleMouseEvent(const WebMouseEvent& event)
             return false;
         }
     case WebEventType::MouseDown:
+        ALWAYS_LOG_WITH_STREAM(stream << "sgill26: mouse event in unified pdf plugin");
         switch (event.button()) {
         case WebMouseEventButton::Left: {
             auto pointInDocumentSpace = convertFromPluginToDocument(convertFromRootViewToPlugin(event.position()));

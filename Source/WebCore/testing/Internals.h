@@ -293,6 +293,7 @@ public:
         double speed;
     };
     Vector<AcceleratedAnimation> acceleratedAnimationsForElement(Element&);
+    Vector<Vector<double>> pdfButtonLocations();
     unsigned numberOfAnimationTimelineInvalidations() const;
     double timeToNextAnimationTick(WebAnimation&) const;
 
@@ -1426,6 +1427,8 @@ public:
     String getComputedRole(Element&) const;
 
     bool hasScopeBreakingHasSelectors() const;
+
+
 
 private:
     explicit Internals(Document&);

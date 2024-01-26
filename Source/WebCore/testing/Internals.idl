@@ -610,6 +610,8 @@ typedef (FetchRequest or FetchResponse) FetchObject;
     DOMString parserMetaData(optional any func);
 
     undefined updateEditorUINowIfScheduled();
+    
+    sequence<sequence<double>> pdfButtonLocations();
 
     readonly attribute boolean sentenceRetroCorrectionEnabled;
     boolean hasSpellingMarker(long from, long length);

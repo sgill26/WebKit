@@ -1674,6 +1674,7 @@ bool PDFPlugin::handleMouseEvent(const WebMouseEvent& event)
         }
         break;
     case WebEventType::MouseDown:
+        ALWAYS_LOG_WITH_STREAM(stream << "sgill26: mouse event in pdfplugin");
         switch (event.button()) {
         case WebMouseEventButton::Left:
             if (targetScrollbar)

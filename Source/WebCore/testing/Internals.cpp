@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "Internals.h"
-
 #include "AXObjectCache.h"
 #include "AddEventListenerOptions.h"
 #include "AnimationTimeline.h"
@@ -243,6 +242,7 @@
 #include "WorkletGlobalScope.h"
 #include "WritingDirection.h"
 #include "XMLHttpRequest.h"
+#include "html/PluginDocument.h"
 #include <JavaScriptCore/CodeBlock.h>
 #include <JavaScriptCore/InspectorAgentBase.h>
 #include <JavaScriptCore/InspectorFrontendChannel.h>
@@ -391,6 +391,8 @@
 #if ENABLE(SERVICE_CONTROLS)
 #include "ImageControlsMac.h"
 #endif
+
+#include <WebKit/WebPage.h>
 
 using JSC::CallData;
 using JSC::CodeBlock;
@@ -1319,6 +1321,15 @@ Vector<Internals::AcceleratedAnimation> Internals::acceleratedAnimationsForEleme
     for (const auto& animationAsPair : element.document().timeline().acceleratedAnimationsForElement(element))
         animations.append({ animationAsPair.first, animationAsPair.second });
     return animations;
+}
+
+Vector<Vector<double>> Internals::pdfButtonLocations()
+{
+    Vector<Vector<double>> result;
+    Vector <double> coordinates;
+    coordinates.appendList({1, 2});
+    result.append(coordinates);
+    return result;
 }
 
 unsigned Internals::numberOfAnimationTimelineInvalidations() const
