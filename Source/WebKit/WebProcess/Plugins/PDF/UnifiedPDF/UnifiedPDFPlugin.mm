@@ -1042,7 +1042,7 @@ bool UnifiedPDFPlugin::handleMouseEvent(const WebMouseEvent& event)
                     setActiveAnnotation(WTFMove(annotation));
                     return true;
                 }
-                if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()]) {
+                if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()] || [annotation isKindOfClass:getPDFAnnotationLinkClass()]) {
                     startAnnotationTracking(WTFMove(annotation));
                     return true;
                 }
@@ -1435,7 +1435,7 @@ void UnifiedPDFPlugin::startAnnotationTracking(RetainPtr<PDFAnnotation>&& annota
     ASSERT(!m_trackedAnnotation);
     m_trackedAnnotation = annotation;
 
-    if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()])
+    if ([annotation isKindOfClass:getPDFAnnotationButtonWidgetClass()] || [annotation isKindOfClass:getPDFAnnotationLinkClass()])
         [annotation setHighlighted:YES];
 
     updateLayerHierarchy();
@@ -1444,6 +1444,28 @@ void UnifiedPDFPlugin::startAnnotationTracking(RetainPtr<PDFAnnotation>&& annota
 void UnifiedPDFPlugin::finishAnnotationTracking()
 {
     ASSERT(m_trackedAnnotation);
+
+    auto goToDestination = [&](const RetainPtr<PDFDestination>&& destination) {
+        ASSERT(destination);
+        if (!destination)
+            return;
+        RetainPtr destinationPage = [destination page];
+        if (!destinationPage)
+            return;
+        auto destinationPoint =  [destination point];
+        RetainPtr currentPage = [m_trackedAnnotation page];
+        if (currentPage == destinationPage && )
+    };
+
+    auto handleAnnotationHit = [&]() -> void {
+        RetainPtr action = [m_trackedAnnotation action];
+        if (!action)
+            return;
+        RetainPtr actionType = [action type];
+        if ([actionType isEqualToString:@"GoTo"])
+            goToDestination(WTFMove([(PDFActionGoTo *)action destination]));
+    };
+
 
     if ([m_trackedAnnotation isHighlighted])
         [m_trackedAnnotation setHighlighted:NO];
@@ -1455,7 +1477,7 @@ void UnifiedPDFPlugin::finishAnnotationTracking()
         else if (currentButtonState == PDFWidgetCellState::kPDFWidgetOffState)
             [m_trackedAnnotation setButtonWidgetState:PDFWidgetCellState::kPDFWidgetOnState];
     } else
-        ASSERT_NOT_IMPLEMENTED_YET();
+        handleAnnotationHit();
     m_trackedAnnotation = nullptr;
 
     updateLayerHierarchy();
