@@ -235,14 +235,21 @@ private:
     std::optional<LayoutUnit> m_overridingHeight;
 };
 
-static void updateFlexItemDirtyBitsBeforeLayout(bool relayoutFlexItem, RenderBox& flexItem)
+void RenderFlexibleBox::updateFlexItemDirtyBitsBeforeLayout(bool relayoutFlexItem, RenderBox& flexItem)
 {
     if (flexItem.isOutOfFlowPositioned())
         return;
 
+
+    auto needsToRecomputeRelativeLogicalHeight = [&]() {
+        if (!flexItem.hasRelativeLogicalHeight())
+            return false;
+        return hasOverridingLogicalHeight() && overridingLogicalHeight() != logicalHeight();
+    };
+
     // FIXME: Technically percentage height objects only need a relayout if their percentage isn't going to be turned into
     // an auto value. Add a method to determine this, so that we can avoid the relayout.
-    if (relayoutFlexItem || flexItem.hasRelativeLogicalHeight())
+    if (relayoutFlexItem || needsToRecomputeRelativeLogicalHeight())
         flexItem.setChildNeedsLayout(MarkOnlyThis);
 }
 
