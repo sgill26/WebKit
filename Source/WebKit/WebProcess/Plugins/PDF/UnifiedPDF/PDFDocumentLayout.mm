@@ -30,6 +30,7 @@
 
 #import "Logging.h"
 #import <WebCore/AffineTransform.h>
+#import <WebCore/GeometryUtilities.h>
 #import <wtf/text/TextStream.h>
 
 #import "PDFKitSoftLink.h"
@@ -75,30 +76,81 @@ std::optional<unsigned> PDFDocumentLayout::indexForPage(RetainPtr<PDFPage> page)
 PDFDocumentLayout::PageIndex PDFDocumentLayout::nearestPageIndexForDocumentPoint(FloatPoint documentSpacePoint) const
 {
     auto pageCount = this->pageCount();
+
+    ALWAYS_LOG_WITH_STREAM(stream << "document layout point: " << documentSpacePoint);
+    ALWAYS_LOG_WITH_STREAM(stream << "printing layout bounds of all pages");
+    for (unsigned i = 0; i < pageCount; ++i) {
+        ALWAYS_LOG_WITH_STREAM(stream << "========== page " << i << " ==========");
+        ALWAYS_LOG_WITH_STREAM(stream << layoutBoundsForPageAtIndex(i));
+        ALWAYS_LOG_WITH_STREAM(stream << "=============================");
+    }
+
+
     switch (displayMode()) {
     case PDFDocumentLayout::DisplayMode::TwoUpDiscrete:
-    case PDFDocumentLayout::DisplayMode::TwoUpContinuous:
-        for (PDFDocumentLayout::PageIndex index = 0; index < pageCount; ++index) {
-            if (index == pageCount - 1)
-                return index;
+    case PDFDocumentLayout::DisplayMode::TwoUpContinuous: {
 
+        using PairedPagesLayoutBounds = std::pair<FloatRect, std::optional<FloatRect>>;
+
+        auto layoutBoundsForPairedPages = [this](PageIndex index) -> PairedPagesLayoutBounds {
+            if (isRightPageIndex(index))
+                return { layoutBoundsForPageAtIndex(index - 1), layoutBoundsForPageAtIndex(index) };
+            if (isLastPageIndex(index))
+                return { layoutBoundsForPageAtIndex(index), std::nullopt };
+            return { layoutBoundsForPageAtIndex(index), layoutBoundsForPageAtIndex(index + 1) };
+        };
+
+        for (PDFDocumentLayout::PageIndex index = 0; index < pageCount; index += pagesPerRow()) {
+            auto pairedPagesLayoutBounds = layoutBoundsForPairedPages(index);
+            auto hasRightPage = pairedPagesLayoutBounds.second.has_value();
+
+            if (documentSpacePoint.y() < pairedPagesLayoutBounds.first.maxY() || (hasRightPage && documentSpacePoint.y() < pairedPagesLayoutBounds.second->maxY())) {
+                if (!pairedPagesLayoutBounds.second)
+                    return index;
+                auto distanceToTopRight = euclidianDistance(documentSpacePoint, pairedPagesLayoutBounds.first.maxXMinYCorner());
+                ALWAYS_LOG_WITH_STREAM(stream << "distnaceToTopRight: " << distanceToTopRight);
+                auto distanceToTopLeft = euclidianDistance(documentSpacePoint, pairedPagesLayoutBounds.second->minXMinYCorner());
+                ALWAYS_LOG_WITH_STREAM(stream << "distanceToTopLeft: " << distanceToTopLeft);
+                if (distanceToTopRight < distanceToTopLeft)
+                    return index;
+                return index + 1;
+            }
+/*
             auto currentPageBounds = layoutBoundsForPageAtIndex(index);
             if (documentSpacePoint.y() < currentPageBounds.maxY()) {
 
-                auto pairedPageIndex =  [index, this]() {
-                    if (index % pagesPerRow())
+                if (isLastPageIndex(index))
+                    return index;
+
+                auto pairedPageIndex =  [index, this]() -> std::optional<PDFDocumentLayout::PageIndex> {
+                    if (isRightPageIndex(index))
                         return index - 1;
+                    if (isLastPageIndex(index))
+                        return std::nullopt;
                     return index + 1;
                 }();
 
-                auto pairedPageMaxX= layoutBoundsForPageAtIndex(pairedPageIndex).maxX();
+                if (!pairedPagesLayoutBounds.second)
+                    return index;
+
+                if (documentSpacePoint.x() < pairedPageIndex.)
+
+                auto pairedPageMaxX= layoutBoundsForPageAtIndex(pairedPageIndex.value()).maxX();
                 auto currentPageMaxX = currentPageBounds.maxX();
                 if (currentPageMaxX < pairedPageMaxX)
-                    return documentSpacePoint.x() < currentPageMaxX ? index : pairedPageIndex;
-                return documentSpacePoint.x() < pairedPageMaxX ? pairedPageIndex : index;
+                    return documentSpacePoint.x() < currentPageMaxX ? index : pairedPageIndex.value();
+                return documentSpacePoint.x() < pairedPageMaxX ? pairedPageIndex.value() : index;
             }
+            */
         }
-        break;
+
+        auto lastPageIndex = pageCount - 1;
+        if (isLeftPageIndex(lastPageIndex))
+            return lastPageIndex;
+        
+        auto lastPageBounds = layoutBoundsForPageAtIndex(lastPageIndex);
+        return documentSpacePoint.x() < lastPageBounds.x() ? lastPageIndex - 1 : lastPageIndex;
+    }
     case PDFDocumentLayout::DisplayMode::SinglePageDiscrete:
     case PDFDocumentLayout::DisplayMode::SinglePageContinuous: {
         for (PDFDocumentLayout::PageIndex index = 0; index < pageCount; ++index) {
