@@ -810,7 +810,40 @@ void RenderTreeBuilder::removeAnonymousWrappersForInlineChildrenIfNeeded(RenderE
 void RenderTreeBuilder::childFlowStateChangesAndNoLongerAffectsParentBlock(RenderElement& child)
 {
     ASSERT(child.parent());
-    removeAnonymousWrappersForInlineChildrenIfNeeded(*child.parent());
+
+    auto* parent = child.parent();
+
+    auto collapseContinuation = [&]() {
+        auto* anonymousBlockParent = downcast<RenderBlock>(parent);
+
+        auto* continuationNode = anonymousBlockParent->continuationChainNode();
+        auto* preContinuationNode = continuationNode->previous;
+        auto* postContinuationNode = continuationNode->next;
+
+        auto* preContinuationAnonBlock = downcast<RenderBlock>(parent->previousSibling());
+        auto* postContinuationAnonBlock = downcast<RenderBlock>(parent->nextSibling());
+        auto* continuationAnonBlock = downcast<RenderBlock>(parent);
+
+        auto outOfFlowBlock = detach(*anonymousBlockParent, child, WillBeDestroyed::No);
+        attachIgnoringContinuation(*preContinuationNode->renderer, WTFMove(outOfFlowBlock));
+
+        moveAllChildren(*postContinuationNode->renderer, *downcast<RenderInline>(preContinuationAnonBlock->firstChild()), NormalizeAfterInsertion::No);
+
+        auto* continuationBlockParent = downcast<RenderBlock>(anonymousBlockParent->parent());
+
+        moveAllChildrenIncludingFloats(*preContinuationAnonBlock, *continuationBlockParent, NormalizeAfterInsertion::No);
+        continuationBlockParent->setChildrenInline(true);
+
+        destroy(*postContinuationAnonBlock->firstChild());
+        destroy(*postContinuationAnonBlock);
+        destroy(*preContinuationAnonBlock);
+        destroy(*continuationAnonBlock);
+    };
+
+    if (parent->isAnonymousBlock() && parent->isContinuation())
+        collapseContinuation();
+    else
+        removeAnonymousWrappersForInlineChildrenIfNeeded(*child.parent());
 }
 
 void RenderTreeBuilder::destroyAndCleanUpAnonymousWrappers(RenderObject& rendererToDestroy)
