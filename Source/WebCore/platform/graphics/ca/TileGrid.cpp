@@ -81,6 +81,14 @@ FloatRect TileGrid::rectForTile(TileIndex tileIndex) const
     return rectForTileIndex(tileIndex);
 }
 
+Vector<FloatRect> TileGrid::rectsForTiles() const
+{
+    Vector<FloatRect> rects;
+    for (auto tile : m_tiles) 
+        rects.append(rectForTile(tile.key));
+    return rects;
+}
+
 void TileGrid::setIsZoomedOutTileGrid(bool isZoomedOutGrid)
 {
     if (isZoomedOutGrid)

@@ -147,6 +147,7 @@ private:
     void coverageRectDidChange(WebCore::TiledBacking&, const WebCore::FloatRect&) final;
     void tilingScaleFactorDidChange(WebCore::TiledBacking&, float) final;
     void willRemoveGrid(WebCore::TiledBacking&, WebCore::TileGridIdentifier) final;
+    void willSwapGrid(WebCore::TiledBacking&, WebCore::TileGridIdentifier, Vector<WebCore::FloatRect> newTileRects) final;
 
     void enqueueTilePaintIfNecessary(const TileForGrid&, const WebCore::FloatRect& tileRect, const std::optional<WebCore::FloatRect>& clipRect = { });
     void enqueuePaintWithClip(const TileForGrid&, const TileRenderInfo&);
@@ -195,6 +196,20 @@ private:
         TileRenderInfo tileInfo;
     };
     HashMap<TileForGrid, RenderedTile> m_rendereredTiles;
+    
+    struct AsyncGridSwapState {
+        AsyncGridSwapState(WebCore::TileGridIdentifier gridId, unsigned tilesToRenderCount)
+        : m_gridId(gridId) 
+        , m_tilesToRenderCount(tilesToRenderCount)
+        {
+        }
+
+        HashMap<TileForGrid, RenderedTile> m_renderedTiles;
+        WebCore::TileGridIdentifier m_gridId;
+        unsigned m_tilesToRenderCount;
+    };
+
+    std::optional<AsyncGridSwapState> m_asyncGridSwapState;
 
     using PDFPageIndexSet = HashSet<PDFDocumentLayout::PageIndex, IntHash<PDFDocumentLayout::PageIndex>, WTF::UnsignedWithZeroKeyHashTraits<PDFDocumentLayout::PageIndex>>;
     using PDFPageIndexToPreviewHash = HashMap<PDFDocumentLayout::PageIndex, PagePreviewRequest, IntHash<PDFDocumentLayout::PageIndex>, WTF::UnsignedWithZeroKeyHashTraits<PDFDocumentLayout::PageIndex>>;
@@ -204,6 +219,7 @@ private:
     PDFPageIndexToBufferHash m_pagePreviews;
 
     std::atomic<bool> m_showDebugBorders { false };
+
 };
 
 

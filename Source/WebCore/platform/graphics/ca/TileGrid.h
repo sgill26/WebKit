@@ -86,6 +86,7 @@ public:
     
     IntSize tileSize() const { return m_tileSize; }
     FloatRect rectForTile(TileIndex) const;
+    Vector<FloatRect> rectsForTiles() const;
 
     double retainedTileBackingStoreMemory() const;
     unsigned blankPixelCount() const;

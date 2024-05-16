@@ -70,6 +70,11 @@ enum class TiledBackingScrollability : uint8_t {
     VerticallyScrollable    = 1 << 1
 };
 
+enum class TiledBackingClientRequirements : bool {
+    None,
+    AsyncGridSwapping
+};
+
 using TileIndex = IntPoint;
 class TiledBacking;
 
@@ -82,6 +87,7 @@ public:
     virtual void willRemoveTile(TiledBacking&, TileGridIdentifier, TileIndex) = 0;
     virtual void willRepaintAllTiles(TiledBacking&, TileGridIdentifier) = 0;
     virtual void willRemoveGrid(TiledBacking&, TileGridIdentifier) = 0;
+    virtual void willSwapGrid(TiledBacking&, TileGridIdentifier, Vector<FloatRect> newTileRects) = 0;
     virtual void coverageRectDidChange(TiledBacking&, const FloatRect&) = 0;
     virtual void tilingScaleFactorDidChange(TiledBacking&, float) = 0;
 };
@@ -93,7 +99,7 @@ class TiledBacking : public CanMakeCheckedPtr<TiledBacking> {
 public:
     virtual ~TiledBacking() = default;
 
-    virtual void setClient(TiledBackingClient*) = 0;
+    virtual void setClient(TiledBackingClient*, TiledBackingClientRequirements = TiledBackingClientRequirements::None) = 0;
 
     virtual void setVisibleRect(const FloatRect&) = 0;
     virtual FloatRect visibleRect() const = 0;
@@ -161,6 +167,11 @@ public:
 
     // This is the scale used to compute tile sizes; it's contentScale / deviceScaleFactor.
     virtual float tilingScaleFactor() const  = 0;
+    virtual float tilingScaleFactorForGrid(TileGridIdentifier) const = 0;
+
+
+    virtual TileGridIdentifier currentTileGridIdentifier() const = 0;
+    virtual std::optional<TileGridIdentifier> currentAsyncTileGridIdentifier() const = 0;
 
     virtual void setZoomedOutContentsScale(float) = 0;
     virtual float zoomedOutContentsScale() const = 0;
@@ -177,6 +188,8 @@ public:
 #if USE(CA)
     virtual PlatformCALayer* tiledScrollingIndicatorLayer() = 0;
 #endif
+
+    virtual void swapGrids() = 0;
 };
 
 } // namespace WebCore

@@ -449,7 +449,7 @@ void UnifiedPDFPlugin::ensureLayers()
     }
 
     if (!m_contentsLayer) {
-        m_contentsLayer = createGraphicsLayer("PDF contents"_s, isFullMainFramePlugin() ? GraphicsLayer::Type::PageTiledBacking : GraphicsLayer::Type::TiledBacking);
+        m_contentsLayer = createGraphicsLayer("PDF contents"_s, GraphicsLayer::Type::TiledBacking);
         m_contentsLayer->setAnchorPoint({ });
         m_contentsLayer->setDrawsContent(true);
         m_scrolledContentsLayer->addChild(*m_contentsLayer);
@@ -715,7 +715,7 @@ void UnifiedPDFPlugin::updateLayerPositions()
 #if ENABLE(UNIFIED_PDF_SELECTION_LAYER)
     m_selectionLayer->setTransform(transform);
 #endif
-    m_pageBackgroundsContainerLayer->setTransform(transform);
+    //m_pageBackgroundsContainerLayer->setTransform(transform);
 }
 
 bool UnifiedPDFPlugin::shouldShowDebugIndicators() const
@@ -890,7 +890,7 @@ void UnifiedPDFPlugin::paintContents(const GraphicsLayer* layer, GraphicsContext
 #endif
 
     if (auto backgroundLayerPageIndex = pageIndexForPageBackgroundLayer(layer)) {
-        paintBackgroundLayerForPage(layer, context, clipRect, *backgroundLayerPageIndex);
+//        paintBackgroundLayerForPage(layer, context, clipRect, *backgroundLayerPageIndex);
         return;
     }
 
@@ -1274,7 +1274,7 @@ void UnifiedPDFPlugin::setScaleFactor(double scale, std::optional<WebCore::IntPo
         m_rootLayer->noteDeviceOrPageScaleFactorChangedIncludingDescendants();
 
     updateLayerPositions();
-    updatePageBackgroundLayers();
+    //updatePageBackgroundLayers();
     updateSnapOffsets();
 
 #if PLATFORM(MAC)

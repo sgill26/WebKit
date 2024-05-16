@@ -84,14 +84,16 @@ TileController::~TileController()
 }
 
 
-void TileController::setClient(TiledBackingClient* client)
+void TileController::setClient(TiledBackingClient* client, TiledBackingClientRequirements clientRequirements)
 {
     if (client) {
         m_client = *client;
+        m_clientRequirements = clientRequirements;
         return;
     }
 
     m_client = nullptr;
+    m_clientRequirements = TiledBackingClientRequirements::None;
 }
 
 void TileController::tileCacheLayerBoundsChanged()
@@ -131,6 +133,16 @@ void TileController::setContentsScale(float contentsScale)
 
     m_hasTilesWithTemporaryScaleFactor = false;
     m_deviceScaleFactor = deviceScaleFactor;
+
+    if (m_clientRequirements == TiledBackingClientRequirements::AsyncGridSwapping) {
+        m_asyncSwapGrid = makeUnique<TileGrid>(*this);
+        WTF_ALWAYS_LOG("creating async grid for swap with id: " << m_asyncSwapGrid->identifier());
+        m_asyncSwapGrid->setScale(scale);
+        m_asyncSwapGrid->revalidateTiles();
+        m_client->willSwapGrid(*this, m_asyncSwapGrid->identifier(), m_asyncSwapGrid->rectsForTiles());
+        m_asyncSwapGrid->setNeedsDisplay();
+        return;
+    }
 
     if (m_coverageMap)
         m_coverageMap->setDeviceScaleFactor(deviceScaleFactor);
@@ -173,6 +185,30 @@ float TileController::contentsScale() const
 float TileController::tilingScaleFactor() const
 {
     return tileGrid().scale();
+}
+
+float TileController::tilingScaleFactorForGrid(TileGridIdentifier gridIdentifier) const
+{
+    if (tileGrid().identifier() == gridIdentifier)
+        return tileGrid().scale();
+    if (m_zoomedOutTileGrid && m_zoomedOutTileGrid->identifier() == gridIdentifier)
+        return m_zoomedOutTileGrid->scale();
+    if (m_asyncSwapGrid && m_asyncSwapGrid->identifier() == gridIdentifier)
+        return m_asyncSwapGrid->scale();
+    ASSERT_NOT_REACHED();
+    return 0.0;
+}
+    
+TileGridIdentifier TileController::currentTileGridIdentifier() const
+{
+    return tileGrid().identifier();
+}
+
+std::optional<TileGridIdentifier> TileController::currentAsyncTileGridIdentifier() const
+{
+    if (!m_asyncSwapGrid)
+        return { };
+    return m_asyncSwapGrid->identifier();
 }
 
 float TileController::zoomedOutContentsScale() const
@@ -858,6 +894,17 @@ void TileController::logFilledVisibleFreshTile(unsigned blankPixelCount)
 {
     if (m_shouldAllowScrollPerformanceLogging == AllowScrollPerformanceLogging::Yes)
         owningGraphicsLayer()->platformCALayerLogFilledVisibleFreshTile(blankPixelCount);
+}
+
+void TileController::swapGrids()
+{
+    if (!m_asyncSwapGrid)
+        return;
+
+    m_tileGrid = WTFMove(m_asyncSwapGrid);
+    m_tileGrid->revalidateTiles();
+    m_hasTilesWithTemporaryScaleFactor = false;
+    tileGridsChanged();
 }
 
 } // namespace WebCore

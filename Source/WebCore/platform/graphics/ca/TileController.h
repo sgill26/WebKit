@@ -148,6 +148,11 @@ public:
     
     void logFilledVisibleFreshTile(unsigned blankPixelCount);
 
+    void swapGrids();
+
+    TileGridIdentifier currentTileGridIdentifier() const;
+    std::optional<TileGridIdentifier> currentAsyncTileGridIdentifier() const;
+
 private:
     TileGrid& tileGrid() { return *m_tileGrid; }
 
@@ -156,7 +161,7 @@ private:
     float topContentInset() const { return m_topContentInset; }
 
     // TiledBacking member functions.
-    void setClient(TiledBackingClient*) final;
+    void setClient(TiledBackingClient*, TiledBackingClientRequirements) final;
     void setVisibleRect(const FloatRect&) final;
     void setLayoutViewportRect(std::optional<FloatRect>) final;
     void setCoverageRect(const FloatRect&) final;
@@ -183,6 +188,7 @@ private:
     void setZoomedOutContentsScale(float) final;
     float zoomedOutContentsScale() const final;
     float tilingScaleFactor() const final;
+    float tilingScaleFactorForGrid(TileGridIdentifier) const final;
 
     void updateMargins();
     void clearZoomedOutTileGrid();
@@ -219,6 +225,7 @@ private:
 
     std::unique_ptr<TileGrid> m_tileGrid;
     std::unique_ptr<TileGrid> m_zoomedOutTileGrid;
+    std::unique_ptr<TileGrid> m_asyncSwapGrid;
 
     std::unique_ptr<HistoricalVelocityData> m_historicalVelocityData; // Used when we track velocity internally.
 
@@ -261,6 +268,9 @@ private:
     float m_tileDebugBorderWidth { 0 };
     ScrollingModeIndication m_indicatorMode { SynchronousScrollingBecauseOfLackOfScrollingCoordinatorIndication };
     float m_topContentInset { 0 };
+
+    TiledBackingClientRequirements m_clientRequirements { TiledBackingClientRequirements::None };
+
 };
 
 } // namespace WebCore
