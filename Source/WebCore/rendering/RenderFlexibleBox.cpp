@@ -240,8 +240,10 @@ static void updateFlexItemDirtyBitsBeforeLayout(bool relayoutFlexItem, RenderBox
 
     // FIXME: Technically percentage height objects only need a relayout if their percentage isn't going to be turned into
     // an auto value. Add a method to determine this, so that we can avoid the relayout.
-    if (relayoutFlexItem || flexItem.hasRelativeLogicalHeight())
+    if (relayoutFlexItem || flexItem.hasRelativeLogicalHeight()) {
+        WTF_ALWAYS_LOG("updateFlexItemDirtyBitsBeforeLayout relayoutFlexItem: " << relayoutFlexItem << " | hasRelativeLogicalHeight(): " <<  flexItem.hasRelativeLogicalHeight());
         flexItem.setChildNeedsLayout(MarkOnlyThis);
+    }
 }
 
 void RenderFlexibleBox::computeChildIntrinsicLogicalWidths(RenderObject& childObject, LayoutUnit& minPreferredLogicalWidth, LayoutUnit& maxPreferredLogicalWidth) const
@@ -413,6 +415,7 @@ bool RenderFlexibleBox::hitTestChildren(const HitTestRequest& request, HitTestRe
 
 void RenderFlexibleBox::layoutBlock(bool relayoutChildren, LayoutUnit)
 {
+    WTF_ALWAYS_LOG("----------RenderFlexibleBox::layoutBlock()----------");
     ASSERT(needsLayout());
 
     if (!relayoutChildren && simplifiedLayout())
@@ -1686,6 +1689,7 @@ void RenderFlexibleBox::maybeCacheChildMainIntrinsicSize(RenderBox& child, bool 
             child.setOverridingContainingBlockContentLogicalHeight(std::nullopt);
         else
             child.setOverridingContainingBlockContentLogicalWidth(std::nullopt);
+        WTF_ALWAYS_LOG("maybeCacheChildMainIntrinsicSize child.needsLayout(): " << child.needsLayout() << " | m_intrinsicSizeAlongMainAxis.contains(child): " << m_intrinsicSizeAlongMainAxis.contains(child));
         child.setChildNeedsLayout(MarkOnlyThis);
         child.layoutIfNeeded();
         cacheChildMainSize(child);
@@ -2000,15 +2004,19 @@ void RenderFlexibleBox::prepareChildForPositionedLayout(RenderBox& child)
     LayoutUnit staticInlinePosition = flowAwareBorderStart() + flowAwarePaddingStart();
     if (childLayer->staticInlinePosition() != staticInlinePosition) {
         childLayer->setStaticInlinePosition(staticInlinePosition);
-        if (child.style().hasStaticInlinePosition(style().isHorizontalWritingMode()))
+        if (child.style().hasStaticInlinePosition(style().isHorizontalWritingMode())) {
+            WTF_ALWAYS_LOG("child hasStaticInlinePosition(): " << child.style().hasStaticInlinePosition(style().isHorizontalWritingMode()));
             child.setChildNeedsLayout(MarkOnlyThis);
+        }
     }
 
     LayoutUnit staticBlockPosition = flowAwareBorderBefore() + flowAwarePaddingBefore();
     if (childLayer->staticBlockPosition() != staticBlockPosition) {
         childLayer->setStaticBlockPosition(staticBlockPosition);
-        if (child.style().hasStaticBlockPosition(style().isHorizontalWritingMode()))
+        if (child.style().hasStaticBlockPosition(style().isHorizontalWritingMode())) {
+            WTF_ALWAYS_LOG("child hasStaticBlockPosition(): " << child.style().hasStaticBlockPosition(style().isHorizontalWritingMode()));
             child.setChildNeedsLayout(MarkOnlyThis);
+        }
     }
 }
 
@@ -2533,6 +2541,7 @@ void RenderFlexibleBox::applyStretchAlignmentToChild(RenderBox& child, LayoutUni
             // determine their intrinsic content logical height correctly even when
             // there's an overrideHeight.
             LayoutUnit childIntrinsicContentLogicalHeight = cachedChildIntrinsicContentLogicalHeight(child);
+            WTF_ALWAYS_LOG("applyStretchAlignmentToChild() when mainAxisIsChildInlineAxis");
             child.setChildNeedsLayout(MarkOnlyThis);
             
             // Don't use layoutChildIfNeeded to avoid setting cross axis cached size twice.
@@ -2547,6 +2556,7 @@ void RenderFlexibleBox::applyStretchAlignmentToChild(RenderBox& child, LayoutUni
         if (childWidth != child.logicalWidth()) {
             child.setOverridingLogicalWidth(childWidth);
             child.setChildNeedsLayout(MarkOnlyThis);
+            WTF_ALWAYS_LOG("applyStretchALignmentToChild() when !maxinAxisIsChildInlineAxis && logicalWidth is auto");
             child.layoutIfNeeded();
         }
     }

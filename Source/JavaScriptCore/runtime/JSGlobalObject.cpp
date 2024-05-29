@@ -533,6 +533,7 @@ JSC_DEFINE_HOST_FUNCTION(signpostStart, (JSGlobalObject* globalObject, CallFrame
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     auto message = asSignpostString(globalObject, callFrame->argument(0));
+    WTF_ALWAYS_LOG("========== SIGNPOST START: " << message.ascii().data() << " ==========");
     RETURN_IF_EXCEPTION(scope, EncodedJSValue());
 
     ++activeJSGlobalObjectSignpostIntervalCount;
@@ -547,6 +548,7 @@ JSC_DEFINE_HOST_FUNCTION(signpostStop, (JSGlobalObject* globalObject, CallFrame*
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     auto message = asSignpostString(globalObject, callFrame->argument(0));
+    WTF_ALWAYS_LOG("========== SIGNPOST END: " << message.ascii().data() << " ==========");
     RETURN_IF_EXCEPTION(scope, EncodedJSValue());
 
     WTFEndSignpostAlways(globalObject, JSCJSGlobalObject, "%" PUBLIC_LOG_STRING, message.ascii().data());
