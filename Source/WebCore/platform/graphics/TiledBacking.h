@@ -84,6 +84,8 @@ public:
     virtual void willRemoveGrid(TiledBacking&, TileGridIdentifier) = 0;
     virtual void coverageRectDidChange(TiledBacking&, const FloatRect&) = 0;
     virtual void tilingScaleFactorDidChange(TiledBacking&, float oldScaleFactor, float newScaleFactor) = 0;
+    virtual void tileSizeDidChange(TiledBacking&, IntSize) = 0;
+    virtual void didRevalidateTiles(TiledBacking&) = 0;
 };
 
 

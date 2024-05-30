@@ -367,6 +367,7 @@ void TileGrid::revalidateTiles(OptionSet<ValidationPolicyFlag> validationPolicy)
     if (tileSize != m_tileSize) {
         removeAllTiles();
         m_tileSize = tileSize;
+        m_controller.tileSizeDidChange();
     }
 
     // Move tiles newly outside the coverage rect into the cohort map.

@@ -602,6 +602,12 @@ void TileController::tileSizeChangeTimerFired()
     setNeedsRevalidateTiles();
 }
 
+void TileController::tileSizeDidChange()
+{
+    if (m_client)
+        m_client->tileSizeDidChange(*this, tileSize());
+}
+
 IntSize TileController::tileSize() const
 {
     return tileGrid().tileSize();

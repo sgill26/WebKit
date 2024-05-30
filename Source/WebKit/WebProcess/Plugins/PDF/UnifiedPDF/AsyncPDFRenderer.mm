@@ -186,11 +186,13 @@ void AsyncPDFRenderer::willRepaintTile(TiledBacking& tiledBacking, TileGridIdent
     if (haveValidTile(tileInfo))
         return;
 
+    WTF_ALWAYS_LOG("will repaint tile");
+
     auto tileRender = m_rendereredTiles.take(tileInfo);
 
-    if (!m_staleTileState)
-        m_staleTileState = StaleTileState(tiledBacking.tilingScaleFactor());
-    m_staleTileState->staleTiles().add(tileInfo, tileRender);
+    //if (!m_staleTileState)
+    //    m_staleTileState = StaleTileState(tiledBacking.tilingScaleFactor());
+    //m_staleTileState->staleTiles().add(tileInfo, tileRender);
 
     // Currently we always do full tile paints when the grid changes.
     UNUSED_PARAM(tileDirtyRect);
@@ -199,6 +201,7 @@ void AsyncPDFRenderer::willRepaintTile(TiledBacking& tiledBacking, TileGridIdent
 
 void AsyncPDFRenderer::willRemoveTile(TiledBacking& tiledBacking, TileGridIdentifier gridIdentifier, TileIndex tileIndex)
 {
+    WTF_ALWAYS_LOG("will remove tile");
     auto tileInfo = TileForGrid { gridIdentifier, tileIndex };
 
     LOG_WITH_STREAM(PDFAsyncRendering, stream << "AsyncPDFRenderer::willRemoveTile " << tileInfo);
@@ -208,17 +211,18 @@ void AsyncPDFRenderer::willRemoveTile(TiledBacking& tiledBacking, TileGridIdenti
 
     auto tileRender = m_rendereredTiles.take(tileInfo);
 
-    if (!m_staleTileState)
-        m_staleTileState = StaleTileState(tiledBacking.tilingScaleFactor());
-    m_staleTileState->staleTiles().add(tileInfo, tileRender);
+    //if (!m_staleTileState)
+    //    m_staleTileState = StaleTileState(tiledBacking.tilingScaleFactor());
+    //m_staleTileState->staleTiles().add(tileInfo, tileRender);
 
 }
 
 void AsyncPDFRenderer::willRepaintAllTiles(TiledBacking& tiledBacking, TileGridIdentifier)
 {
-    if (!m_staleTileState)
-        m_staleTileState = StaleTileState(tiledBacking.tilingScaleFactor());
-    m_staleTileState->setStaleTiles(m_rendereredTiles);
+    WTF_ALWAYS_LOG("will repaint all tiles");
+    //if (!m_staleTileState)
+    //    m_staleTileState = StaleTileState(tiledBacking.tilingScaleFactor());
+    //m_staleTileState->setStaleTiles(m_rendereredTiles);
 
     clearRequestsAndCachedTiles();
 }
@@ -254,7 +258,18 @@ void AsyncPDFRenderer::coverageRectDidChange(TiledBacking&, const FloatRect& cov
 
 void AsyncPDFRenderer::tilingScaleFactorDidChange(TiledBacking&, float oldScaleFactor, float)
 {
+    WTF_ALWAYS_LOG("tiling scale factor did change");
     m_staleTileState = StaleTileState(oldScaleFactor);
+}
+
+void AsyncPDFRenderer::tileSizeDidChange(TiledBacking&, IntSize)
+{
+    WTF_ALWAYS_LOG("tile size did change");
+}
+
+void AsyncPDFRenderer::didRevalidateTiles(TiledBacking&)
+{
+    WTF_ALWAYS_LOG("did revalidate tiles");
 }
 
 void AsyncPDFRenderer::willRemoveGrid(WebCore::TiledBacking&, TileGridIdentifier gridIdentifier)
@@ -604,7 +619,7 @@ bool AsyncPDFRenderer::paintTilesForPage(GraphicsContext& context, float documen
     };
 
     auto* tiledBacking = m_pdfContentsLayer->tiledBacking();
-    if (m_staleTileState && tiledBacking) {
+    if (m_staleTileState && tiledBacking && false) {
         Vector<TileIndex> renderedTileIndices;
         for (auto& [tileInfo, renderedTile] : m_rendereredTiles)
             renderedTileIndices.append(tileInfo.tileIndex);

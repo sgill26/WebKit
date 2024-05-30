@@ -195,6 +195,7 @@ private:
 
     void notePendingTileSizeChange();
     void tileSizeChangeTimerFired();
+    void tileSizeDidChange();
 
     void willRepaintTile(TileGrid&, TileIndex, const FloatRect& tileClip, const FloatRect& paintDirtyRect);
     void willRemoveTile(TileGrid&, TileIndex);
