@@ -137,6 +137,11 @@ private:
     friend class GridTrackSizingAlgorithm;
     friend class GridMasonryLayout;
 
+    enum class FastPathReason { TriviallyComputableGridAreas = 1 << 0 };
+
+    std::optional<FastPathReason> canPerformFastPathLayout() const;
+    void performFastPathGridLayout(FastPathReason);
+
     ItemPosition selfAlignmentNormalBehavior(const RenderBox* child = nullptr) const override
     {
         ASSERT(child);

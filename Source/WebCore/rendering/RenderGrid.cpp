@@ -318,8 +318,14 @@ void RenderGrid::layoutGrid(bool relayoutChildren)
 
         updateLogicalWidth();
 
+
         LayoutUnit availableSpaceForColumns = availableLogicalWidth();
         placeItemsOnGrid(availableSpaceForColumns);
+        
+        // Currently we can only take the fast path after we place the items since we do
+        // not support fast path with automatically created rows/columns.
+        if (auto fastPathLayoutReason = canPerformFastPathLayout())
+            WTF_ALWAYS_LOG("RenderGrid::layoutGrid - can perform fast path layout! " << *this);
 
         m_trackSizingAlgorithm.setAvailableSpace(GridTrackSizingDirection::ForColumns, availableSpaceForColumns);
         performPreLayoutForGridItems(m_trackSizingAlgorithm, ShouldUpdateGridAreaLogicalSize::Yes);
@@ -2591,6 +2597,61 @@ RenderGrid::GridWrapper::GridWrapper(RenderGrid& renderGrid)
 void RenderGrid::GridWrapper::resetCurrentGrid() const
 {
     m_currentGrid = std::ref(const_cast<Grid&>(m_layoutGrid));
+}
+
+std::optional<RenderGrid::FastPathReason> RenderGrid::canPerformFastPathLayout() const
+{
+    if (!isHorizontalWritingMode() || currentGrid().autoRepeatEmptyTracksCount(GridTrackSizingDirection::ForRows) || currentGrid().autoRepeatEmptyTracksCount(GridTrackSizingDirection::ForColumns))
+        return { };
+
+    for (auto& gridItem : childrenOfType<RenderBox>(*this)) {
+        static WTF::NeverDestroyed<unsigned> maxSpanSize = 2;
+
+        if (currentGrid().gridItemSpan(gridItem, GridTrackSizingDirection::ForColumns).integerSpan() > maxSpanSize || currentGrid().gridItemSpan(gridItem, GridTrackSizingDirection::ForRows).integerSpan() > 2)
+            return { };
+    }
+
+    for (auto& columnTrackSize : style().gridTrackSizes(GridTrackSizingDirection::ForColumns)) {
+        if (!columnTrackSize.minTrackBreadth().isPercentage() && !columnTrackSize.maxTrackBreadth().isPercentage())
+            return { };
+    }
+
+    if (!style().logicalHeight().isSpecified())
+        return { };
+
+    for (auto& rowTrackSize : style().gridTrackSizes(GridTrackSizingDirection::ForRows)) {
+        auto& minTrackBreadth = rowTrackSize.minTrackBreadth();
+        if (!minTrackBreadth.isPercentage() && !rowTrackSize.maxTrackBreadth().isPercentage() && !(minTrackBreadth.isLength() && minTrackBreadth.length().isFixed()))
+            return { };
+    }
+    return FastPathReason::TriviallyComputableGridAreas;
+}
+
+void RenderGrid::performFastPathGridLayout(FastPathReason fastPathReason)
+{
+    if (fastPathReason == FastPathReason::TriviallyComputableGridAreas) {
+        for (auto& gridItem : childrenOfType<RenderBox>(*this)) {
+            if (currentGrid().orderIterator().shouldSkipChild(gridItem)) {
+                if (gridItem.isOutOfFlowPositioned())
+                    prepareChildForPositionedLayout(gridItem);
+                continue;
+            }
+            if (auto* renderGrid = dynamicDowncast<RenderGrid>(gridItem); renderGrid  && (renderGrid->isSubgridColumns() || renderGrid->isSubgridRows()))
+                gridItem.setNeedsLayout(MarkOnlyThis);
+
+            auto [ gridAreaLogicalWidth, gridAreaLogicalHeight ] = [&]() {
+                auto& rowTracks = style().gridTrackSizes(GridTrackSizingDirection::ForRows);
+                auto& columnTracks = style().gridTrackSizes(GridTrackSizingDirection::ForColumns);
+                auto& gridArea = currentGrid().gridItemArea(gridItem);
+
+                // Compute grid area logical width
+
+
+                // Compute grid area logical height
+            }();
+
+        }
+    }
 }
 
 } // namespace WebCore
