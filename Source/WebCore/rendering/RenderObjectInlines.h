@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Document.h"
-#include "RenderObject.h"
+#include "RenderGrid.h"
 #include "RenderStyleInlines.h"
 
 namespace WebCore {
@@ -31,5 +31,29 @@ inline bool RenderObject::isBlockLevelBox() const { return style().isDisplayBloc
 inline bool RenderObject::isTransformed() const { return hasTransformRelatedProperty() && (style().affectsTransform() || hasSVGTransform()); }
 inline bool RenderObject::preservesNewline() const { return !isRenderSVGInlineText() && style().preserveNewline(); }
 inline Ref<Document> RenderObject::protectedDocument() const { return document(); }
+
+inline void RenderObject::setNeedsLayout(MarkingBehavior markParents)
+{
+    ASSERT(!isSetNeedsLayoutForbidden());
+    if (selfNeedsLayout())
+        return;
+    m_stateBitfields.setFlag(StateFlag::NeedsLayout);
+
+    if (auto* parent = this->parent(); parent && parent->isRenderGrid() && isRenderBox())
+        downcast<RenderGrid>(parent)->gridItemNeedsLayout(*downcast<RenderBox>(this));
+    if (isRenderGrid())
+        downcast<RenderGrid>(this)->gridNeedsLayout();
+
+    if (markParents == MarkContainingBlockChain)
+        scheduleLayout(markContainingBlocksForLayout());
+    if (hasLayer())
+        setLayerNeedsFullRepaint();
+}
+
+inline void RenderObject::setNeedsLayoutAndPrefWidthsRecalc()
+{
+    setNeedsLayout();
+    setPreferredLogicalWidthsDirty(true);
+}
 
 } // namespace WebCore

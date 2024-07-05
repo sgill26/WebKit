@@ -36,6 +36,7 @@
 #include "LocalFrame.h"
 #include "NodeName.h"
 #include "RenderBoxInlines.h"
+#include "RenderObjectInlines.h"
 #include "RenderSVGRoot.h"
 #include "RenderSVGViewportContainer.h"
 #include "RenderView.h"

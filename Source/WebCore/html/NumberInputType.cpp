@@ -43,6 +43,7 @@
 #include "NodeName.h"
 #include "PlatformLocale.h"
 #include "RenderBoxModelObjectInlines.h"
+#include "RenderObjectInlines.h"
 #include "RenderTextControl.h"
 #include "StepRange.h"
 #include <limits>

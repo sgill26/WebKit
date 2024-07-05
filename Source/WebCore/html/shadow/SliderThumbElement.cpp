@@ -44,6 +44,7 @@
 #include "MouseEvent.h"
 #include "RenderBoxInlines.h"
 #include "RenderFlexibleBox.h"
+#include "RenderObjectInlines.h"
 #include "RenderSlider.h"
 #include "RenderStyleInlines.h"
 #include "RenderStyleSetters.h"

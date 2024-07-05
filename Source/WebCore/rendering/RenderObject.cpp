@@ -54,6 +54,7 @@
 #include "RenderElementInlines.h"
 #include "RenderFragmentedFlow.h"
 #include "RenderGeometryMap.h"
+#include "RenderGrid.h"
 #include "RenderInline.h"
 #include "RenderIterator.h"
 #include "RenderLayer.h"
@@ -586,6 +587,11 @@ void RenderObject::clearNeedsLayout(HadSkippedLayout hadSkippedLayout)
 #endif
 }
 
+RenderObject* RenderObject::parentObject() const
+{
+    return parent();
+}
+
 void RenderObject::scheduleLayout(RenderElement* layoutRoot)
 {
     if (auto* renderView = dynamicDowncast<RenderView>(layoutRoot))
@@ -636,6 +642,8 @@ RenderElement* RenderObject::markContainingBlocksForLayout(RenderElement* layout
         } else {
             if (ancestor->normalChildNeedsLayout())
                 return { };
+            if (auto* renderGrid = dynamicDowncast<RenderGrid>(container.get()))
+                renderGrid->gridItemNeedsLayout(*dynamicDowncast<RenderBox>(ancestor.get()));
             ancestor->setNormalChildNeedsLayoutBit(true);
         }
         ASSERT(!ancestor->isSetNeedsLayoutForbidden());

@@ -142,4 +142,11 @@ inline LayoutUnit adjustLayoutUnitForAbsoluteZoom(LayoutUnit value, const Render
     return adjustLayoutUnitForAbsoluteZoom(value, renderer.style());
 }
 
+inline void RenderElement::setAncestorLineBoxDirty(bool f)
+{
+    m_ancestorLineBoxDirty = f;
+    if (m_ancestorLineBoxDirty)
+        setNeedsLayout();
+}
+
 } // namespace WebCore

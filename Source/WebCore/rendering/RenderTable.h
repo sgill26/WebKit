@@ -27,6 +27,7 @@
 #include "CSSPropertyNames.h"
 #include "CollapsedBorderValue.h"
 #include "RenderBlock.h"
+#include "RenderObjectInlines.h"
 #include <memory>
 #include <wtf/HashMap.h>
 #include <wtf/Vector.h>

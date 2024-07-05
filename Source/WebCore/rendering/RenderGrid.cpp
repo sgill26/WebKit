@@ -275,6 +275,44 @@ Vector<RenderBox*> RenderGrid::computeAspectRatioDependentAndBaselineItems()
     return dependentGridItems;
 }
 
+void RenderGrid::gridNeedsLayout()
+{
+    ASSERT(selfNeedsLayout());
+
+    for (auto& gridItem : childrenOfType<RenderBox>(*this)) {
+        if (allowedToStretchChildAlongColumnAxis(gridItem))
+            setGridItemLayoutDamage(gridItem, ItemDamageType::NeedsColumnAxisStretchAlignment);
+        if (!allowedToStretchChildAlongColumnAxis(gridItem))
+            removeGridItemLayoutDamage(gridItem, ItemDamageType::NeedsColumnAxisStretchAlignment);
+    }
+}
+
+void RenderGrid::gridItemNeedsLayout(RenderBox& gridItem)
+{
+    // FIXME: why does this assert currently?
+    //ASSERT(gridItem.parent() == this);
+    if (gridItem.parent() != this)
+        return;
+
+    if (allowedToStretchChildAlongColumnAxis(gridItem))
+        setGridItemLayoutDamage(gridItem, ItemDamageType::NeedsColumnAxisStretchAlignment);
+    if (!allowedToStretchChildAlongColumnAxis(gridItem))
+        removeGridItemLayoutDamage(gridItem, ItemDamageType::NeedsColumnAxisStretchAlignment);
+}
+
+void RenderGrid::setGridItemLayoutDamage(RenderBox& gridItem, ItemDamageType layoutDamage)
+{
+    m_gridItemLayoutDamage.ensure(gridItem, [&] {
+        return OptionSet<ItemDamageType> { layoutDamage }; 
+    }).iterator->value.add(layoutDamage);
+}
+
+void RenderGrid::removeGridItemLayoutDamage(RenderBox& gridItem, ItemDamageType layoutDamage)
+{
+    if (auto itr = m_gridItemLayoutDamage.find(gridItem); itr != m_gridItemLayoutDamage.end())
+        itr->value.remove(layoutDamage);
+}
+
 void RenderGrid::layoutBlock(bool relayoutChildren, LayoutUnit)
 {
     ASSERT(needsLayout());
@@ -389,6 +427,11 @@ void RenderGrid::layoutGrid(bool relayoutChildren)
         }
 
         layoutGridItems();
+
+#if ASSERT_ENABLED
+    for (auto& gridItem : childrenOfType<RenderBox>(*this))
+        ASSERT(m_gridItemLayoutDamage.get(gridItem).isEmpty());
+#endif
 
         endAndCommitUpdateScrollInfoAfterLayoutTransaction();
 
@@ -1379,6 +1422,9 @@ void RenderGrid::layoutGridItems()
         applyStretchAlignmentToChildIfNeeded(*child);
         applySubgridStretchAlignmentToChildIfNeeded(*child);
 
+        if (child->needsLayout())
+            WTF_ALWAYS_LOG("laying out child " << *child);
+
         child->layoutIfNeeded();
 
         // We need pending layouts to be done in order to compute auto-margins properly.
@@ -1648,17 +1694,29 @@ void RenderGrid::applyStretchAlignmentToChildIfNeeded(RenderBox& child)
     if (allowedToStretchChildBlockSize && !aspectRatioPrefersInline(child, blockFlowIsColumnAxis)) {
         auto overridingContainingBlockContentSizeForChild = GridLayoutFunctions::overridingContainingBlockContentSizeForChild(child, childBlockDirection);
         ASSERT(overridingContainingBlockContentSizeForChild && *overridingContainingBlockContentSizeForChild);
-        LayoutUnit stretchedLogicalHeight = availableAlignmentSpaceForChildBeforeStretching(overridingContainingBlockContentSizeForChild->value(), child, GridTrackSizingDirection::ForRows);
-        LayoutUnit desiredLogicalHeight = child.constrainLogicalHeightByMinMax(stretchedLogicalHeight, std::nullopt);
-        child.setOverridingLogicalHeight(desiredLogicalHeight);
+        LayoutUnit availableBlockSpace = availableAlignmentSpaceForChildBeforeStretching(overridingContainingBlockContentSizeForChild->value(), child, GridTrackSizingDirection::ForRows);
+        LayoutUnit stretchedBlockSize = child.constrainLogicalHeightByMinMax(availableBlockSpace, std::nullopt);
+
+        if (blockFlowIsColumnAxis && stretchedBlockSize != child.logicalHeight())
+            setGridItemLayoutDamage(child, ItemDamageType::NeedsColumnAxisStretchAlignment);
+
+        auto needsStretchAlignment = [&]() {
+            if (blockFlowIsColumnAxis)
+                return m_gridItemLayoutDamage.get(child).contains(ItemDamageType::NeedsColumnAxisStretchAlignment);
+            return stretchedBlockSize != child.logicalHeight() || (is<RenderBlock>(child) && downcast<RenderBlock>(child).hasPercentHeightDescendants());
+        }();
+
+
 
         // Checking the logical-height of a child isn't enough. Setting an override logical-height
         // changes the definiteness, resulting in percentages to resolve differently.
         //
         // FIXME: Can avoid laying out here in some cases. See https://webkit.org/b/87905.
-        if (desiredLogicalHeight != child.logicalHeight() || (is<RenderBlock>(child) && downcast<RenderBlock>(child).hasPercentHeightDescendants())) {
+        if (needsStretchAlignment) {
+            child.setOverridingLogicalHeight(stretchedBlockSize);
             child.setLogicalHeight(0_lu);
             child.setNeedsLayout(MarkOnlyThis);
+            removeGridItemLayoutDamage(child, ItemDamageType::NeedsColumnAxisStretchAlignment);
         }
     } else if (!allowedToStretchChildBlockSize && allowedToStretchChildAlongRowAxis(child)) {
         auto overridingContainingBlockContentSizeForChild = GridLayoutFunctions::overridingContainingBlockContentSizeForChild(child, childInlineDirection);

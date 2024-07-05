@@ -60,6 +60,9 @@ public:
     void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override;
     void layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeight = 0_lu) override;
 
+    void gridNeedsLayout();
+    void gridItemNeedsLayout(RenderBox&);
+
     bool avoidsFloats() const override { return true; }
     bool canDropAnonymousBlockChild() const override { return false; }
 
@@ -136,6 +139,12 @@ public:
 private:
     friend class GridTrackSizingAlgorithm;
     friend class GridMasonryLayout;
+
+    enum class ItemDamageType { NeedsColumnAxisStretchAlignment = 1 << 0 };
+    using ItemDamage = SingleThreadWeakHashMap<RenderBox, OptionSet<ItemDamageType>>;
+
+    void setGridItemLayoutDamage(RenderBox&, ItemDamageType);
+    void removeGridItemLayoutDamage(RenderBox&, ItemDamageType);
 
     ItemPosition selfAlignmentNormalBehavior(const RenderBox* child = nullptr) const override
     {
@@ -287,6 +296,8 @@ private:
     bool m_hasAspectRatioBlockSizeDependentItem { false };
     bool m_baselineItemsCached {false};
     bool m_hasAnyBaselineAlignmentItem { false };
+
+    ItemDamage m_gridItemLayoutDamage; 
 };
 
 } // namespace WebCore

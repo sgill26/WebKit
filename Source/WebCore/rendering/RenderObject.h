@@ -344,6 +344,7 @@ public:
 
     inline RenderElement* parent() const; // Defined in RenderElement.h.
     inline CheckedPtr<RenderElement> checkedParent() const; // Defined in RenderElement.h.
+    RenderObject* parentObject() const;
     bool isDescendantOf(const RenderObject*) const;
 
     RenderObject* previousSibling() const { return m_previous.get(); }
@@ -710,7 +711,7 @@ public:
     bool needsSimplifiedNormalFlowLayoutOnly() const;
     bool normalChildNeedsLayout() const { return m_stateBitfields.hasFlag(StateFlag::NormalChildNeedsLayout); }
     bool outOfFlowChildNeedsStaticPositionLayout() const { return m_stateBitfields.hasFlag(StateFlag::OutOfFlowChildNeedsStaticPositionLayout); }
-    
+
     bool preferredLogicalWidthsDirty() const { return m_stateBitfields.hasFlag(StateFlag::PreferredLogicalWidthsDirty); }
 
     bool isSelectionBorder() const;
@@ -772,13 +773,13 @@ public:
     RenderBoxModelObject* offsetParent() const;
 
     RenderElement* markContainingBlocksForLayout(RenderElement* layoutRoot = nullptr);
-    void setNeedsLayout(MarkingBehavior = MarkContainingBlockChain);
+    inline void setNeedsLayout(MarkingBehavior = MarkContainingBlockChain);
     enum class HadSkippedLayout { No, Yes };
     void clearNeedsLayout(HadSkippedLayout = HadSkippedLayout::No);
     void setPreferredLogicalWidthsDirty(bool, MarkingBehavior = MarkContainingBlockChain);
     void invalidateContainerPreferredLogicalWidths();
     
-    void setNeedsLayoutAndPrefWidthsRecalc();
+    inline void setNeedsLayoutAndPrefWidthsRecalc();
 
     void setPositionState(PositionType);
     void clearPositionedState() { m_stateBitfields.clearPositionedState(); }
@@ -1380,18 +1381,6 @@ inline bool RenderObject::isBeforeOrAfterContent() const
     return isBeforeContent() || isAfterContent();
 }
 
-inline void RenderObject::setNeedsLayout(MarkingBehavior markParents)
-{
-    ASSERT(!isSetNeedsLayoutForbidden());
-    if (selfNeedsLayout())
-        return;
-    m_stateBitfields.setFlag(StateFlag::NeedsLayout);
-    if (markParents == MarkContainingBlockChain)
-        scheduleLayout(markContainingBlocksForLayout());
-    if (hasLayer())
-        setLayerNeedsFullRepaint();
-}
-
 inline void RenderObject::setSelectionStateIfNeeded(HighlightState state)
 {
     if (selectionState() == state)
@@ -1475,12 +1464,6 @@ inline bool RenderObject::needsPositionedMovementLayoutOnly() const
         && !normalChildNeedsLayout()
         && !posChildNeedsLayout()
         && !needsSimplifiedNormalFlowLayout();
-}
-
-inline void RenderObject::setNeedsLayoutAndPrefWidthsRecalc()
-{
-    setNeedsLayout();
-    setPreferredLogicalWidthsDirty(true);
 }
 
 inline void RenderObject::setPositionState(PositionType position)

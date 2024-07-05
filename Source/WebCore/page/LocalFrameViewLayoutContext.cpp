@@ -46,6 +46,7 @@
 #include "LayoutState.h"
 #include "LayoutTreeBuilder.h"
 #include "RenderDescendantIterator.h"
+#include "RenderObjectInlines.h"
 #include "RenderStyleInlines.h"
 #include <wtf/SetForScope.h>
 #include <wtf/SystemTracing.h>
