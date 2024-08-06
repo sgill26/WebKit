@@ -143,6 +143,8 @@ public:
     void copyBaselineItemsCache(const GridTrackSizingAlgorithm&, GridAxis);
     void clearBaselineItemsCache();
 
+    const Vector<BaselineGroup> sharedGroups(GridTrackSizingDirection, unsigned trackIndex) const;
+
     Vector<GridTrack>& tracks(GridTrackSizingDirection direction) { return direction == GridTrackSizingDirection::ForColumns ? m_columns : m_rows; }
     const Vector<GridTrack>& tracks(GridTrackSizingDirection direction) const { return direction == GridTrackSizingDirection::ForColumns ? m_columns : m_rows; }
 
@@ -310,6 +312,8 @@ private:
     };
 };
 
+
+
 class GridTrackSizingAlgorithmStrategy {
     WTF_MAKE_FAST_ALLOCATED;
 public:
@@ -347,5 +351,8 @@ protected:
 
     GridTrackSizingAlgorithm& m_algorithm;
 };
+
+GridAxis gridAxisForDirection(GridTrackSizingDirection direction);
+GridTrackSizingDirection gridDirectionForAxis(GridAxis axis);
 
 } // namespace WebCore

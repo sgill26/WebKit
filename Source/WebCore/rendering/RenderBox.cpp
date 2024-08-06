@@ -5731,7 +5731,7 @@ LayoutUnit synthesizedBaseline(const RenderBox& box, const RenderStyle& parentSt
         boxSize += direction == HorizontalLine ? box.verticalMarginExtent() : box.horizontalMarginExtent();
     
     if (baselineType == FontBaseline::AlphabeticBaseline) {
-        auto shouldTreatAsHorizontal = direction == HorizontalLine || (textOrientation == TextOrientation::Sideways && parentStyle.writingMode() == WritingMode::VerticalRl);
+        auto shouldTreatAsHorizontal = direction == HorizontalLine || (parentStyle.writingMode() == WritingMode::VerticalRl || box.style().writingMode() == WritingMode::VerticalRl);
         return shouldTreatAsHorizontal ? boxSize : LayoutUnit();
     }
     return boxSize / 2;

@@ -62,6 +62,18 @@ public:
     // Clearing the Baseline Alignment context and their internal classes and data structures.
     void clear(GridAxis);
 
+    const Vector<BaselineGroup> sharedGroups(GridAxis gridAxis, unsigned trackIndex) const
+    {
+        if (gridAxis == GridAxis::GridColumnAxis) {
+            if (auto itr = m_colAxisBaselineAlignmentStates.find(trackIndex); itr != m_colAxisBaselineAlignmentStates.end())
+                return itr->value->sharedGroups();
+            return { };
+        }
+        if (auto itr = m_rowAxisBaselineAlignmentStates.find(trackIndex); itr != m_rowAxisBaselineAlignmentStates.end())
+            return itr->value->sharedGroups();
+        return { };
+    }
+
 private:
     const BaselineGroup& baselineGroupForGridItem(ItemPosition, unsigned sharedContext, const RenderBox&, GridAxis) const;
     LayoutUnit marginOverForGridItem(const RenderBox&, GridAxis) const;

@@ -134,6 +134,18 @@ LayoutUnit marginLogicalSizeForGridItem(const RenderGrid& grid, GridTrackSizingD
     return margin;
 }
 
+LayoutUnit borderBoxLogicalSizeForGridItem(const RenderGrid& renderGrid, GridTrackSizingDirection direction, const RenderBox& gridItem)
+{
+    if (!isOrthogonalGridItem(renderGrid, gridItem))
+        return direction == GridTrackSizingDirection::ForColumns ? gridItem.logicalWidth() : gridItem.logicalHeight();
+    return direction == GridTrackSizingDirection::ForColumns ? gridItem.logicalHeight() : gridItem.logicalWidth();
+}
+
+LayoutUnit marginBoxLogicalSizeForGridItem(const RenderGrid& renderGrid, GridTrackSizingDirection direction, const RenderBox& gridItem)
+{
+    return GridLayoutFunctions::marginLogicalSizeForGridItem(renderGrid, direction, gridItem) + GridLayoutFunctions::borderBoxLogicalSizeForGridItem(renderGrid, direction, gridItem);
+}
+
 bool isOrthogonalGridItem(const RenderGrid& grid, const RenderBox& gridItem)
 {
     return gridItem.isHorizontalWritingMode() != grid.isHorizontalWritingMode();
@@ -184,6 +196,42 @@ unsigned alignmentContextForBaselineAlignment(const GridSpan& span, const ItemPo
     if (alignment == ItemPosition::Baseline)
         return span.startLine();
     return span.endLine() - 1;
+}
+
+void moveGridItemBy(const RenderGrid& renderGrid, RenderBox& gridItem, GridTrackSizingDirection direction, LayoutUnit amount)
+{
+    if (!GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+        direction == GridTrackSizingDirection::ForColumns ? gridItem.setLogicalLeft(gridItem.logicalLeft() + amount) : gridItem.setLogicalTop(gridItem.logicalTop() + amount);
+    else
+        direction == GridTrackSizingDirection::ForColumns ? gridItem.setLogicalTop(gridItem.logicalTop() + amount) : gridItem.setLogicalLeft(gridItem.logicalLeft() + amount);
+}
+
+LayoutUnit logicalOffsetForGridItem(const RenderGrid& renderGrid, RenderBox& gridItem, GridTrackSizingDirection direction)
+{
+    if (!GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+        return direction == GridTrackSizingDirection::ForColumns ? gridItem.logicalLeft() : gridItem.logicalTop();
+    return direction == GridTrackSizingDirection::ForColumns ? gridItem.logicalTop() : gridItem.logicalLeft();
+}
+
+LayoutUnit logicalMarginBoxOffsetForGridItem(const RenderGrid& renderGrid, RenderBox& gridItem, GridTrackSizingDirection direction)
+{
+    auto gridItemMargin = computeMarginLogicalSizeForGridItem(renderGrid, direction, gridItem);
+    return logicalOffsetForGridItem(renderGrid, gridItem, direction) - gridItemMargin;
+}
+
+WritingMode writingModeForBaselineAlignment(const RenderGrid& renderGrid, const RenderBox& gridItem, GridTrackSizingDirection alignmentContextDirection)
+{
+    if (alignmentContextDirection == GridTrackSizingDirection::ForColumns) {
+        if (GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+            return gridItem.style().writingMode();
+            
+        if (!gridItem.isHorizontalWritingMode())
+            return WritingMode::HorizontalTb;
+        return renderGrid.style().direction() == TextDirection::LTR ? WritingMode::VerticalLr : WritingMode::VerticalRl;
+    }
+        if (!GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+            return gridItem.style().writingMode();
+        return renderGrid.style().writingMode();
 }
 
 } // namespace GridLayoutFunctions

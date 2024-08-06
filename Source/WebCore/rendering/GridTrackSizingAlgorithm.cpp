@@ -121,12 +121,12 @@ void GridTrack::ensureGrowthLimitIsBiggerThanBaseSize()
 
 // Static helper methods.
 
-static GridAxis gridAxisForDirection(GridTrackSizingDirection direction)
+GridAxis gridAxisForDirection(GridTrackSizingDirection direction)
 {
     return direction == GridTrackSizingDirection::ForColumns ? GridAxis::GridRowAxis : GridAxis::GridColumnAxis;
 }
 
-static GridTrackSizingDirection gridDirectionForAxis(GridAxis axis)
+GridTrackSizingDirection gridDirectionForAxis(GridAxis axis)
 {
     return axis == GridAxis::GridRowAxis ? GridTrackSizingDirection::ForColumns : GridTrackSizingDirection::ForRows;
 }
@@ -1962,6 +1962,11 @@ GridTrackSizingAlgorithm::StateMachine::~StateMachine()
 bool GridTrackSizingAlgorithm::isDirectionInMasonryDirection() const
 {
     return m_renderGrid->isMasonry(m_direction);
+}
+
+const Vector<BaselineGroup> GridTrackSizingAlgorithm::sharedGroups(GridTrackSizingDirection alignmentContextType, unsigned trackIndex) const
+{
+    return m_baselineAlignment.sharedGroups(gridAxisForDirection(alignmentContextType), trackIndex);
 }
 
 } // namespace WebCore

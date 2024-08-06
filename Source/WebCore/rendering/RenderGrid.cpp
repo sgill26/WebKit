@@ -413,6 +413,9 @@ void RenderGrid::layoutGrid(bool relayoutChildren)
 
         layoutGridItems(gridLayoutState);
 
+        performBaselineAlignment(GridTrackSizingDirection::ForColumns);
+        performBaselineAlignment(GridTrackSizingDirection::ForRows);
+
         endAndCommitUpdateScrollInfoAfterLayoutTransaction();
 
         if (size() != previousSize)
@@ -1466,6 +1469,85 @@ void RenderGrid::layoutMasonryItems(GridLayoutState& gridLayoutState)
     }
 }
 
+void RenderGrid::performBaselineAlignment(GridTrackSizingDirection alignmentContextType) const
+{
+    for (auto trackIndex = 0u; trackIndex < numTracks(alignmentContextType); ++trackIndex) {
+        GridIterator iterator(currentGrid(), alignmentContextType, trackIndex);
+        auto& baselineSharingGroups = m_trackSizingAlgorithm.sharedGroups(alignmentContextType, trackIndex);
+
+        auto baselineShim = [&](const RenderBox& gridItem) {
+            auto shim = 0_lu;
+
+            const auto& gridItemSpan = gridSpanForGridItem(gridItem, alignmentContextType);
+            auto gridItemAlignment = alignmentContextType == GridTrackSizingDirection::ForColumns ? justifySelfForGridItem(gridItem) : alignSelfForGridItem(gridItem);
+            auto alignmentContextIndex = GridLayoutFunctions::alignmentContextForBaselineAlignment(gridItemSpan, gridItemAlignment.position());
+
+            auto& tracks = m_trackSizingAlgorithm.tracks(alignmentContextType);
+            for (auto trackIndex = gridItemSpan.startLine(); trackIndex < alignmentContextIndex; ++trackIndex) {
+                auto& track = tracks[trackIndex];
+                if (track.cachedTrackSize().hasAutoOrMinContentMinTrackBreadthAndIntrinsicMaxTrackBreadth() || track.cachedTrackSize().hasIntrinsicMaxTrackBreadth())
+                    continue;
+                shim += tracks[trackIndex].baseSize();
+            }
+
+            return shim;
+        };
+
+        for (auto& baselineSharingGroup : baselineSharingGroups) {
+            auto availableSpaceForFallbackAlignment = LayoutUnit::max();
+
+            // Align the baselines of each item in the baseline sharing group.
+            for (auto& gridItem : baselineSharingGroup) {
+
+                GridLayoutFunctions::moveGridItemBy(*this, gridItem, alignmentContextType, baselineShim(gridItem));
+
+                auto availableSpaceForAlignment = gridAreaBreadthForGridItemIncludingAlignmentOffsets(gridItem, alignmentContextType);
+                auto offset = m_trackSizingAlgorithm.baselineOffsetForGridItem(gridItem, gridAxisForDirection(alignmentContextType));
+
+                WTF_ALWAYS_LOG("baseline offset for " << gridItem << " - " << offset);
+
+                GridLayoutFunctions::moveGridItemBy(*this, gridItem, alignmentContextType, offset);
+                availableSpaceForFallbackAlignment = std::min(availableSpaceForFallbackAlignment, availableSpaceForAlignment - GridLayoutFunctions::marginBoxLogicalSizeForGridItem(*this, alignmentContextType, gridItem) - offset);
+            }
+            WTF_ALWAYS_LOG("availableSpaceForFallbackAlignment - " << availableSpaceForFallbackAlignment);
+
+
+            // Fallback alignment.
+            for (auto& gridItem : baselineSharingGroup) {
+                auto writingModeForBaselineAlignment = GridLayoutFunctions::writingModeForBaselineAlignment(*this, gridItem, alignmentContextType);
+
+                auto alignmentAxisDirection = [&] {
+                    if (alignmentContextType == GridTrackSizingDirection::ForColumns) {
+                        if (style().isHorizontalWritingMode())
+                            return BlockFlowDirection::LeftToRight;
+                        return BlockFlowDirection::TopToBottom;
+                    }
+                    if (style().isHorizontalWritingMode())
+                        return BlockFlowDirection::TopToBottom;
+                    return style().writingMode() == WritingMode::VerticalLr ? BlockFlowDirection::LeftToRight : BlockFlowDirection::RightToLeft;
+                }();
+
+
+                auto shouldMoveForFallbackAlignment = [&] {
+                    auto gridItemAlignment = alignmentContextType == GridTrackSizingDirection::ForColumns ? justifySelfForGridItem(gridItem) : alignSelfForGridItem(gridItem);
+                    auto gridItemBlockFlowDirection = writingModeToBlockFlowDirection(writingModeForBaselineAlignment);
+
+                    if (gridItemAlignment == ItemPosition::Baseline)
+                        return alignmentAxisDirection != gridItemBlockFlowDirection;
+                    return alignmentAxisDirection == gridItemBlockFlowDirection;
+
+                }();
+                if (shouldMoveForFallbackAlignment) {
+                    WTF_ALWAYS_LOG("Grid item being moved for fallback alignment: " << gridItem);
+                    GridLayoutFunctions::moveGridItemBy(*this, gridItem, alignmentContextType, availableSpaceForFallbackAlignment);
+                }
+            }
+        }
+
+    }
+
+}
+
 void RenderGrid::prepareGridItemForPositionedLayout(RenderBox& gridItem)
 {
     ASSERT(gridItem.isOutOfFlowPositioned());
@@ -2015,14 +2097,7 @@ GridAxisPosition RenderGrid::columnAxisPositionForGridItem(const RenderBox& grid
         return GridAxisPosition::GridAxisStart;
     case ItemPosition::Baseline:
     case ItemPosition::LastBaseline: {
-        auto fallbackAlignment = [&] {
-            if (gridItemAlignSelf == ItemPosition::Baseline)
-                return hasSameWritingMode ? GridAxisPosition::GridAxisStart : GridAxisPosition::GridAxisEnd;
-            return hasSameWritingMode ? GridAxisPosition::GridAxisEnd : GridAxisPosition::GridAxisStart;
-        };
-        if (GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem))
-            return gridItemAlignSelf == ItemPosition::Baseline ? GridAxisPosition::GridAxisStart : GridAxisPosition::GridAxisEnd;
-        return fallbackAlignment();
+        return GridAxisPosition::GridAxisStart;
     }
     case ItemPosition::Legacy:
     case ItemPosition::Auto:
@@ -2117,7 +2192,7 @@ LayoutUnit RenderGrid::columnAxisOffsetForGridItem(const RenderBox& gridItem) co
     GridAxisPosition axisPosition = columnAxisPositionForGridItem(gridItem);
     switch (axisPosition) {
     case GridAxisPosition::GridAxisStart:
-        return startPosition + columnAxisBaselineOffsetForGridItem(gridItem) + masonryOffset;
+        return startPosition + masonryOffset;
     case GridAxisPosition::GridAxisEnd:
         return (startPosition + offsetFromStartPosition) - columnAxisBaselineOffsetForGridItem(gridItem);
     case GridAxisPosition::GridAxisCenter:
@@ -2140,7 +2215,7 @@ LayoutUnit RenderGrid::rowAxisOffsetForGridItem(const RenderBox& gridItem) const
     GridAxisPosition axisPosition = rowAxisPositionForGridItem(gridItem);
     switch (axisPosition) {
     case GridAxisPosition::GridAxisStart:
-        return startPosition + rowAxisBaselineOffsetForGridItem(gridItem) + masonryOffset;
+        return startPosition + masonryOffset;
     case GridAxisPosition::GridAxisEnd:
     case GridAxisPosition::GridAxisCenter: {
         LayoutUnit rowAxisGridItemSize = GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem) ? gridItem.logicalHeight() + gridItem.marginLogicalHeight() : gridItem.logicalWidth() + gridItem.marginLogicalWidth();

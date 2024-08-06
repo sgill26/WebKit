@@ -54,40 +54,47 @@ LayoutUnit GridBaselineAlignment::logicalAscentForGridItem(const RenderBox& grid
         extraMarginsFromAncestorSubgrids = GridLayoutFunctions::extraMarginForSubgridAncestors(GridTrackSizingDirection::ForRows, gridItem);
 
     LayoutUnit ascent = ascentForGridItem(gridItem, alignmentAxis, position) + extraMarginsFromAncestorSubgrids.extraTrackStartMargin();
-    return (isDescentBaselineForGridItem(gridItem, alignmentAxis) || position == ItemPosition::LastBaseline) ? descentForGridItem(gridItem, ascent, alignmentAxis, extraMarginsFromAncestorSubgrids) : ascent;
+    WTF_ALWAYS_LOG("Ascent for item  - " << gridItem << " - " << ascent);
+    return ascent;
+    //return (isDescentBaselineForGridItem(gridItem, alignmentAxis) || position == ItemPosition::LastBaseline) ? descentForGridItem(gridItem, ascent, alignmentAxis, extraMarginsFromAncestorSubgrids) : ascent;
 }
 
 LayoutUnit GridBaselineAlignment::ascentForGridItem(const RenderBox& gridItem, GridAxis alignmentAxis, ItemPosition position) const
 {
-    static const LayoutUnit noValidBaseline = LayoutUnit(-1);
-
     ASSERT(position == ItemPosition::Baseline || position == ItemPosition::LastBaseline);
-    auto baseline = 0_lu;
     auto gridItemMargin = alignmentAxis == GridAxis::GridColumnAxis ? gridItem.marginBlockStart(m_writingMode) : gridItem.marginInlineStart(m_writingMode);
     auto& parentStyle = gridItem.parent()->style();
 
-    if (alignmentAxis == GridAxis::GridColumnAxis) {
-        auto alignmentContextDirection = [&] {
-            return parentStyle.isHorizontalWritingMode() ? LineDirectionMode::HorizontalLine : LineDirectionMode::VerticalLine;
-        };
+    auto shouldSynthesizeBaseline = [&] {
+        // idk if this is even the right thing or if it should be the opposite.
+        if (alignmentAxis == GridAxis::GridRowAxis)
+            return isHorizontalWritingMode(m_writingMode) == isHorizontalWritingMode(gridItem.style().writingMode());
+        return isHorizontalWritingMode(m_writingMode) != isHorizontalWritingMode(gridItem.style().writingMode());
+    }();
 
-        if (!isParallelToAlignmentAxisForGridItem(gridItem, alignmentAxis))
-            return gridItemMargin + synthesizedBaseline(gridItem, parentStyle, alignmentContextDirection(), BaselineSynthesisEdge::BorderBox);
-        auto ascent = position == ItemPosition::Baseline ? gridItem.firstLineBaseline() : gridItem.lastLineBaseline();
-        if (!ascent)
-            return gridItemMargin + synthesizedBaseline(gridItem, parentStyle, alignmentContextDirection(), BaselineSynthesisEdge::BorderBox);
-        baseline = ascent.value();
-    } else {
-        auto computedBaselineValue = position == ItemPosition::Baseline ? gridItem.firstLineBaseline() : gridItem.lastLineBaseline();
-        baseline = isParallelToAlignmentAxisForGridItem(gridItem, alignmentAxis) ? computedBaselineValue.value_or(noValidBaseline) : noValidBaseline;
-        // We take border-box's under edge if no valid baseline.
-        if (baseline == noValidBaseline) {
-            ASSERT(!gridItem.needsLayout());
-            if (isVerticalAlignmentContext(alignmentAxis))
-                return isFlippedWritingMode(m_writingMode) ? gridItemMargin + gridItem.size().width().toInt() : gridItemMargin;
-            return gridItemMargin + synthesizedBaseline(gridItem, parentStyle, LineDirectionMode::HorizontalLine, BaselineSynthesisEdge::BorderBox);
-        }
-    }
+    auto alignmentContextDirection = [&] {
+        if (parentStyle.isHorizontalWritingMode())
+            return alignmentAxis == GridAxis::GridRowAxis ? LineDirectionMode::VerticalLine : LineDirectionMode::HorizontalLine;
+        return alignmentAxis == GridAxis::GridRowAxis ? LineDirectionMode::HorizontalLine : LineDirectionMode::VerticalLine;
+    };
+
+    auto baseline = [&] {
+        if (shouldSynthesizeBaseline)
+            return synthesizedBaseline(gridItem, parentStyle, alignmentContextDirection(), BaselineSynthesisEdge::BorderBox);
+        if (auto baselineFromRenderer = position == ItemPosition::Baseline ? gridItem.firstLineBaseline() : gridItem.lastLineBaseline())
+            return baselineFromRenderer.value();
+        return synthesizedBaseline(gridItem, parentStyle, alignmentContextDirection(), BaselineSynthesisEdge::BorderBox);
+    }();
+
+    auto& renderGrid = *downcast<RenderGrid>(gridItem.parent());
+
+    auto writingModeForBaselineAlignment = GridLayoutFunctions::writingModeForBaselineAlignment(renderGrid, gridItem, gridDirectionForAxis(alignmentAxis));
+    if (alignmentAxis == GridAxis::GridRowAxis && isFlippedWritingMode(writingModeForBaselineAlignment) == renderGrid.style().isLeftToRightDirection())
+        baseline = GridLayoutFunctions::borderBoxLogicalSizeForGridItem(renderGrid, GridTrackSizingDirection::ForColumns, gridItem) - baseline;
+        
+
+    if (alignmentAxis == GridAxis::GridColumnAxis && writingModeToBlockFlowDirection(renderGrid.style().writingMode()) != writingModeToBlockFlowDirection(writingModeForBaselineAlignment))
+        baseline = GridLayoutFunctions::borderBoxLogicalSizeForGridItem(renderGrid, GridTrackSizingDirection::ForRows, gridItem) - baseline;
 
     return gridItemMargin + baseline;
 }
@@ -125,8 +132,7 @@ bool GridBaselineAlignment::isParallelToAlignmentAxisForGridItem(const RenderBox
 const BaselineGroup& GridBaselineAlignment::baselineGroupForGridItem(ItemPosition preference, unsigned sharedContext, const RenderBox& gridItem, GridAxis alignmentAxis) const
 {
     ASSERT(isBaselinePosition(preference));
-    bool isRowAxisContext = alignmentAxis == GridAxis::GridColumnAxis;
-    auto& baselineAlignmentStateMap = isRowAxisContext ? m_rowAxisBaselineAlignmentStates : m_colAxisBaselineAlignmentStates;
+    auto& baselineAlignmentStateMap = alignmentAxis == GridAxis::GridRowAxis ? m_rowAxisBaselineAlignmentStates : m_colAxisBaselineAlignmentStates;
     auto* baselineAlignmentState = baselineAlignmentStateMap.get(sharedContext);
     ASSERT(baselineAlignmentState);
     return baselineAlignmentState->sharedGroup(gridItem, preference);
@@ -142,8 +148,7 @@ void GridBaselineAlignment::updateBaselineAlignmentContext(ItemPosition preferen
     LayoutUnit ascent = logicalAscentForGridItem(gridItem, alignmentAxis, preference);
     // Looking up for a shared alignment context perpendicular to the
     // alignment axis.
-    bool isRowAxisContext = alignmentAxis == GridAxis::GridColumnAxis;
-    auto& baselineAlignmentStateMap = isRowAxisContext ? m_rowAxisBaselineAlignmentStates : m_colAxisBaselineAlignmentStates;
+    auto& baselineAlignmentStateMap = alignmentAxis == GridAxis::GridRowAxis ? m_rowAxisBaselineAlignmentStates : m_colAxisBaselineAlignmentStates;
     // Looking for a compatible baseline-sharing group.
     if (auto* baselineAlignmentStateSearch = baselineAlignmentStateMap.get(sharedContext))
         baselineAlignmentStateSearch->updateSharedGroup(gridItem, preference, ascent);
@@ -155,14 +160,16 @@ LayoutUnit GridBaselineAlignment::baselineOffsetForGridItem(ItemPosition prefere
 {
     ASSERT(isBaselinePosition(preference));
     auto& group = baselineGroupForGridItem(preference, sharedContext, gridItem, alignmentAxis);
-    if (group.computeSize() > 1)
-        return group.maxAscent() - logicalAscentForGridItem(gridItem, alignmentAxis, preference);
+    if (group.computeSize() > 1) {
+        auto ascent = logicalAscentForGridItem(gridItem, alignmentAxis, preference);
+        return group.maxAscent() - ascent;
+    }
     return LayoutUnit();
 }
 
 void GridBaselineAlignment::clear(GridAxis alignmentAxis)
 {
-    if (alignmentAxis == GridAxis::GridColumnAxis)
+    if (alignmentAxis == GridAxis::GridRowAxis)
         m_rowAxisBaselineAlignmentStates.clear();
     else
         m_colAxisBaselineAlignmentStates.clear();

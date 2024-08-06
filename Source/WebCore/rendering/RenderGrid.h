@@ -200,6 +200,8 @@ private:
 
     void layoutGridItems(GridLayoutState&);
     void layoutMasonryItems(GridLayoutState&);
+    
+    void performBaselineAlignment(GridTrackSizingDirection) const;
 
     void populateGridPositionsForDirection(GridTrackSizingDirection);
 
