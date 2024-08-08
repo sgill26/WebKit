@@ -1028,6 +1028,11 @@ LayoutUnit GridTrackSizingAlgorithm::baselineOffsetForGridItem(const RenderBox& 
     return m_baselineAlignment.baselineOffsetForGridItem(align, alignmentContext, gridItem, baselineAxis);
 }
 
+Vector<BaselineGroup> GridTrackSizingAlgorithm::baselineSharingGroups(unsigned trackIndex, GridTrackSizingDirection alignmentContext)
+{
+    return m_baselineAlignment.baselineSharingGroups(trackIndex, alignmentContext);
+}
+
 void GridTrackSizingAlgorithm::clearBaselineItemsCache()
 {
     m_columnBaselineItemsMap.clear();

@@ -1466,7 +1466,25 @@ void RenderGrid::alignGridItems()
         if (currentGrid().orderIterator().shouldSkipChild(gridItem))
             continue;
 
-        setPhysicalLocationForGridItem(gridItem, logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns), logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows));
+        // "In the positioning phase [...] calculations are performed according to the writing mode of the containing block of the box establishing the
+        // orthogonal flow." However, 'setLogicalLocation' will only take into account the grid item's writing-mode, so the position may need to be transposed.
+        auto logicalLeft = [&] {
+            // Baseline alignment is handled in performBaselineAlignment.
+            if (m_trackSizingAlgorithm.participateInBaselineAlignment(gridItem, GridAxis::GridRowAxis))
+                return 0_lu;
+
+            return logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns);
+        }();
+            
+        auto logicalTop = [&] {
+            // Baseline alignment is handled in performBaselineAlignment.
+            if (m_trackSizingAlgorithm.participateInBaselineAlignment(gridItem, GridAxis::GridColumnAxis))
+                return 0_lu;
+
+            return logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows);
+        }();
+
+        setPhysicalLocationForGridItem(gridItem, logicalLeft, logicalTop);
 
         auto oldGridItemRect = gridItem.frameRect();
         // If the grid item moved, we have to repaint it as well as any floating/positioned
@@ -1474,6 +1492,29 @@ void RenderGrid::alignGridItems()
         // repaint ourselves (and the grid item) anyway.
         if (!selfNeedsLayout() && gridItem.checkForRepaintDuringLayout())
             gridItem.repaintDuringLayoutIfMoved(oldGridItemRect);
+    }
+
+    performBaselineAlignment(GridTrackSizingDirection::ForColumns);
+    performBaselineAlignment(GridTrackSizingDirection::ForRows);
+}
+
+void RenderGrid::performBaselineAlignment(GridTrackSizingDirection alignmentContext)
+{
+    for (auto trackIndex = 0u; trackIndex < numTracks(alignmentContext); ++trackIndex) {
+        auto baselineSharingGroups = m_trackSizingAlgorithm.baselineSharingGroups(trackIndex, alignmentContext);
+
+        for (auto& baselineSharingGroup : baselineSharingGroups) {
+            for (auto& gridItem : baselineSharingGroup) {
+                // Subgridded items should have handled when we performed layout on the
+                // subgrid. We cannot get the offsets for this item because it was never
+                // added in our grid area.
+                if (gridItem.parent() != this)
+                    continue;
+
+                auto logicalOffset = logicalOffsetForGridItem(gridItem, alignmentContext);
+                setPhysicalOffsetForGridItem(gridItem, alignmentContext, logicalOffset);
+            }
+        }
     }
 }
 

@@ -133,6 +133,7 @@ public:
     LayoutUnit maxContentSize() const { return m_maxContentSize; };
 
     LayoutUnit baselineOffsetForGridItem(const RenderBox&, GridAxis) const;
+    Vector<BaselineGroup> baselineSharingGroups(unsigned trackIndex, GridTrackSizingDirection);
 
     // The estimated grid area should be use pre-layout versus the grid area, which should be used once
     // layout is complete.
@@ -161,6 +162,8 @@ public:
 #if ASSERT_ENABLED
     bool tracksAreWiderThanMinTrackBreadth() const;
 #endif
+
+    bool participateInBaselineAlignment(const RenderBox&, GridAxis) const;
 
 private:
     struct MasonryIndefiniteItems {
@@ -208,7 +211,6 @@ private:
     void computeBaselineAlignmentContext();
     void updateBaselineAlignmentContext(const RenderBox&, GridAxis);
     bool canParticipateInBaselineAlignment(const RenderBox&, GridAxis) const;
-    bool participateInBaselineAlignment(const RenderBox&, GridAxis) const;
 
     bool isIntrinsicSizedGridArea(const RenderBox&, GridAxis) const;
     void computeGridContainerIntrinsicSizes();

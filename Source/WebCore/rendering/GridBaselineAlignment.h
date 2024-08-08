@@ -62,6 +62,8 @@ public:
     // Clearing the Baseline Alignment context and their internal classes and data structures.
     void clear(GridAxis);
 
+    Vector<BaselineGroup> baselineSharingGroups(unsigned trackIndex, GridTrackSizingDirection);
+
 private:
     const BaselineGroup& baselineGroupForGridItem(ItemPosition, unsigned sharedContext, const RenderBox&, GridAxis) const;
     LayoutUnit marginOverForGridItem(const RenderBox&, GridAxis) const;

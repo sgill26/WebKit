@@ -168,4 +168,17 @@ void GridBaselineAlignment::clear(GridAxis alignmentAxis)
         m_colAxisBaselineAlignmentStates.clear();
 }
 
+Vector<BaselineGroup> GridBaselineAlignment::baselineSharingGroups(unsigned trackIndex, GridTrackSizingDirection alignmentContext)
+{
+    auto baselineAlignmentState = [&] {
+        if (alignmentContext == GridTrackSizingDirection::ForColumns)
+            return m_colAxisBaselineAlignmentStates.get(trackIndex);
+        return m_rowAxisBaselineAlignmentStates.get(trackIndex);
+    }();
+
+    if (baselineAlignmentState)
+        return baselineAlignmentState->sharedGroups();
+    return { };
+}
+
 } // namespace WebCore

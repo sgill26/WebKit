@@ -202,6 +202,7 @@ private:
     void layoutMasonryItems(GridLayoutState&);
 
     void alignGridItems();
+    void performBaselineAlignment(GridTrackSizingDirection);
 
     void populateGridPositionsForDirection(GridTrackSizingDirection);
 
@@ -216,8 +217,8 @@ private:
     LayoutUnit columnAxisOffsetForGridItem(const RenderBox&) const;
     LayoutUnit rowAxisOffsetForGridItem(const RenderBox&) const;
     void computeContentPositionAndDistributionOffset(GridTrackSizingDirection, const LayoutUnit& availableFreeSpace, unsigned numberOfGridTracks);
-    void setPhysicalLocationForGridItem(RenderBox&, LayoutUnit logicalLeft, LayoutUnit logicalRight) const;
-    void setPhysicalOffsetForGridItem(RenderBox&, GridTrackSizingDirection, LayoutUnit logicalOffset) const;
+    void setPhysicalLocationForGridItem(RenderBox& gridItem, LayoutUnit logicalLeft, LayoutUnit logicalRight) const;
+    void setPhysicalOffsetForGridItem(RenderBox& gridItem, GridTrackSizingDirection direction, LayoutUnit logicalOffset) const;
     LayoutUnit logicalOffsetForGridItem(const RenderBox&, GridTrackSizingDirection) const;
 
     LayoutUnit gridAreaBreadthForGridItemIncludingAlignmentOffsets(const RenderBox&, GridTrackSizingDirection) const;
