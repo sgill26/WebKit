@@ -1450,7 +1450,7 @@ void RenderGrid::layoutMasonryItems(GridLayoutState& gridLayoutState)
         updateAutoMarginsInColumnAxisIfNeeded(*gridItem);
         updateAutoMarginsInRowAxisIfNeeded(*gridItem);
 
-        setLogicalPositionForGridItem(*gridItem);
+        setPhysicalLocationForGridItem(*gridItem, logicalOffsetForGridItem(*gridItem, GridTrackSizingDirection::ForColumns), logicalOffsetForGridItem(*gridItem, GridTrackSizingDirection::ForRows));
 
         // If the grid item moved, we have to repaint it as well as any floating/positioned
         // descendants. An exception is if we need a layout. In this case, we know we're going to
@@ -1466,7 +1466,7 @@ void RenderGrid::alignGridItems()
         if (currentGrid().orderIterator().shouldSkipChild(gridItem))
             continue;
 
-        setLogicalPositionForGridItem(gridItem);
+        setPhysicalLocationForGridItem(gridItem, logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns), logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows));
 
         auto oldGridItemRect = gridItem.frameRect();
         // If the grid item moved, we have to repaint it as well as any floating/positioned
@@ -1512,8 +1512,8 @@ void RenderGrid::layoutPositionedObject(RenderBox& gridItem, bool relayoutChildr
 
     RenderBlock::layoutPositionedObject(gridItem, relayoutChildren, fixedPositionObjectsOnly);
 
-    setLogicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns);
-    setLogicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows);
+    setPhysicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns, logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns));
+    setPhysicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows, logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows));
 }
 
 LayoutUnit RenderGrid::gridAreaBreadthForGridItemIncludingAlignmentOffsets(const RenderBox& gridItem, GridTrackSizingDirection direction) const
@@ -2456,23 +2456,38 @@ LayoutUnit RenderGrid::translateRTLCoordinate(LayoutUnit coordinate) const
 }
 
 // FIXME: SetLogicalPositionForGridItem has only one caller, consider its refactoring in the future.
-void RenderGrid::setLogicalPositionForGridItem(RenderBox& gridItem) const
+void RenderGrid::setPhysicalLocationForGridItem(RenderBox& gridItem, LayoutUnit logicalLeft, LayoutUnit logicalRight) const
 {
+    // We stored m_columnPositions's data ignoring the direction, hence we might need now
+    // to translate positions from RTL to LTR, as it's more convenient for painting.
+    if (!style().isLeftToRightDirection())
+        logicalLeft = translateRTLCoordinate(logicalLeft) - (GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem) ? gridItem.logicalHeight()  : gridItem.logicalWidth());
+
+    LayoutPoint location { logicalLeft, logicalRight };
+
+    if (GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem))
+        location = location.transposedPoint();
+
     // "In the positioning phase [...] calculations are performed according to the writing mode of the containing block of the box establishing the
     // orthogonal flow." However, 'setLogicalLocation' will only take into account the grid item's writing-mode, so the position may need to be transposed.
-    LayoutPoint gridItemLocation(logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForColumns), logicalOffsetForGridItem(gridItem, GridTrackSizingDirection::ForRows));
-    gridItem.setLogicalLocation(GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem) ? gridItemLocation.transposedPoint() : gridItemLocation);
+    gridItem.setLogicalLocation(location);
 }
 
-void RenderGrid::setLogicalOffsetForGridItem(RenderBox& gridItem, GridTrackSizingDirection direction) const
+void RenderGrid::setPhysicalOffsetForGridItem(RenderBox& gridItem, GridTrackSizingDirection direction, LayoutUnit logicalOffset) const
 {
     if (gridItem.parent() != this && hasStaticPositionForGridItem(gridItem, direction))
         return;
+
+    // We stored m_columnPositions's data ignoring the direction, hence we might need now
+    // to translate positions from RTL to LTR, as it's more convenient for painting.
+    if (!style().isLeftToRightDirection() && direction == GridTrackSizingDirection::ForColumns)
+        logicalOffset = translateRTLCoordinate(logicalOffset) - (GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem) ? gridItem.logicalHeight()  : gridItem.logicalWidth());
+
     // 'setLogicalLeft' and 'setLogicalTop' only take into account the grid item's writing-mode, that's why 'flowAwareDirectionForGridItem' is needed.
-    if (GridLayoutFunctions::flowAwareDirectionForGridItem(*this, gridItem, direction) == GridTrackSizingDirection::ForColumns)
-        gridItem.setLogicalLeft(logicalOffsetForGridItem(gridItem, direction));
-    else
-        gridItem.setLogicalTop(logicalOffsetForGridItem(gridItem, direction));
+    if (GridLayoutFunctions::flowAwareDirectionForGridItem(*this, gridItem, direction) == GridTrackSizingDirection::ForColumns) {
+        gridItem.setLogicalLeft(logicalOffset);
+    } else
+        gridItem.setLogicalTop(logicalOffset);
 }
 
 LayoutUnit RenderGrid::logicalOffsetForGridItem(const RenderBox& gridItem, GridTrackSizingDirection direction) const
@@ -2480,10 +2495,6 @@ LayoutUnit RenderGrid::logicalOffsetForGridItem(const RenderBox& gridItem, GridT
     if (direction == GridTrackSizingDirection::ForRows)
         return columnAxisOffsetForGridItem(gridItem);
     LayoutUnit rowAxisOffset = rowAxisOffsetForGridItem(gridItem);
-    // We stored m_columnPositions's data ignoring the direction, hence we might need now
-    // to translate positions from RTL to LTR, as it's more convenient for painting.
-    if (!style().isLeftToRightDirection())
-        rowAxisOffset = translateRTLCoordinate(rowAxisOffset) - (GridLayoutFunctions::isOrthogonalGridItem(*this, gridItem) ? gridItem.logicalHeight()  : gridItem.logicalWidth());
     return rowAxisOffset;
 }
 

@@ -216,8 +216,8 @@ private:
     LayoutUnit columnAxisOffsetForGridItem(const RenderBox&) const;
     LayoutUnit rowAxisOffsetForGridItem(const RenderBox&) const;
     void computeContentPositionAndDistributionOffset(GridTrackSizingDirection, const LayoutUnit& availableFreeSpace, unsigned numberOfGridTracks);
-    void setLogicalPositionForGridItem(RenderBox&) const;
-    void setLogicalOffsetForGridItem(RenderBox&, GridTrackSizingDirection) const;
+    void setPhysicalLocationForGridItem(RenderBox&, LayoutUnit logicalLeft, LayoutUnit logicalRight) const;
+    void setPhysicalOffsetForGridItem(RenderBox&, GridTrackSizingDirection, LayoutUnit logicalOffset) const;
     LayoutUnit logicalOffsetForGridItem(const RenderBox&, GridTrackSizingDirection) const;
 
     LayoutUnit gridAreaBreadthForGridItemIncludingAlignmentOffsets(const RenderBox&, GridTrackSizingDirection) const;
