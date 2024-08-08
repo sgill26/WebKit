@@ -201,6 +201,8 @@ private:
     void layoutGridItems(GridLayoutState&);
     void layoutMasonryItems(GridLayoutState&);
 
+    void alignGridItems();
+
     void populateGridPositionsForDirection(GridTrackSizingDirection);
 
     LayoutUnit gridAreaBreadthForOutOfFlowGridItem(const RenderBox&, GridTrackSizingDirection);

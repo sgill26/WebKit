@@ -412,6 +412,7 @@ void RenderGrid::layoutGrid(bool relayoutChildren)
         }
 
         layoutGridItems(gridLayoutState);
+        alignGridItems();
 
         endAndCommitUpdateScrollInfoAfterLayoutTransaction();
 
@@ -1397,7 +1398,6 @@ void RenderGrid::layoutGridItems(GridLayoutState& gridLayoutState)
         // used during the track sizing algorithm.
         updateGridAreaLogicalSize(*gridItem, gridAreaBreadthForGridItemIncludingAlignmentOffsets(*gridItem, GridTrackSizingDirection::ForColumns), gridAreaBreadthForGridItemIncludingAlignmentOffsets(*gridItem, GridTrackSizingDirection::ForRows));
 
-        LayoutRect oldGridItemRect = gridItem->frameRect();
 
         // Stretching logic might force a grid item layout, so we need to run it before the layoutIfNeeded
         // call to avoid unnecessary relayouts. This might imply that grid item margins, needed to correctly
@@ -1411,13 +1411,7 @@ void RenderGrid::layoutGridItems(GridLayoutState& gridLayoutState)
         updateAutoMarginsInColumnAxisIfNeeded(*gridItem);
         updateAutoMarginsInRowAxisIfNeeded(*gridItem);
 
-        setLogicalPositionForGridItem(*gridItem);
-
-        // If the grid item moved, we have to repaint it as well as any floating/positioned
-        // descendants. An exception is if we need a layout. In this case, we know we're going to
-        // repaint ourselves (and the grid item) anyway.
-        if (!selfNeedsLayout() && gridItem->checkForRepaintDuringLayout())
-            gridItem->repaintDuringLayoutIfMoved(oldGridItemRect);
+        
     }
 }
 
@@ -1463,6 +1457,23 @@ void RenderGrid::layoutMasonryItems(GridLayoutState& gridLayoutState)
         // repaint ourselves (and the grid item) anyway.
         if (!selfNeedsLayout() && gridItem->checkForRepaintDuringLayout())
             gridItem->repaintDuringLayoutIfMoved(oldGridItemRect);
+    }
+}
+
+void RenderGrid::alignGridItems()
+{
+    for (auto& gridItem : childrenOfType<RenderBox>(*this)) {
+        if (currentGrid().orderIterator().shouldSkipChild(gridItem))
+            continue;
+
+        setLogicalPositionForGridItem(gridItem);
+
+        auto oldGridItemRect = gridItem.frameRect();
+        // If the grid item moved, we have to repaint it as well as any floating/positioned
+        // descendants. An exception is if we need a layout. In this case, we know we're going to
+        // repaint ourselves (and the grid item) anyway.
+        if (!selfNeedsLayout() && gridItem.checkForRepaintDuringLayout())
+            gridItem.repaintDuringLayoutIfMoved(oldGridItemRect);
     }
 }
 
