@@ -1504,6 +1504,8 @@ void RenderGrid::performBaselineAlignment(GridTrackSizingDirection alignmentCont
         auto baselineSharingGroups = m_trackSizingAlgorithm.baselineSharingGroups(trackIndex, alignmentContext);
 
         for (auto& baselineSharingGroup : baselineSharingGroups) {
+            auto availableSpaceForFallbackAlignment = LayoutUnit::max();
+
             for (auto& gridItem : baselineSharingGroup) {
                 // Subgridded items should have handled when we performed layout on the
                 // subgrid. We cannot get the offsets for this item because it was never
@@ -1511,9 +1513,39 @@ void RenderGrid::performBaselineAlignment(GridTrackSizingDirection alignmentCont
                 if (gridItem.parent() != this)
                     continue;
 
-                auto logicalOffset = logicalOffsetForGridItem(gridItem, alignmentContext);
-                setPhysicalOffsetForGridItem(gridItem, alignmentContext, logicalOffset);
+                if (alignmentContext == GridTrackSizingDirection::ForRows) {
+                    auto logicalOffset = logicalOffsetForGridItem(gridItem, alignmentContext);
+                    setPhysicalOffsetForGridItem(gridItem, alignmentContext, logicalOffset);
+                    continue;
+                }
+
+                auto fallbackAlignment = [&] {
+                    auto justifySelfForGridItem = this->justifySelfForGridItem(gridItem).position();
+                    auto gridHasSameDirectionAsItemBlockFlow = style().isLeftToRightDirection() != isFlippedWritingMode(GridLayoutFunctions::writingModeForBaselineAlignment(*this, gridItem, alignmentContext));
+
+                    if (justifySelfForGridItem == ItemPosition::Baseline)
+                        return gridHasSameDirectionAsItemBlockFlow ? GridAxisPosition::GridAxisStart : GridAxisPosition::GridAxisEnd;
+                    return gridHasSameDirectionAsItemBlockFlow ? GridAxisPosition::GridAxisEnd : GridAxisPosition::GridAxisStart;
+                }();
+
+                auto [startOfColumn, endOfColumn] = gridAreaPositionForGridItem(gridItem, alignmentContext);
+                auto borderBoxLogicalLeft = startOfColumn + marginStartForChild(gridItem) + m_trackSizingAlgorithm.baselineOffsetForGridItem(gridItem, GridAxis::GridRowAxis);
+                auto availableSpaceInGridArea = gridAreaBreadthForGridItemIncludingAlignmentOffsets(gridItem, alignmentContext);
+
+                if (fallbackAlignment == GridAxisPosition::GridAxisEnd) {
+                    auto marginBoxLogicalLeft = borderBoxLogicalLeft - marginStartForChild(gridItem);
+                    availableSpaceForFallbackAlignment = std::min(availableSpaceForFallbackAlignment, availableSpaceInGridArea - marginBoxLogicalLeft - GridLayoutFunctions::marginBoxLogicalSizeForGridItem(*this, alignmentContext, gridItem));
+                }
+
+                setPhysicalOffsetForGridItem(gridItem, alignmentContext, borderBoxLogicalLeft);
             }
+
+            if (availableSpaceForFallbackAlignment == LayoutUnit::max())
+                continue;
+
+            // Fallback alignment.
+            for (auto& gridItem : baselineSharingGroup)
+                GridLayoutFunctions::offsetGridItemBy(*this, alignmentContext, gridItem, availableSpaceForFallbackAlignment);
         }
     }
 }
@@ -1961,7 +1993,7 @@ SingleThreadWeakPtr<RenderBox> RenderGrid::getBaselineGridItem(ItemPosition alig
             // If an item participates in baseline alignment, we select such item.
             if (isBaselineAlignmentForGridItem(*gridItem, GridAxis::GridColumnAxis, AllowedBaseLine::BothLines)) {
                 auto gridItemAlignment = selfAlignmentForGridItem(GridAxis::GridColumnAxis, *gridItem).position();
-                if (rowIndexDeterminingBaseline == GridLayoutFunctions::alignmentContextForBaselineAlignment(gridSpanForGridItem(*gridItem, GridTrackSizingDirection::ForRows), gridItemAlignment)) {
+                if (rowIndexDeterminingBaseline == GridLayoutFunctions::alignmentContextForBaselineAlignment(*this, *gridItem, GridTrackSizingDirection::ForRows, gridItemAlignment)) {
                     // FIXME: self-baseline and content-baseline alignment not implemented yet.
                     baselineGridItem = gridItem.get();
                     break;

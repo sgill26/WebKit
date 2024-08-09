@@ -113,6 +113,22 @@ ExtraMarginsFromSubgrids extraMarginForSubgridAncestors(GridTrackSizingDirection
     return extraMargins;
 }
 
+
+void offsetGridItemBy(const RenderGrid& renderGrid, GridTrackSizingDirection direction, RenderBox& gridItem, LayoutUnit offsetAmount)
+{
+    if (!GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem)) {
+        if (direction == GridTrackSizingDirection::ForColumns)
+            gridItem.setLogicalLeft(offsetAmount + gridItem.logicalLeft());
+        else
+            gridItem.setLogicalTop(offsetAmount + gridItem.logicalTop());
+    } else {
+        if (direction == GridTrackSizingDirection::ForColumns)
+            gridItem.setLogicalTop(offsetAmount + gridItem.logicalTop());
+        else
+            gridItem.setLogicalLeft(offsetAmount + gridItem.logicalLeft());
+    }
+}
+
 LayoutUnit marginLogicalSizeForGridItem(const RenderGrid& grid, GridTrackSizingDirection direction, const RenderBox& gridItem)
 {
     LayoutUnit margin;
@@ -132,6 +148,18 @@ LayoutUnit marginLogicalSizeForGridItem(const RenderGrid& grid, GridTrackSizingD
     }
 
     return margin;
+}
+
+LayoutUnit borderBoxLogicalSizeForGridItem(const RenderGrid& renderGrid, GridTrackSizingDirection direction, const RenderBox& gridItem)
+{
+    if (!GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+        return direction == GridTrackSizingDirection::ForColumns ? gridItem.logicalWidth() : gridItem.logicalHeight();
+    return direction == GridTrackSizingDirection::ForColumns ? gridItem.logicalHeight() : gridItem.logicalWidth();
+}
+
+LayoutUnit marginBoxLogicalSizeForGridItem(const RenderGrid& renderGrid, GridTrackSizingDirection direction, const RenderBox& gridItem)
+{
+    return GridLayoutFunctions::marginLogicalSizeForGridItem(renderGrid, direction, gridItem) + GridLayoutFunctions::borderBoxLogicalSizeForGridItem(renderGrid, direction, gridItem);
 }
 
 bool isOrthogonalGridItem(const RenderGrid& grid, const RenderBox& gridItem)
@@ -178,12 +206,36 @@ bool isSubgridReversedDirection(const RenderGrid& grid, GridTrackSizingDirection
     return isFlippedDirection(grid, outerDirection) != isFlippedDirection(subgrid, subgridDirection);
 }
 
-unsigned alignmentContextForBaselineAlignment(const GridSpan& span, const ItemPosition& alignment)
+unsigned alignmentContextForBaselineAlignment(const RenderGrid& renderGrid, const RenderBox& gridItem, GridTrackSizingDirection alignmentContext, ItemPosition alignment)
 {
     ASSERT(alignment == ItemPosition::Baseline || alignment == ItemPosition::LastBaseline);
+
+    bool reversed = false;
+    if (alignmentContext == GridTrackSizingDirection::ForColumns) {
+        auto gridItemWritingModeForBaselineAlignment = GridLayoutFunctions::writingModeForBaselineAlignment(renderGrid, gridItem, alignmentContext);
+        reversed = renderGrid.style().isLeftToRightDirection() == isFlippedWritingMode(gridItemWritingModeForBaselineAlignment);
+    }
+
+    auto gridItemSpan = renderGrid.gridSpanForGridItem(gridItem, alignmentContext);
     if (alignment == ItemPosition::Baseline)
-        return span.startLine();
-    return span.endLine() - 1;
+        return !reversed ? gridItemSpan.startLine() : gridItemSpan.endLine() - 1;
+    return !reversed ? gridItemSpan.endLine() - 1 : gridItemSpan.startLine();
+}
+
+
+WritingMode writingModeForBaselineAlignment(const RenderGrid& renderGrid, const RenderBox& gridItem, GridTrackSizingDirection alignmentContext)
+{
+    if (alignmentContext == GridTrackSizingDirection::ForColumns) {
+        if (GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+            return gridItem.style().writingMode();
+            
+        if (!gridItem.isHorizontalWritingMode())
+            return WritingMode::HorizontalTb;
+        return renderGrid.style().direction() == TextDirection::LTR ? WritingMode::VerticalLr : WritingMode::VerticalRl;
+    }
+        if (!GridLayoutFunctions::isOrthogonalGridItem(renderGrid, gridItem))
+            return gridItem.style().writingMode();
+        return renderGrid.style().writingMode();
 }
 
 } // namespace GridLayoutFunctions

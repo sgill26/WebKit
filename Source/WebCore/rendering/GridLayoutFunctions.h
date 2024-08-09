@@ -60,8 +60,11 @@ struct ExtraMarginsFromSubgrids {
 
 namespace GridLayoutFunctions {
 
+void offsetGridItemBy(const RenderGrid&, GridTrackSizingDirection, RenderBox&, LayoutUnit);
 LayoutUnit computeMarginLogicalSizeForGridItem(const RenderGrid&, GridTrackSizingDirection, const RenderBox&);
 LayoutUnit marginLogicalSizeForGridItem(const RenderGrid&, GridTrackSizingDirection, const RenderBox&);
+LayoutUnit marginBoxLogicalSizeForGridItem(const RenderGrid&, GridTrackSizingDirection, const RenderBox&);
+LayoutUnit borderBoxLogicalSizeForGridItem(const RenderGrid&, GridTrackSizingDirection, const RenderBox&);
 bool isOrthogonalGridItem(const RenderGrid&, const RenderBox&);
 bool isOrthogonalParent(const RenderGrid&, const RenderElement& parent);
 bool isAspectRatioBlockSizeDependentGridItem(const RenderBox&);
@@ -74,7 +77,8 @@ bool isFlippedDirection(const RenderGrid&, GridTrackSizingDirection);
 bool isSubgridReversedDirection(const RenderGrid&, GridTrackSizingDirection outerDirection, const RenderGrid& subgrid);
 ExtraMarginsFromSubgrids extraMarginForSubgridAncestors(GridTrackSizingDirection, const RenderBox& gridItem);
 
-unsigned alignmentContextForBaselineAlignment(const GridSpan&, const ItemPosition& alignment);
+unsigned alignmentContextForBaselineAlignment(const RenderGrid& renderGrid, const RenderBox& gridItem, GridTrackSizingDirection alignmentContext, ItemPosition);
+WritingMode writingModeForBaselineAlignment(const RenderGrid &, const RenderBox &, GridTrackSizingDirection alignmentContext);
 
 }
 

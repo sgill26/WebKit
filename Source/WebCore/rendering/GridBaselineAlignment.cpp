@@ -65,6 +65,11 @@ LayoutUnit GridBaselineAlignment::ascentForGridItem(const RenderBox& gridItem, G
     auto baseline = 0_lu;
     auto gridItemMargin = alignmentAxis == GridAxis::GridColumnAxis ? gridItem.marginBlockStart(m_writingMode) : gridItem.marginInlineStart(m_writingMode);
     auto& parentStyle = gridItem.parent()->style();
+    auto alignmentContextDirection = [&] {
+        if (parentStyle.isHorizontalWritingMode())
+            return alignmentAxis == GridAxis::GridRowAxis ? LineDirectionMode::VerticalLine : LineDirectionMode::HorizontalLine;
+        return alignmentAxis == GridAxis::GridRowAxis ? LineDirectionMode::HorizontalLine : LineDirectionMode::VerticalLine;
+    }();
 
     if (alignmentAxis == GridAxis::GridColumnAxis) {
         auto alignmentContextDirection = [&] {
@@ -83,9 +88,8 @@ LayoutUnit GridBaselineAlignment::ascentForGridItem(const RenderBox& gridItem, G
         // We take border-box's under edge if no valid baseline.
         if (baseline == noValidBaseline) {
             ASSERT(!gridItem.needsLayout());
-            if (isVerticalAlignmentContext(alignmentAxis))
-                return isFlippedWritingMode(m_writingMode) ? gridItemMargin + gridItem.size().width().toInt() : gridItemMargin;
-            return gridItemMargin + synthesizedBaseline(gridItem, parentStyle, LineDirectionMode::HorizontalLine, BaselineSynthesisEdge::BorderBox);
+            baseline = synthesizedBaseline(gridItem, parentStyle, alignmentContextDirection, BaselineSynthesisEdge::BorderBox);
+            return gridItemMargin + baseline;
         }
     }
 
