@@ -1,0 +1,27 @@
+<!DOCTYPE html> <!-- webkit-test-runner [ UnifiedPDFEnabled=true ] -->
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+<script src="../resources/ui-helper.js"></script>
+<body>
+<embed id="pdf" src="../http/tests/pdf/resources/non-linearized.pdf" style="width: 100%; height: 100vh;">
+</body>
+<script>
+
+    window.addEventListener('load', async () => {
+        await UIHelper.renderingUpdate();
+
+        if (!window.internals)
+            return;
+
+        testRunner.waitUntilDone();
+            
+        shouldBecomeEqual("internals.numberOfScrollableAreas()", "1", () => {
+            testRunner.notifyDone();
+        });
+    });
+</script>
+</head>
+</html>
+
+
