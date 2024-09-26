@@ -2689,6 +2689,14 @@ void WebPage::scaleView(double scale)
     scalePage(pageScale, scrollPositionAtNewScale);
 }
 
+#if ENABLE(PDF_PLUGIN)
+void WebPage::setPluginScaleFactor(double scaleFactor, WebCore::IntPoint origin)
+{
+    if (RefPtr plugin = mainFramePlugIn())
+        plugin->setPageScaleFactor(scaleFactor, origin);
+}
+#endif
+
 void WebPage::setDeviceScaleFactor(float scaleFactor)
 {
     if (scaleFactor == m_page->deviceScaleFactor())

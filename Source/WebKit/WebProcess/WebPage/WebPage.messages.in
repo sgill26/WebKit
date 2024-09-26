@@ -303,6 +303,9 @@ GenerateSyntheticEditingCommand(enum:uint8_t WebKit::SyntheticEditingCommandType
     DidScalePageInViewCoordinates(double scale, WebCore::IntPoint origin)
     DidScalePageRelativeToScrollPosition(double scale, WebCore::IntPoint origin)
     ScaleView(double scale)
+#if ENABLE(PDF_PLUGIN)
+    SetPluginScaleFactor(double scale, WebCore::IntPoint origin);
+#endif
 
     SetUseFixedLayout(bool fixed)
     SetFixedLayoutSize(WebCore::IntSize size)

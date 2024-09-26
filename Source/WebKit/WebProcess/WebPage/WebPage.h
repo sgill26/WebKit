@@ -722,6 +722,9 @@ public:
     double totalScaleFactor() const;
     double viewScaleFactor() const;
     void scaleView(double scale);
+#if ENABLE(PDF_PLUGIN)
+    void setPluginScaleFactor(double scaleFactor, WebCore::IntPoint origin);
+#endif
 
     void didScalePage(double scale, const WebCore::IntPoint& origin);
     void didScalePageInViewCoordinates(double scale, const WebCore::IntPoint& origin);

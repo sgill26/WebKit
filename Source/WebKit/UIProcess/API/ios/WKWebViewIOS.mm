@@ -2283,8 +2283,11 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
     if (![self usesStandardContentView] && [_customContentView respondsToSelector:@selector(web_scrollViewDidZoom:)])
         [_customContentView web_scrollViewDidZoom:scrollView];
 
-    if (_page->mainFramePluginHandlesPageScaleGesture())
+    if (_page->mainFramePluginHandlesPageScaleGesture()) {
+        auto gestureOrigin = WebCore::IntPoint([scrollView.pinchGestureRecognizer locationInView:self]);
+        _page->setPluginScaleFactor(contentZoomScale(self), gestureOrigin);
         return;
+    }
 
     [self _updateScrollViewBackground];
     [self _scheduleVisibleContentRectUpdateAfterScrollInView:scrollView];
@@ -2299,7 +2302,6 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
 
     if (_page->mainFramePluginHandlesPageScaleGesture()) {
         _page->didEndUserTriggeredZooming();
-        [self _scheduleVisibleContentRectUpdateAfterScrollInView:scrollView];
         return;
     }
 
