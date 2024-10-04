@@ -301,6 +301,11 @@ Ref<WebCore::HTMLPlugInElement> PluginView::protectedPluginElement() const
     return m_pluginElement;
 }
 
+void PluginView::pluginDidInstallPDFDocument()
+{
+    m_webPage->pluginDidInstallPDFDocument();
+}
+
 void PluginView::layerHostingStrategyDidChange()
 {
     if (!m_isInitialized)

@@ -4156,6 +4156,13 @@ void WebPage::resetViewportDefaultConfiguration(WebFrame* frame, bool hasMobileD
         return;
     }
 
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr plugin = mainFramePlugIn()) {
+        m_viewportConfiguration.setDefaultConfiguration(ViewportConfiguration::pluginParameters());
+        return;
+    }
+#endif
+
     auto parametersForStandardFrame = [&] {
 #if ENABLE(FULLSCREEN_API)
         if (m_isInFullscreenMode == IsInFullscreenMode::Yes)

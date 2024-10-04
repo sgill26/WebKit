@@ -1239,6 +1239,11 @@ void PageClientImpl::scheduleVisibleContentRectUpdate()
     [webView() _scheduleVisibleContentRectUpdate];
 }
 
+void PageClientImpl::pluginChangedScaleFactor(double scaleFactor)
+{
+//    [[webView() scrollView] setZoomScale:scaleFactor];
+}
+
 } // namespace WebKit
 
 #endif // PLATFORM(IOS_FAMILY)

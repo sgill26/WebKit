@@ -772,6 +772,7 @@ public:
 #if ENABLE(PDF_PLUGIN)
     void addPluginView(PluginView&);
     void removePluginView(PluginView&);
+    void pluginDidInstallPDFDocument();
 #endif
 
     inline bool isVisible() const;

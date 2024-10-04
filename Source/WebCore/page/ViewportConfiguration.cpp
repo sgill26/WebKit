@@ -268,7 +268,7 @@ bool ViewportConfiguration::shouldIgnoreVerticalScalingConstraints() const
 
 bool ViewportConfiguration::shouldIgnoreScalingConstraints() const
 {
-    return shouldIgnoreHorizontalScalingConstraints() || shouldIgnoreVerticalScalingConstraints();
+    return m_configuration.isMainFramePlugin || shouldIgnoreHorizontalScalingConstraints() || shouldIgnoreVerticalScalingConstraints();
 }
 
 bool ViewportConfiguration::shouldIgnoreScalingConstraintsRegardlessOfContentSize() const
@@ -462,6 +462,21 @@ ViewportConfiguration::Parameters ViewportConfiguration::xhtmlMobileParameters()
 {
     Parameters parameters = webpageParameters();
     parameters.width = 320;
+    return parameters;
+}
+
+ViewportConfiguration::Parameters ViewportConfiguration::pluginParameters()
+{
+    Parameters parameters;
+    parameters.width = defaultDesktopViewportWidth;
+    parameters.widthIsSet = true;
+    parameters.allowsUserScaling = true;
+    parameters.allowsShrinkToFit = true;
+    parameters.initialScale = 0.5;
+    parameters.isMainFramePlugin = true;
+    parameters.initialScaleIsSet = true;
+    parameters.minimumScale = platformMinimumScaleForWebpage();
+    parameters.maximumScale = 5;
     return parameters;
 }
 

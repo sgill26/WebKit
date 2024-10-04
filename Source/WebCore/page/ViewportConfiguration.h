@@ -58,6 +58,7 @@ public:
         bool widthIsSet { false };
         bool heightIsSet { false };
         bool initialScaleIsSet { false };
+        bool isMainFramePlugin { false };
 
         bool ignoreInitialScaleForLayoutWidth { false };
 
@@ -150,6 +151,7 @@ public:
     WEBCORE_EXPORT static Parameters imageDocumentParameters();
     WEBCORE_EXPORT static Parameters xhtmlMobileParameters();
     WEBCORE_EXPORT static Parameters testingParameters();
+    WEBCORE_EXPORT static Parameters pluginParameters();
 
     String description() const;
 #if !LOG_DISABLED

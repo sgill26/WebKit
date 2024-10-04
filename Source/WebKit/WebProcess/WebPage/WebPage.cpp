@@ -4917,7 +4917,13 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
 
     layerTransaction.setContentsSize(frameView->contentsSize());
     layerTransaction.setScrollOrigin(frameView->scrollOrigin());
-    layerTransaction.setPageScaleFactor(corePage()->pageScaleFactor());
+    if (RefPtr plugin = mainFramePlugIn()) {
+        WTF_ALWAYS_LOG("sgill26: layerTransaction setting page scale factor to plugin scale factor " << plugin->pageScaleFactor());
+        layerTransaction.setPageScaleFactor(plugin->pageScaleFactor());
+    } else {
+        WTF_ALWAYS_LOG("sgill26: layerTransaction setting page scale factor to pageScaleFactor");
+        layerTransaction.setPageScaleFactor(corePage()->pageScaleFactor());
+    }
     layerTransaction.setRenderTreeSize(corePage()->renderTreeSize());
     layerTransaction.setThemeColor(corePage()->themeColor());
     layerTransaction.setPageExtendedBackgroundColor(corePage()->pageExtendedBackgroundColor());
@@ -6097,6 +6103,14 @@ void WebPage::removePluginView(PluginView& pluginView)
 {
     ASSERT(m_pluginViews.contains(pluginView));
     m_pluginViews.remove(pluginView);
+}
+
+void WebPage::pluginDidInstallPDFDocument()
+{
+#if PLATFORM(IOS_FAMILY)
+    WTF_ALWAYS_LOG("sgill26: pluginDidInstallPDFDocument");
+    resetViewportDefaultConfiguration(m_mainFrame.ptr()); 
+#endif
 }
 
 #endif // ENABLE(PDF_PLUGIN)

@@ -78,6 +78,7 @@ public:
     id accessibilityObject() const final;
     id accessibilityAssociatedPluginParentForElement(WebCore::Element*) const final;
 
+    void pluginDidInstallPDFDocument();
     void layerHostingStrategyDidChange() final;
 
     WebCore::HTMLPlugInElement& pluginElement() const { return m_pluginElement; }

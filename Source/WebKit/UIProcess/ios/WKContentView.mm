@@ -1001,6 +1001,7 @@ static void storeAccessibilityRemoteConnectionInformation(id element, pid_t pid,
 {
     BOOL transactionMayChangeBounds = layerTreeTransaction.isMainFrameProcessTransaction();
     CGSize contentsSize = layerTreeTransaction.contentsSize();
+    WTF_ALWAYS_LOG("sgill26: WKContentView didCommitLayerTree - contents size " << WebCore::FloatSize(contentsSize));
     CGPoint scrollOrigin = -layerTreeTransaction.scrollOrigin();
     CGRect contentBounds = { scrollOrigin, contentsSize };
 

@@ -272,8 +272,11 @@ void UnifiedPDFPlugin::installPDFDocument()
     if (isLocked())
         createPasswordEntryForm();
 
-    if (m_view)
+    if (m_view) {
         m_view->layerHostingStrategyDidChange();
+        m_view->pluginDidInstallPDFDocument();
+        WTF_ALWAYS_LOG("sgill26: UnifiedPDF plugin did install document scale factor " << pageScaleFactor());
+    }
 
     [[NSNotificationCenter defaultCenter] addObserver:m_pdfMutationObserver.get() selector:@selector(formChanged:) name:mutationObserverNotificationString() object:m_pdfDocument.get()];
 
@@ -966,7 +969,29 @@ double UnifiedPDFPlugin::scaleForActualSize() const
 
     return pixelSize / size().width();
 #endif
-    return 1;
+    if (size().isEmpty())
+        return 1;
+
+    if (!m_frame || !m_frame->coreLocalFrame())
+        return 1;
+
+    RefPtr webPage = m_frame->page();
+    if (!webPage)
+        return 1;
+
+    auto* screenData = WebCore::screenData(webPage->corePage()->displayID());
+    if (!screenData)
+        return 1;
+
+    if (!m_documentLayout.pageCount() || documentSize().isEmpty())
+        return 1;
+
+    auto firstPageBounds = m_documentLayout.layoutBoundsForPageAtIndex(0);
+    if (firstPageBounds.isEmpty())
+        return 1;
+    
+    return screenData->screenAvailableRect.width() / firstPageBounds.width();
+
 }
 
 double UnifiedPDFPlugin::scaleForFitToView() const
@@ -984,10 +1009,13 @@ double UnifiedPDFPlugin::scaleForFitToView() const
 double UnifiedPDFPlugin::initialScale() const
 {
     auto actualSizeScale = scaleForActualSize();
+    WTF_ALWAYS_LOG("sgill26: actualSizeScale - " << actualSizeScale);
     auto fitToViewScale = scaleForFitToView();
+    WTF_ALWAYS_LOG("sgill26: fitToViewScale - " << fitToViewScale);
     auto initialScale = std::max(actualSizeScale, fitToViewScale);
     // Only let actual size scaling scale down, not up.
     initialScale = std::min(initialScale, 1.0);
+    WTF_ALWAYS_LOG("sgill26: computed initialScale " << initialScale);
     return initialScale;
 }
 
@@ -1050,6 +1078,7 @@ void UnifiedPDFPlugin::didEndMagnificationGesture()
 
 void UnifiedPDFPlugin::setScaleFactor(double scale, std::optional<WebCore::IntPoint> originInRootViewCoordinates)
 {
+    WTF_ALWAYS_LOG("sgill26: UnifiedPDFPlugin setScaleFactor " << scale);
     RefPtr page = this->page();
     if (!page)
         return;
@@ -1109,6 +1138,7 @@ void UnifiedPDFPlugin::setScaleFactor(double scale, std::optional<WebCore::IntPo
 
 void UnifiedPDFPlugin::setPageScaleFactor(double scale, std::optional<WebCore::IntPoint> origin)
 {
+    WTF_ALWAYS_LOG("sgill26: UnifiedPDFPlugin::setPageScaleFactor " << scale);
     deviceOrPageScaleFactorChanged(CheckForMagnificationGesture::Yes);
     if (!handlesPageScaleFactor())
         return;
@@ -1218,7 +1248,7 @@ void UnifiedPDFPlugin::updateLayout(AdjustScaleAfterLayout shouldAdjustScale, st
         m_shouldUpdateAutoSizeScale = ShouldUpdateAutoSizeScale::No;
     }
 
-    LOG_WITH_STREAM(PDF, stream << "UnifiedPDFPlugin::updateLayout - scale " << m_scaleFactor << " normalization factor " << m_scaleNormalizationFactor << " layout scale " << m_documentLayout.scale());
+    WTF_ALWAYS_LOG("sgill26: UnifiedPDFPlugin::updateLayout - scale " << m_scaleFactor << " normalization factor " << m_scaleNormalizationFactor << " layout scale " << m_documentLayout.scale());
 
     constexpr OptionSet allLayoutChangeTypes {
         PDFDocumentLayout::LayoutUpdateChange::PageGeometries,

@@ -209,6 +209,10 @@ private:
     void showPlaybackTargetPicker(bool hasVideo, const WebCore::IntRect& elementRect, WebCore::RouteSharingPolicy, const String&) override;
     void showDataDetectorsUIForPositionInformation(const InteractionInformationAtPosition&) override;
 
+#if ENABLE(PDF_PLUGIN)
+    void pluginChangedScaleFactor(double scaleFactor) final;
+#endif
+
     void hardwareKeyboardAvailabilityChanged() override;
 
     bool handleRunOpenPanel(WebPageProxy*, WebFrameProxy*, const FrameInfoData&, API::OpenPanelParameters*, WebOpenPanelResultListenerProxy*) override;

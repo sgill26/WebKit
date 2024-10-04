@@ -5675,6 +5675,7 @@ void WebPageProxy::pluginScaleFactorDidChange(IPC::Connection& connection, doubl
 {
     MESSAGE_CHECK_BASE(scaleFactorIsValid(pluginScaleFactor), connection);
     m_pluginScaleFactor = pluginScaleFactor;
+    m_pageClient->pluginChangedScaleFactor(pluginScaleFactor);
 }
 
 void WebPageProxy::pluginZoomFactorDidChange(IPC::Connection& connection, double pluginZoomFactor)

@@ -1004,6 +1004,7 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     [_scrollView _setScrollEnabledInternal:YES];
     if (!layerTreeTransaction.scaleWasSetByUIProcess() && ![_scrollView isZooming] && ![_scrollView isZoomBouncing] && ![_scrollView _wk_isZoomAnimating] && !WebKit::scalesAreEssentiallyEqual([_scrollView zoomScale], layerTreeTransaction.pageScaleFactor())) {
         LOG_WITH_STREAM(VisibleRects, stream << " updating scroll view with pageScaleFactor " << layerTreeTransaction.pageScaleFactor());
+        WTF_ALWAYS_LOG("sgill26: updating page scale factor - " << layerTreeTransaction.pageScaleFactor());
 
         // When web-process-originated scale changes occur, pin the
         // scroll position to the top edge of the content,
