@@ -1677,6 +1677,11 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
     return YES;
 }
 
+- (void)_zoomInWithOrigin:(WebCore::FloatPoint)origin toScale:(double)scale animated:(BOOL)animated
+{
+    [self _zoomToCenter: origin atScale:scale animated:animated honorScrollability:YES];
+}
+
 - (void)_zoomOutWithOrigin:(WebCore::FloatPoint)origin animated:(BOOL)animated
 {
     [self _zoomToCenter:origin atScale:[_scrollView minimumZoomScale] animated:animated honorScrollability:YES];
@@ -1924,6 +1929,7 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
     double currentScale = contentZoomScale(self);
     double targetScale = [self _targetContentZoomScaleForRect:targetRect currentScale:currentScale fitEntireRect:fitEntireRect minimumScale:minimumScale maximumScale:maximumScale];
 
+    WTF_ALWAYS_LOG("sgill26: currentScale " << currentScale << " targetScale " << targetScale);
     if (std::abs(targetScale - currentScale) < maximumScaleFactorDeltaForPanScroll) {
         if ([self _scrollToRect:targetRect origin:origin minimumScrollDistance:minimumScrollDistance])
             return true;
@@ -2283,6 +2289,7 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
     if (![self usesStandardContentView] && [_customContentView respondsToSelector:@selector(web_scrollViewDidZoom:)])
         [_customContentView web_scrollViewDidZoom:scrollView];
 
+    WTF_ALWAYS_LOG("sgill26: scrollViewDidZoom " << contentZoomScale(self));
 #if ENABLE(PDF_PLUGIN)
     if (_page->mainFramePluginHandlesPageScaleGesture()) {
         auto gestureOrigin = WebCore::IntPoint([scrollView.pinchGestureRecognizer locationInView:self]);

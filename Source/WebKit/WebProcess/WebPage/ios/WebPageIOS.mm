@@ -4216,8 +4216,10 @@ void WebPage::resetViewportDefaultConfiguration(WebFrame* frame, bool hasMobileD
         else if (document->isTextDocument())
             m_viewportConfiguration.setDefaultConfiguration(ViewportConfiguration::textDocumentParameters());
 #if ENABLE(PDF_PLUGIN)
-        else if (document->isPluginDocument())
+        else if (document->isPluginDocument()) {
+            WTF_ALWAYS_LOG("sgill26: setting to plugin document parameters");
             m_viewportConfiguration.setDefaultConfiguration(ViewportConfiguration::pluginDocumentParameters());
+        }
 #endif
         else
             configureWithParametersForStandardFrame = true;

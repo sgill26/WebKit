@@ -292,6 +292,8 @@ void WebPageProxy::dynamicViewportSizeUpdate(const DynamicViewportSizeUpdate& ta
 
 void WebPageProxy::setViewportConfigurationViewLayoutSize(const WebCore::FloatSize& size, double layoutSizeScaleFactorFromClient, double minimumEffectiveDeviceWidth)
 {
+    WTF_ALWAYS_LOG("sgill26: WebPageProxy::setViewportConfigurationViewLayoutSize");
+    WTFReportBacktraceWithPrefix("sgill26: ");
     internals().viewportConfigurationViewLayoutSize = size;
     m_viewportConfigurationLayoutSizeScaleFactorFromClient = layoutSizeScaleFactorFromClient;
     m_viewportConfigurationMinimumEffectiveDeviceWidth = minimumEffectiveDeviceWidth;

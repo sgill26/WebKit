@@ -4457,6 +4457,11 @@ static inline OptionSet<WebKit::FindOptions> toFindOptions(_WKFindOptions wkFind
 - (void)_setViewScale:(CGFloat)viewScale
 {
     THROW_IF_SUSPENDED;
+    WTF_ALWAYS_LOG("sgill26:: WKWebView::setViewScale - " << viewScale);
+    if (_page->mainFramePluginHandlesPageScaleGesture()) {
+        WTF_ALWAYS_LOG("sgill26: main frame plugin handles page scale gesture");
+        return;
+    }
     if (viewScale <= 0 || isnan(viewScale) || isinf(viewScale))
         [NSException raise:NSInvalidArgumentException format:@"View scale should be a positive number"];
 

@@ -294,6 +294,7 @@ void UnifiedPDFPlugin::installPDFDocument()
         m_pdfTestCallback->handleEvent();
         m_pdfTestCallback = nullptr;
     }
+    WTF_ALWAYS_LOG("sgill26: UnifiedPDFPugin::installPDFDocument");
 }
 
 void UnifiedPDFPlugin::incrementalLoadingDidProgress()
@@ -1117,6 +1118,8 @@ void UnifiedPDFPlugin::setScaleFactor(double scale, std::optional<WebCore::IntPo
 
 void UnifiedPDFPlugin::setPageScaleFactor(double scale, std::optional<WebCore::IntPoint> origin)
 {
+    WTF_ALWAYS_LOG("sgill26: UnifiedPDFPlugin - setPageScaleFactor " << scale);
+    WTFReportBacktraceWithPrefix("sgill26:");
     deviceOrPageScaleFactorChanged(CheckForMagnificationGesture::Yes);
     if (!handlesPageScaleFactor())
         return;
@@ -1221,6 +1224,7 @@ void UnifiedPDFPlugin::updateLayout(AdjustScaleAfterLayout shouldAdjustScale, st
     if (shouldAdjustScale == AdjustScaleAfterLayout::Yes && m_view) {
         auto initialScaleFactor = initialScale();
         LOG_WITH_STREAM(PDF, stream << "UnifiedPDFPlugin::updateLayout - on first layout, chose scale for actual size " << initialScaleFactor);
+        WTF_ALWAYS_LOG("sgill26: UnifiedPDFPlugin initial scale - " << initialScaleFactor);
         setScaleFactor(initialScaleFactor);
 
         m_shouldUpdateAutoSizeScale = ShouldUpdateAutoSizeScale::No;

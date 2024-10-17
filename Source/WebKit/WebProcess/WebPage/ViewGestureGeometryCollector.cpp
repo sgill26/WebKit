@@ -76,6 +76,7 @@ ViewGestureGeometryCollector::~ViewGestureGeometryCollector()
 
 void ViewGestureGeometryCollector::dispatchDidCollectGeometryForSmartMagnificationGesture(FloatPoint origin, FloatRect absoluteTargetRect, FloatRect visibleContentRect, bool fitEntireRect, double viewportMinimumScale, double viewportMaximumScale)
 {
+    WTF_ALWAYS_LOG("sgill26: ViewGestureGeomtryController::dispatchDidCollectGeometryForSmartMagnificationGesture - " << origin);
 #if PLATFORM(MAC)
     protectedWebPage()->send(Messages::ViewGestureController::DidCollectGeometryForSmartMagnificationGesture(origin, absoluteTargetRect, visibleContentRect, fitEntireRect, viewportMinimumScale, viewportMaximumScale));
 #endif
@@ -126,6 +127,13 @@ void ViewGestureGeometryCollector::collectGeometryForSmartMagnificationGesture(F
         return;
     }
 #endif // PLATFORM(IOS_FAMILY)
+
+    if (RefPtr pluginView = webPage->mainFramePlugIn()) {
+        auto rectOrigin = gestureLocationInViewCoordinates.scaled(0.5);
+        auto rectSize = (gestureLocationInViewCoordinates - rectOrigin).scaled(2);
+        dispatchDidCollectGeometryForSmartMagnificationGesture(gestureLocationInViewCoordinates, { rectOrigin, rectSize }, visibleContentRect, false, 1.0, 6.0);
+        return;
+    }
 
     IntPoint originInContentsSpace = frameView->windowToContents(roundedIntPoint(gestureLocationInViewCoordinates));
     HitTestResult hitTestResult = HitTestResult(originInContentsSpace);

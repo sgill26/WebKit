@@ -2608,6 +2608,9 @@ static inline WebCore::FloatSize tapHighlightBorderRadius(WebCore::FloatSize bor
 
 - (void)_handleSmartMagnificationInformationForPotentialTap:(WebKit::TapIdentifier)requestID renderRect:(const WebCore::FloatRect&)renderRect fitEntireRect:(BOOL)fitEntireRect viewportMinimumScale:(double)viewportMinimumScale viewportMaximumScale:(double)viewportMaximumScale nodeIsRootLevel:(BOOL)nodeIsRootLevel
 {
+    if (_page->mainFramePluginHandlesPageScaleGesture())
+        return;
+
     const auto& preferences = _page->preferences();
 
     ASSERT(preferences.fasterClicksEnabled());
