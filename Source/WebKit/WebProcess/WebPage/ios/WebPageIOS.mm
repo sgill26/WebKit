@@ -3898,6 +3898,11 @@ void WebPage::setViewportConfigurationViewLayoutSize(const FloatSize& size, doub
 {
     LOG_WITH_STREAM(VisibleRects, stream << "WebPage " << m_identifier << " setViewportConfigurationViewLayoutSize " << size << " layoutSizeScaleFactorFromClient " << layoutSizeScaleFactorFromClient << " minimumEffectiveDeviceWidth " << minimumEffectiveDeviceWidth);
 
+    if (RefPtr localFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame())) {
+        if (RefPtr document = localFrame->document(); document && document->isPluginDocument())
+            return;
+    }
+
     if (!m_viewportConfiguration.isKnownToLayOutWiderThanViewport())
         m_viewportConfiguration.setMinimumEffectiveDeviceWidthForShrinkToFit(0);
 
