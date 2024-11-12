@@ -3760,8 +3760,15 @@ LayoutUnit RenderBox::availableLogicalHeightUsing(const Length& h, AvailableLogi
         return overridingContentLogicalHeight(*usedFlexItemOverridingLogicalHeightForPercentageResolutionForFlex);
 
     if (shouldComputeLogicalHeightFromAspectRatio()) {
+        auto usedLogicalWidth = [&] {
+            if (isGridItem()) {
+                if (auto availableLogicalWidth = overridingContainingBlockContentLogicalWidth())
+                    return computeLogicalWidthInFragmentUsing(SizeType::MainOrPreferredSize, style().logicalWidth(), *availableLogicalWidth.value_or(0), *containingBlock(), nullptr);
+            }
+            return borderAndPaddingLogicalWidth();
+        }();
         auto borderAndPaddingLogicalHeight = this->borderAndPaddingLogicalHeight();
-        auto borderBoxLogicalHeight = blockSizeFromAspectRatio(borderAndPaddingLogicalWidth(), borderAndPaddingLogicalHeight, style().logicalAspectRatio(), style().boxSizingForAspectRatio(), logicalWidth(), style().aspectRatioType(), isRenderReplaced());
+        auto borderBoxLogicalHeight = blockSizeFromAspectRatio(borderAndPaddingLogicalWidth(), borderAndPaddingLogicalHeight, style().logicalAspectRatio(), style().boxSizingForAspectRatio(), usedLogicalWidth, style().aspectRatioType(), isRenderReplaced());
         if (heightType == AvailableLogicalHeightType::ExcludeMarginBorderPadding)
             return borderBoxLogicalHeight - borderAndPaddingLogicalHeight;
         return borderBoxLogicalHeight;

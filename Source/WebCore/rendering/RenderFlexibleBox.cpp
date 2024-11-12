@@ -55,6 +55,7 @@
 #include "RenderTable.h"
 #include "RenderView.h"
 #include "WritingMode.h"
+#include "rendering/RenderDescendantIterator.h"
 #include <limits>
 #include <wtf/MathExtras.h>
 #include <wtf/SetForScope.h>
@@ -1689,8 +1690,11 @@ FlexLayoutItem RenderFlexibleBox::constructFlexLayoutItem(RenderBox& flexItem, b
     if (everHadLayout && flexItem.hasTrimmedMargin(std::optional<MarginTrimType> { }))
         flexItem.clearTrimmedMarginsMarkings();
     
-    if (flexItem.needsPreferredWidthsRecalculation())
+    if (flexItem.needsPreferredWidthsRecalculation()) {
         flexItem.setPreferredLogicalWidthsDirty(true, MarkingBehavior::MarkOnlyThis);
+        for (auto& descendant : descendantsOfType<RenderBox>(flexItem))
+            descendant.setPreferredLogicalWidthsDirty(true, MarkingBehavior::MarkOnlyThis);
+    }
 
     LayoutUnit borderAndPadding = isHorizontalFlow() ? flexItem.horizontalBorderAndPaddingExtent() : flexItem.verticalBorderAndPaddingExtent();
     LayoutUnit innerFlexBaseSize = computeFlexBaseSizeForFlexItem(flexItem, borderAndPadding, relayoutChildren);

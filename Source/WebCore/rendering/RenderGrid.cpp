@@ -279,7 +279,7 @@ bool RenderGrid::canSetColumnAxisStretchRequirementForItem(const RenderBox& grid
 void RenderGrid::computeLayoutRequirementsForItemsBeforeLayout(GridLayoutState& gridLayoutState) const
 {
     for (auto& gridItem : childrenOfType<RenderBox>(*this)) {
-
+        const_cast<RenderBox&>(gridItem).setOverridingContainingBlockContentLogicalHeight(std::nullopt);
         auto gridItemAlignSelf = alignSelfForGridItem(gridItem).position();
         if (GridLayoutFunctions::isGridItemInlineSizeDependentOnBlockConstraints(gridItem, *this, gridItemAlignSelf)) {
             gridLayoutState.setNeedsSecondTrackSizingPass();
@@ -401,7 +401,7 @@ void RenderGrid::layoutGrid(bool relayoutChildren)
         // 3. If the min-content contribution of any grid items have changed based on the row
         // sizes calculated in step 2, steps 1 and 2 are repeated with the new min-content
         // contribution (once only).
-        repeatTracksSizingIfNeeded(availableSpaceForColumns, contentLogicalHeight(), gridLayoutState);
+        //repeatTracksSizingIfNeeded(availableSpaceForColumns, contentLogicalHeight(), gridLayoutState);
 
         // Grid container should have the minimum height of a line if it's editable. That does not affect track sizing though.
         if (hasLineIfEmpty()) {
