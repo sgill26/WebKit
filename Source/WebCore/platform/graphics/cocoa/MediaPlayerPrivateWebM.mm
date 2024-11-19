@@ -169,18 +169,6 @@ MediaPlayerPrivateWebM::~MediaPlayerPrivateWebM()
     cancelLoad();
 }
 
-#if HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)
-
-static bool isCopyDisplayedPixelBufferAvailable()
-{
-    static NeverDestroyed<std::optional<bool>> result;
-    if (!result->has_value())
-        result.get() = [PAL::getAVSampleBufferDisplayLayerClass() instancesRespondToSelector:@selector(copyDisplayedPixelBuffer)];
-    return MediaSessionManagerCocoa::mediaSourceInlinePaintingEnabled() && result.get();
-}
-
-#endif // HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)
-
 static HashSet<String>& mimeTypeCache()
 {
     static NeverDestroyed cache = HashSet<String>();
@@ -649,17 +637,17 @@ RefPtr<NativeImage> MediaPlayerPrivateWebM::nativeImageForCurrentTime()
 
 bool MediaPlayerPrivateWebM::updateLastPixelBuffer()
 {
-#if HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)
-    if (m_videoRenderer && isCopyDisplayedPixelBufferAvailable()) {
-        if (RetainPtr pixelBuffer = m_videoRenderer->copyDisplayedPixelBuffer()) {
-            INFO_LOG(LOGIDENTIFIER, "displayed pixelbuffer copied for time ", currentTime());
-            m_lastPixelBuffer = WTFMove(pixelBuffer);
+    if (m_videoRenderer) {
+        auto entry = m_videoRenderer->copyDisplayedPixelBuffer();
+        if (entry.pixelBuffer) {
+            INFO_LOG(LOGIDENTIFIER, "displayed pixelbuffer copied for time ", entry.presentationTimeStamp);
+            m_lastPixelBuffer = WTFMove(entry.pixelBuffer);
+            m_lastPixelBufferPresentationTimeStamp = entry.presentationTimeStamp;
             return true;
         }
     }
-#endif
 
-    if (m_videoRenderer || !m_decompressionSession)
+    if (!m_decompressionSession)
         return false;
 
     auto flags = !m_lastPixelBuffer ? WebCoreDecompressionSession::AllowLater : WebCoreDecompressionSession::ExactTime;
@@ -718,32 +706,10 @@ void MediaPlayerPrivateWebM::paintCurrentFrameInContext(GraphicsContext& context
     context.drawNativeImage(*image, outputRect, imageRect);
 }
 
-#if !HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)
-void MediaPlayerPrivateWebM::willBeAskedToPaintGL()
-{
-    // We have been asked to paint into a WebGL canvas, so take that as a signal to create
-    // a decompression session, even if that means the native video can't also be displayed
-    // in page.
-    if (m_hasBeenAskedToPaintGL)
-        return;
-
-    ALWAYS_LOG(LOGIDENTIFIER);
-    m_hasBeenAskedToPaintGL = true;
-    acceleratedRenderingStateChanged();
-}
-#endif
-
 RefPtr<VideoFrame> MediaPlayerPrivateWebM::videoFrameForCurrentTime()
 {
-    if (!m_isGatheringVideoFrameMetadata) {
-        // FIXME: This method is synchronous in order to
-        // work around https://bugs.webkit.org/show_bug.cgi?id=228997
-        // on builds without AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER
-        const auto shouldWaitForFrame = m_hasAvailableVideoFrameSemaphore && m_decompressionSession;
-        if (shouldWaitForFrame)
-            m_hasAvailableVideoFrameSemaphore->waitFor(100_ms);
+    if (!m_isGatheringVideoFrameMetadata)
         updateLastPixelBuffer();
-    }
     if (!m_lastPixelBuffer)
         return nullptr;
     return VideoFrameCV::create(currentTime(), false, VideoFrame::Rotation::None, RetainPtr { m_lastPixelBuffer });
@@ -872,14 +838,8 @@ void MediaPlayerPrivateWebM::characteristicsChanged()
 
 bool MediaPlayerPrivateWebM::shouldEnsureLayerOrVideoRenderer() const
 {
-#if HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)
     auto player = m_player.get();
-    return isCopyDisplayedPixelBufferAvailable()
-        && ((m_videoRenderer && !CGRectIsEmpty(m_videoRenderer->bounds()))
-            || (player && !player->presentationSize().isEmpty()));
-#else
-    return !m_hasBeenAskedToPaintGL;
-#endif
+    return (m_videoRenderer && !CGRectIsEmpty(m_videoRenderer->bounds())) || (player && !player->presentationSize().isEmpty());
 }
 
 void MediaPlayerPrivateWebM::setPresentationSize(const IntSize& newSize)
@@ -1478,8 +1438,6 @@ void MediaPlayerPrivateWebM::flushVideo()
     
     if (m_decompressionSession) {
         m_decompressionSession->flush();
-        if (!m_hasAvailableVideoFrameSemaphore)
-            m_hasAvailableVideoFrameSemaphore = makeUnique<BinarySemaphore>();
         registerNotifyWhenHasAvailableVideoFrame();
     }
     setHasAvailableVideoFrame(false);
@@ -1528,11 +1486,16 @@ void MediaPlayerPrivateWebM::ensureDecompressionSession()
     if (m_decompressionSession)
         return;
     
-    m_hasAvailableVideoFrameSemaphore = makeUnique<BinarySemaphore>();
-
     m_decompressionSession = WebCoreDecompressionSession::createOpenGL();
     m_decompressionSession->setTimebase([m_synchronizer timebase]);
     m_decompressionSession->setResourceOwner(m_resourceOwner);
+    m_decompressionSession->setErrorListener([weakThis = WeakPtr { *this }](OSStatus) {
+        if (RefPtr protectedThis = weakThis.get()) {
+            protectedThis->setNetworkState(MediaPlayer::NetworkState::DecodeError);
+            protectedThis->setReadyState(MediaPlayer::ReadyState::HaveNothing);
+            protectedThis->m_errored = true;
+        }
+    });
 
     registerNotifyWhenHasAvailableVideoFrame();
     
@@ -1619,7 +1582,6 @@ MediaPlayerEnums::NeedsRenderingModeChanged MediaPlayerPrivateWebM::destroyDecom
 
     m_decompressionSession->invalidate();
     m_decompressionSession = nullptr;
-    m_hasAvailableVideoFrameSemaphore = nullptr;
     setHasAvailableVideoFrame(false);
     return MediaPlayerEnums::NeedsRenderingModeChanged::Yes;
 }
@@ -1702,13 +1664,8 @@ void MediaPlayerPrivateWebM::registerNotifyWhenHasAvailableVideoFrame()
         return;
     
     m_decompressionSession->notifyWhenHasAvailableVideoFrame([weakThis = WeakPtr { *this }, this] {
-        if (weakThis) {
+        if (weakThis)
             setHasAvailableVideoFrame(true);
-            if (m_hasAvailableVideoFrameSemaphore) {
-                m_hasAvailableVideoFrameSemaphore->signal();
-                m_hasAvailableVideoFrameSemaphore = nullptr;
-            }
-        }
     });
 }
 
@@ -1741,7 +1698,7 @@ void MediaPlayerPrivateWebM::stopVideoFrameMetadataGathering()
     m_videoFrameMetadataGatheringObserver = nil;
 }
 
-void MediaPlayerPrivateWebM::checkNewVideoFrameMetadata(CMTime currentTime)
+void MediaPlayerPrivateWebM::checkNewVideoFrameMetadata(CMTime currentCMTime)
 {
     auto player = m_player.get();
     if (!player)
@@ -1750,11 +1707,20 @@ void MediaPlayerPrivateWebM::checkNewVideoFrameMetadata(CMTime currentTime)
     if (!updateLastPixelBuffer())
         return;
 
+    auto currentTime = PAL::toMediaTime(currentCMTime);
+    auto presentationTime = m_lastPixelBufferPresentationTimeStamp;
+    if (!presentationTime.isValid())
+        presentationTime = currentTime;
+
+    auto displayTime = MonotonicTime::now().secondsSinceEpoch().seconds() - (currentTime - presentationTime).toDouble();
+
     VideoFrameMetadata metadata;
     metadata.width = m_naturalSize.width();
     metadata.height = m_naturalSize.height();
     metadata.presentedFrames = ++m_sampleCount;
-    metadata.presentationTime = PAL::CMTimeGetSeconds(currentTime);
+    metadata.presentationTime = displayTime;
+    metadata.expectedDisplayTime = displayTime;
+    metadata.mediaTime = presentationTime.toDouble();
 
     m_videoFrameMetadata = metadata;
     player->onNewVideoFrameMetadata(WTFMove(metadata), m_lastPixelBuffer.get());

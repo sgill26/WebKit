@@ -1029,12 +1029,13 @@ webkit.org/b/53675 fast/animation/request-animation-frame-during-modal.html [ Sk
 
 webkit.org/b/191584 fast/animation/css-animation-resuming-when-visible-with-style-change.html [ Pass Timeout ]
 
-webkit.org/b/282662 [ Debug ] imported/w3c/web-platform-tests/scroll-animations/css/progress-based-animation-animation-longhand-properties.tentative.html [ Skip ] # Crash
-
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/layout-changes-on-percentage-based-timeline.html [ Pass ]
 
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/setting-timeline.tentative.html [ Failure ]
+imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-animatable-interface.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-display-none.html [ ImageOnlyFailure ]
 
+webkit.org/b/263870 imported/w3c/web-platform-tests/scroll-animations/css/animation-range-ignored.html [ Skip ]
+webkit.org/b/263870 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/scroll-timeline-range.html [ Skip ]
 
 #//////////////////////////////////////////////////////////////////////////////////////////
 # Compositing
@@ -1952,7 +1953,6 @@ html5lib [ Skip ]
 http/wpt/audio-output [ Skip ]
 http/wpt/beacon [ Skip ]
 http/wpt/cache-storage [ Skip ]
-http/wpt/credential-management [ Skip ]
 http/wpt/cross-origin-opener-policy [ Skip ]
 http/wpt/cross-origin-resource-policy [ Skip ]
 http/wpt/crypto [ Skip ]
@@ -4331,7 +4331,7 @@ http/tests/navigation/keyboard-events-during-provisional-navigation.html [ Failu
 
 # waitForCompositorReady().then(takeScreenshot) times out on the internal Buildbot
 imported/w3c/web-platform-tests/scroll-animations/css/animation-range-visual-test.html [ ImageOnlyFailure Timeout ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/custom-property.html [ ImageOnlyFailure Timeout ]
+imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/custom-property.html [ Pass Timeout ]
 [ Debug ] imported/w3c/web-platform-tests/scroll-animations/css/animation-inactive-outside-range-test.html [ Skip ] # Timeout
 
 imported/w3c/web-platform-tests/scroll-animations/view-timelines/animation-events.html [ Failure Pass ]

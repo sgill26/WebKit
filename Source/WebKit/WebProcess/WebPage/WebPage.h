@@ -678,7 +678,8 @@ public:
     void getFrameTree(CompletionHandler<void(FrameTreeNodeData&&)>&&);
     void didFinishLoadInAnotherProcess(WebCore::FrameIdentifier);
     void frameWasRemovedInAnotherProcess(WebCore::FrameIdentifier);
-    void mainFrameURLChangedInAnotherProcess(const URL&);
+
+    void processSyncDataChangedInAnotherProcess(const WebCore::ProcessSyncData&);
 
     std::optional<WebCore::SimpleRange> currentSelectionAsRange();
 
@@ -1761,6 +1762,12 @@ public:
     void setInteractionRegionsEnabled(bool);
 #endif
 
+    void startDeferringResizeEvents();
+    void flushDeferredResizeEvents();
+
+    void startDeferringScrollEvents();
+    void flushDeferredScrollEvents();
+
     void flushDeferredDidReceiveMouseEvent();
 
     void generateTestReport(String&& message, String&& group);
@@ -1895,6 +1902,7 @@ private:
     void setSelectedRangeDispatchingSyntheticMouseEventsIfNeeded(const WebCore::SimpleRange&, WebCore::Affinity);
     void dispatchSyntheticMouseEventsForSelectionGesture(SelectionTouch, const WebCore::IntPoint&);
     void invokePendingSyntheticClickCallback(WebCore::SyntheticClickResult);
+    void resetLastSelectedReplacementRangeIfNeeded();
 
     void sendPositionInformation(InteractionInformationAtPosition&&);
     RefPtr<WebCore::ShareableBitmap> shareableBitmapSnapshotForNode(WebCore::Element&);
@@ -2070,7 +2078,7 @@ private:
     void getWebArchiveOfFrame(std::optional<WebCore::FrameIdentifier>, CompletionHandler<void(const std::optional<IPC::SharedBufferReference>&)>&&);
     void getWebArchiveOfFrameWithFileName(WebCore::FrameIdentifier, const Vector<WebCore::MarkupExclusionRule>&, const String& fileName, CompletionHandler<void(const std::optional<IPC::SharedBufferReference>&)>&&);
     void runJavaScript(WebFrame*, WebCore::RunJavaScriptParameters&&, ContentWorldIdentifier, CompletionHandler<void(std::span<const uint8_t>, const std::optional<WebCore::ExceptionDetails>&)>&&);
-    void runJavaScriptInFrameInScriptWorld(WebCore::RunJavaScriptParameters&&, std::optional<WebCore::FrameIdentifier>, const std::pair<ContentWorldIdentifier, String>& worldData, CompletionHandler<void(std::span<const uint8_t>, const std::optional<WebCore::ExceptionDetails>&)>&&);
+    void runJavaScriptInFrameInScriptWorld(WebCore::RunJavaScriptParameters&&, std::optional<WebCore::FrameIdentifier>, const ContentWorldData&, CompletionHandler<void(std::span<const uint8_t>, const std::optional<WebCore::ExceptionDetails>&)>&&);
     void getAccessibilityTreeData(CompletionHandler<void(const std::optional<IPC::SharedBufferReference>&)>&&);
     void updateRenderingWithForcedRepaint(CompletionHandler<void()>&&);
     void takeSnapshot(WebCore::IntRect snapshotRect, WebCore::IntSize bitmapSize, SnapshotOptions, CompletionHandler<void(std::optional<WebCore::ShareableBitmap::Handle>&&)>&&);
@@ -2484,7 +2492,7 @@ private:
 #endif
 
 #if PLATFORM(COCOA) || PLATFORM(GTK)
-    std::unique_ptr<ViewGestureGeometryCollector> m_viewGestureGeometryCollector;
+    RefPtr<ViewGestureGeometryCollector> m_viewGestureGeometryCollector;
 #endif
 
 #if PLATFORM(COCOA)
@@ -2661,8 +2669,12 @@ private:
     bool m_userIsInteracting { false };
     bool m_hasEverDisplayedContextMenu { false };
 
+    enum class UserInteractionFlag : uint8_t {
+        FocusedElement      = 1 << 0,
+        SelectedRange       = 1 << 1,
+    };
+    OptionSet<UserInteractionFlag> m_userInteractionsSincePageTransition;
 #if HAVE(TOUCH_BAR)
-    bool m_hasEverFocusedElementDueToUserInteractionSincePageTransition { false };
     bool m_requiresUserActionForEditingControlsManager { false };
     bool m_isTouchBarUpdateSuppressedForHiddenContentEditable { false };
     bool m_isNeverRichlyEditableForTouchBar { false };
@@ -2729,6 +2741,7 @@ private:
     WebCore::FloatSize m_overrideAvailableScreenSize;
 
     std::optional<WebCore::SimpleRange> m_initialSelection;
+    std::optional<WebCore::WeakSimpleRange> m_lastSelectedReplacementRange;
     WebCore::VisibleSelection m_storedSelectionForAccessibility { WebCore::VisibleSelection() };
     WebCore::IntDegrees m_deviceOrientation { 0 };
     bool m_keyboardIsAttached { false };

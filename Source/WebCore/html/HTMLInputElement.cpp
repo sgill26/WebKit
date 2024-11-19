@@ -136,7 +136,7 @@ Ref<Element> HTMLInputElement::cloneElementWithoutAttributesAndChildren(Document
 HTMLImageLoader& HTMLInputElement::ensureImageLoader()
 {
     if (!m_imageLoader)
-        m_imageLoader = makeUnique<HTMLImageLoader>(*this);
+        m_imageLoader = makeUniqueWithoutRefCountedCheck<HTMLImageLoader>(*this);
     return *m_imageLoader;
 }
 
@@ -1573,6 +1573,34 @@ void HTMLInputElement::setAutofillButtonType(AutoFillButtonType autoFillButtonTy
 
     if (CheckedPtr cache = document().existingAXObjectCache())
         cache->autofillTypeChanged(*this);
+}
+
+auto HTMLInputElement::autofillVisibility() const -> AutofillVisibility
+{
+    ASSERT(!autofilledAndObscured() || !autofilledAndViewable());
+    if (autofilledAndObscured())
+        return AutofillVisibility::Hidden;
+    if (autofilledAndViewable())
+        return AutofillVisibility::Visible;
+    return AutofillVisibility::Normal;
+}
+
+void HTMLInputElement::setAutofillVisibility(AutofillVisibility state)
+{
+    switch (state) {
+    case AutofillVisibility::Normal:
+        setAutofilledAndViewable(false);
+        setAutofilledAndObscured(false);
+        break;
+    case AutofillVisibility::Visible:
+        setAutofilledAndViewable(true);
+        setAutofilledAndObscured(false);
+        break;
+    case AutofillVisibility::Hidden:
+        setAutofilledAndViewable(false);
+        setAutofilledAndObscured(true);
+        break;
+    }
 }
 
 #if ENABLE(INPUT_TYPE_COLOR)

@@ -1272,10 +1272,9 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL_TEMPLATE(FunctionParserOMGIRGenerator);
 int32_t OMGIRGenerator::fixupPointerPlusOffset(Value*& ptr, uint32_t offset)
 {
     if (static_cast<uint64_t>(offset) > static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) {
-        if (isARM_THUMB2())
-            RELEASE_ASSERT_NOT_REACHED();
-        ptr = append<Value>(m_proc, Add, origin(), ptr, append<Const64Value>(m_proc, origin(), offset));
-        return 0;
+        uint32_t half = offset / 2;
+        ptr = append<Value>(m_proc, Add, origin(), ptr, append<Const32Value>(m_proc, origin(), half));
+        return half + (offset % 2);
     }
     return offset;
 }
@@ -1770,7 +1769,7 @@ auto OMGIRGenerator::addArguments(const TypeDefinition& signature) -> PartialRes
                     else if (src.isFPR())
                         RELEASE_ASSERT_NOT_REACHED();
                     else
-                        dataLog(fpl[src.offsetFromFP() / sizeof(uint64_t)], " / ", fpi[src.offsetFromFP() / sizeof(uint32_t)],  " / ", RawHex(fpi[src.offsetFromFP() / sizeof(uint32_t)]), " / ", bitwise_cast<double>(fpl[src.offsetFromFP() / sizeof(uint64_t)]), " at ", RawPointer(&fpi[src.offsetFromFP() / sizeof(uint32_t)]));
+                        dataLog(fpl[src.offsetFromFP() / sizeof(uint64_t)], " / ", fpi[src.offsetFromFP() / sizeof(uint32_t)],  " / ", RawHex(fpi[src.offsetFromFP() / sizeof(uint32_t)]), " / ", std::bit_cast<double>(fpl[src.offsetFromFP() / sizeof(uint64_t)]), " at ", RawPointer(&fpi[src.offsetFromFP() / sizeof(uint32_t)]));
                     dataLogLn();
                 }
             });
@@ -2171,10 +2170,8 @@ auto OMGIRGenerator::addCurrentMemory(ExpressionType& result) -> PartialResult
 
     constexpr uint32_t shiftValue = 16;
     static_assert(PageCount::pageSize == 1ull << shiftValue, "This must hold for the code below to be correct.");
-    Value* numPages = append<Value>(m_proc, ZShr, origin(),
+    result = push<Value>(m_proc, ZShr, origin(),
         size, append<Const32Value>(m_proc, origin(), shiftValue));
-
-    result = push<Value>(m_proc, Trunc, origin(), numPages);
 
     return { };
 }
@@ -3171,45 +3168,45 @@ auto OMGIRGenerator::truncSaturated(Ext1OpType op, ExpressionType argVar, Expres
     Value* intermediate = nullptr;
     switch (op) {
     case Ext1OpType::I32TruncSatF32S:
-        maxFloat = constant(Float, bitwise_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int32_t>::min())));
-        minFloat = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min())));
+        maxFloat = constant(Float, std::bit_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int32_t>::min())));
+        minFloat = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min())));
         break;
     case Ext1OpType::I32TruncSatF32U:
-        maxFloat = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min()) * static_cast<float>(-2.0)));
-        minFloat = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(-1.0)));
+        maxFloat = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min()) * static_cast<float>(-2.0)));
+        minFloat = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(-1.0)));
         break;
     case Ext1OpType::I32TruncSatF64S:
-        maxFloat = constant(Double, bitwise_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int32_t>::min())));
-        minFloat = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) - 1.0));
+        maxFloat = constant(Double, std::bit_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int32_t>::min())));
+        minFloat = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) - 1.0));
         break;
     case Ext1OpType::I32TruncSatF64U:
-        maxFloat = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) * -2.0));
-        minFloat = constant(Double, bitwise_cast<uint64_t>(-1.0));
+        maxFloat = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) * -2.0));
+        minFloat = constant(Double, std::bit_cast<uint64_t>(-1.0));
         break;
     case Ext1OpType::I64TruncSatF32S:
-        maxFloat = constant(Float, bitwise_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int64_t>::min())));
-        minFloat = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min())));
+        maxFloat = constant(Float, std::bit_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int64_t>::min())));
+        minFloat = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min())));
         intermediate = m_currentBlock->appendNew<CCallValue>(m_proc, B3::Int64, origin(),
             m_currentBlock->appendNew<ConstPtrValue>(m_proc, origin(), tagCFunction<OperationPtrTag>(Math::f32_convert_s_i64)),
             arg);
         break;
     case Ext1OpType::I64TruncSatF32U:
-        maxFloat = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min()) * static_cast<float>(-2.0)));
-        minFloat = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(-1.0)));
+        maxFloat = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min()) * static_cast<float>(-2.0)));
+        minFloat = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(-1.0)));
         intermediate = append<CCallValue>(m_proc, B3::Int64, origin(),
             append<ConstPtrValue>(m_proc, origin(), tagCFunction<OperationPtrTag>(Math::f32_convert_u_i64)),
             arg);
         break;
     case Ext1OpType::I64TruncSatF64S:
-        maxFloat = constant(Double, bitwise_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int64_t>::min())));
-        minFloat = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min())));
+        maxFloat = constant(Double, std::bit_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int64_t>::min())));
+        minFloat = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min())));
         intermediate = m_currentBlock->appendNew<CCallValue>(m_proc, B3::Int64, origin(),
             m_currentBlock->appendNew<ConstPtrValue>(m_proc, origin(), tagCFunction<OperationPtrTag>(Math::f64_convert_s_i64)),
             arg);
         break;
     case Ext1OpType::I64TruncSatF64U:
-        maxFloat = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min()) * -2.0));
-        minFloat = constant(Double, bitwise_cast<uint64_t>(-1.0));
+        maxFloat = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min()) * -2.0));
+        minFloat = constant(Double, std::bit_cast<uint64_t>(-1.0));
         intermediate = append<CCallValue>(m_proc, B3::Int64, origin(),
             append<ConstPtrValue>(m_proc, origin(), tagCFunction<OperationPtrTag>(Math::f64_convert_u_i64)),
             arg);
@@ -3252,27 +3249,27 @@ auto OMGIRGenerator::truncSaturated(Ext1OpType op, ExpressionType argVar, Expres
     switch (op) {
     case Ext1OpType::I32TruncSatF32S:
     case Ext1OpType::I32TruncSatF64S:
-        maxResult = constant(Int32, bitwise_cast<uint32_t>(INT32_MAX));
-        minResult = constant(Int32, bitwise_cast<uint32_t>(INT32_MIN));
+        maxResult = constant(Int32, std::bit_cast<uint32_t>(INT32_MAX));
+        minResult = constant(Int32, std::bit_cast<uint32_t>(INT32_MIN));
         zero = constant(Int32, 0);
         requiresNaNCheck = true;
         break;
     case Ext1OpType::I32TruncSatF32U:
     case Ext1OpType::I32TruncSatF64U:
-        maxResult = constant(Int32, bitwise_cast<uint32_t>(UINT32_MAX));
-        minResult = constant(Int32, bitwise_cast<uint32_t>(0U));
+        maxResult = constant(Int32, std::bit_cast<uint32_t>(UINT32_MAX));
+        minResult = constant(Int32, std::bit_cast<uint32_t>(0U));
         break;
     case Ext1OpType::I64TruncSatF32S:
     case Ext1OpType::I64TruncSatF64S:
-        maxResult = constant(Int64, bitwise_cast<uint64_t>(INT64_MAX));
-        minResult = constant(Int64, bitwise_cast<uint64_t>(INT64_MIN));
+        maxResult = constant(Int64, std::bit_cast<uint64_t>(INT64_MAX));
+        minResult = constant(Int64, std::bit_cast<uint64_t>(INT64_MIN));
         zero = constant(Int64, 0);
         requiresNaNCheck = true;
         break;
     case Ext1OpType::I64TruncSatF32U:
     case Ext1OpType::I64TruncSatF64U:
-        maxResult = constant(Int64, bitwise_cast<uint64_t>(UINT64_MAX));
-        minResult = constant(Int64, bitwise_cast<uint64_t>(0ULL));
+        maxResult = constant(Int64, std::bit_cast<uint64_t>(UINT64_MAX));
+        minResult = constant(Int64, std::bit_cast<uint64_t>(0ULL));
         break;
     default:
         RELEASE_ASSERT_NOT_REACHED();
@@ -3628,8 +3625,13 @@ auto OMGIRGenerator::addArrayFill(uint32_t typeIndex, ExpressionType arrayref, E
 
     Value* resultValue;
     RELEASE_ASSERT(!elementType.unpacked().isV128());
+    Value* adjustedValue = get(value);
+    if (adjustedValue->type().isFloat())
+        adjustedValue = append<Value>(m_proc, BitwiseCast, origin(), adjustedValue);
+    if (adjustedValue->type() == Int32)
+        adjustedValue = append<Value>(m_proc, ZExt32, origin(), adjustedValue);
     resultValue = callWasmOperation(m_currentBlock, toB3Type(Types::I32), operationWasmArrayFill,
-        instanceValue(), get(arrayref), get(offset), get(value), get(size));
+        instanceValue(), get(arrayref), get(offset), adjustedValue, get(size));
 
     {
         CheckValue* check = append<CheckValue>(m_proc, Check, origin(),
@@ -5240,7 +5242,7 @@ static inline void prepareForTailCallImpl(unsigned functionIndex, CCallHelpers& 
                 else if (src.isConstant())
                     dataLog(src.value(), " / ", src.doubleValue());
                 else
-                    dataLog(fpl[src.offsetFromFP() / sizeof(uint64_t)], " / ", fpi[src.offsetFromFP() / sizeof(uint32_t)], " / ", bitwise_cast<double>(fpl[src.offsetFromFP() / sizeof(uint64_t)]), " at ", RawPointer(&fpp[src.offsetFromFP() / sizeof(uint64_t)]));
+                    dataLog(fpl[src.offsetFromFP() / sizeof(uint64_t)], " / ", fpi[src.offsetFromFP() / sizeof(uint32_t)], " / ", std::bit_cast<double>(fpl[src.offsetFromFP() / sizeof(uint64_t)]), " at ", RawPointer(&fpp[src.offsetFromFP() / sizeof(uint64_t)]));
                 dataLogLn(" -> ", dst);
             }
         });
@@ -5489,7 +5491,7 @@ static inline void prepareForTailCallImpl(unsigned functionIndex, CCallHelpers& 
                 else if (arg.location.isFPR())
                     RELEASE_ASSERT_NOT_REACHED();
                 else
-                    dataLog(fpl[src.offsetFromFP() / sizeof(uint64_t)], " / ", fpi[src.offsetFromFP() / sizeof(uint32_t)],  " / ", RawHex(fpi[src.offsetFromFP() / sizeof(uint32_t)]), " / ", bitwise_cast<double>(fpl[src.offsetFromFP() / sizeof(uint64_t)]), " at ", RawPointer(&fpi[src.offsetFromFP() / sizeof(uint32_t)]));
+                    dataLog(fpl[src.offsetFromFP() / sizeof(uint64_t)], " / ", fpi[src.offsetFromFP() / sizeof(uint32_t)],  " / ", RawHex(fpi[src.offsetFromFP() / sizeof(uint32_t)]), " / ", std::bit_cast<double>(fpl[src.offsetFromFP() / sizeof(uint64_t)]), " at ", RawPointer(&fpi[src.offsetFromFP() / sizeof(uint32_t)]));
                 dataLogLn();
             }
         });
@@ -5972,7 +5974,7 @@ auto OMGIRGenerator::addCallIndirect(unsigned tableIndex, const TypeDefinition& 
                 append<Value>(m_proc, Sub, pointerType(), origin(), rttSizeAsPointerType, constant(pointerType(), 1 + (parentRTTHasEntries ? signatureRTT->displaySize() : 0)))));
         Value* displayEntry = append<MemoryValue>(heapTop(), m_proc, Load, pointerType(), origin(), payloadIndexed);
         m_currentBlock->appendNewControlValue(m_proc, B3::Branch, origin(),
-            append<Value>(m_proc, Equal, origin(), displayEntry, constant(pointerType(), bitwise_cast<uintptr_t>(signatureRTT.get()))),
+            append<Value>(m_proc, Equal, origin(), displayEntry, constant(pointerType(), std::bit_cast<uintptr_t>(signatureRTT.get()))),
             FrequentedBlock(continuation), FrequentedBlock(throwBlock, FrequencyClass::Rare));
     } else
         m_currentBlock->appendNewControlValue(m_proc, B3::Jump, origin(), throwBlock);
@@ -6086,7 +6088,7 @@ auto OMGIRGenerator::origin() -> Origin
         break;
     }
     ASSERT(isValidOpType(static_cast<uint8_t>(origin.opcode())));
-    return bitwise_cast<Origin>(origin);
+    return std::bit_cast<Origin>(origin);
 }
 
 static bool shouldDumpIRFor(uint32_t functionIndex)
@@ -6444,8 +6446,8 @@ auto OMGIRGenerator::addF32Trunc(ExpressionType argVar, ExpressionType& result) 
 auto OMGIRGenerator::addI32TruncSF64(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Double, bitwise_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int32_t>::min())));
-    Value* min = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) - 1.0));
+    Value* max = constant(Double, std::bit_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int32_t>::min())));
+    Value* min = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) - 1.0));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterThan, origin(), arg, min));
@@ -6467,8 +6469,8 @@ auto OMGIRGenerator::addI32TruncSF64(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI32TruncSF32(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Float, bitwise_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int32_t>::min())));
-    Value* min = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min())));
+    Value* max = constant(Float, std::bit_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int32_t>::min())));
+    Value* min = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min())));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterEqual, origin(), arg, min));
@@ -6491,8 +6493,8 @@ auto OMGIRGenerator::addI32TruncSF32(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI32TruncUF64(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) * -2.0));
-    Value* min = constant(Double, bitwise_cast<uint64_t>(-1.0));
+    Value* max = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int32_t>::min()) * -2.0));
+    Value* min = constant(Double, std::bit_cast<uint64_t>(-1.0));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterThan, origin(), arg, min));
@@ -6514,8 +6516,8 @@ auto OMGIRGenerator::addI32TruncUF64(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI32TruncUF32(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min()) * static_cast<float>(-2.0)));
-    Value* min = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(-1.0)));
+    Value* max = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int32_t>::min()) * static_cast<float>(-2.0)));
+    Value* min = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(-1.0)));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterThan, origin(), arg, min));
@@ -6537,8 +6539,8 @@ auto OMGIRGenerator::addI32TruncUF32(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI64TruncSF64(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Double, bitwise_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int64_t>::min())));
-    Value* min = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min())));
+    Value* max = constant(Double, std::bit_cast<uint64_t>(-static_cast<double>(std::numeric_limits<int64_t>::min())));
+    Value* min = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min())));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterEqual, origin(), arg, min));
@@ -6557,8 +6559,8 @@ auto OMGIRGenerator::addI64TruncSF64(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI64TruncUF64(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Double, bitwise_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min()) * -2.0));
-    Value* min = constant(Double, bitwise_cast<uint64_t>(-1.0));
+    Value* max = constant(Double, std::bit_cast<uint64_t>(static_cast<double>(std::numeric_limits<int64_t>::min()) * -2.0));
+    Value* min = constant(Double, std::bit_cast<uint64_t>(-1.0));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterThan, origin(), arg, min));
@@ -6578,8 +6580,8 @@ auto OMGIRGenerator::addI64TruncUF64(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI64TruncSF32(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Float, bitwise_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int64_t>::min())));
-    Value* min = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min())));
+    Value* max = constant(Float, std::bit_cast<uint32_t>(-static_cast<float>(std::numeric_limits<int64_t>::min())));
+    Value* min = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min())));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterEqual, origin(), arg, min));
@@ -6598,8 +6600,8 @@ auto OMGIRGenerator::addI64TruncSF32(ExpressionType argVar, ExpressionType& resu
 auto OMGIRGenerator::addI64TruncUF32(ExpressionType argVar, ExpressionType& result) -> PartialResult
 {
     Value* arg = get(argVar);
-    Value* max = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min()) * static_cast<float>(-2.0)));
-    Value* min = constant(Float, bitwise_cast<uint32_t>(static_cast<float>(-1.0)));
+    Value* max = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(std::numeric_limits<int64_t>::min()) * static_cast<float>(-2.0)));
+    Value* min = constant(Float, std::bit_cast<uint32_t>(static_cast<float>(-1.0)));
     Value* outOfBounds = append<Value>(m_proc, BitAnd, origin(),
         append<Value>(m_proc, LessThan, origin(), arg, max),
         append<Value>(m_proc, GreaterThan, origin(), arg, min));

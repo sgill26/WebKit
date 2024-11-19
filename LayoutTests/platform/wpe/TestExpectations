@@ -301,6 +301,7 @@ media/video-unmuted-after-play-holds-sleep-assertion.html [ Failure ]
 svg/hixie/viewbox/002.xml [ Failure ]
 
 webkit.org/b/282686 media/media-video-fullrange.html [ Failure ]
+webkit.org/b/282686 media/media-video-fullrange-offscreen.html [ Failure ]
 
 # Pending to create bug.
 imported/w3c/web-platform-tests/cookies/attributes/domain.sub.html [ Failure ]
@@ -1684,3 +1685,5 @@ webkit.org/b/281053 imported/w3c/web-platform-tests/worklets/audio-worklet-refer
 http/tests/cookies/same-site/fetch-after-navigating-iframe-in-cross-origin-page.html [ Failure ]
 http/tests/cookies/same-site/fetch-in-cross-origin-service-worker.html [ Failure ]
 http/tests/cookies/same-site/popup-cross-site-post.html [ Failure ]
+
+webkit.org/b/282970 imported/w3c/web-platform-tests/scroll-to-text-fragment/drag-selection-over-target-text.html [ Failure ]

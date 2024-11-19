@@ -861,17 +861,20 @@ BeaconAPIEnabled:
 
 BlobFileAccessEnforcementEnabled:
   type: bool
-  status: testable
+  status: embedder
   category: security
   humanReadableName: "Enforce blob backed file access valid for web process"
   humanReadableDescription: "Validate file backed blobs were created by the correct web process"
   sharedPreferenceForWebProcess: true
   defaultValue:
     WebKitLegacy:
+      "PLATFORM(COCOA)": true
       default: false
     WebKit:
+      "PLATFORM(COCOA)": true
       default: false
     WebCore:
+      "PLATFORM(COCOA)": true
       default: false
 
 BlobRegistryTopOriginPartitioningEnabled:
@@ -1544,17 +1547,17 @@ CSSStyleQueriesEnabled:
 
 CSSTextAutospaceEnabled:
   type: bool
-  status: testable
+  status: stable
   category: css
   humanReadableName: "CSS text-autospace property"
   humanReadableDescription: "Enable the property text-autospace, defined in CSS Text 4"
   defaultValue:
     WebKitLegacy:
-      default: false
+      default: true
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
 
 CSSTextBoxTrimEnabled:
   type: bool
@@ -4929,22 +4932,6 @@ MediaSourceInWorkerEnabled:
     WebCore:
       default: true
 
-MediaSourceInlinePaintingEnabled:
-  type: bool
-  status: mature
-  category: media
-  humanReadableName: "Experimental MediaSource Inline Painting"
-  humanReadableDescription: "Experimental MediaSource Inline Painting"
-  condition: ENABLE(MEDIA_SOURCE) && (HAVE(AVSAMPLEBUFFERVIDEOOUTPUT) || USE(GSTREAMER))
-  webcoreBinding: DeprecatedGlobalSettings
-  defaultValue:
-    WebKitLegacy:
-      "HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)": true
-      default: false
-    WebKit:
-      "HAVE(AVSAMPLEBUFFERDISPLAYLAYER_COPYDISPLAYEDPIXELBUFFER)": true
-      default: false
-
 # FIXME: Is this implemented for WebKitLegacy? If not, this should be excluded from WebKitLegacy entirely (though we should still set the default value to false when initializing settings).
 # FIXME: Seems to be unused. Remove once verified.
 MediaStreamEnabled:
@@ -5696,18 +5683,18 @@ PitchCorrectionAlgorithm:
 
 PointerLockOptionsEnabled:
   type: bool
-  status: testable
+  status: stable
   category: dom
   condition: ENABLE(POINTER_LOCK)
   humanReadableName: "Pointer Lock Options"
   humanReadableDescription: "Element.requestPointerLock(options) and promise support."
   defaultValue:
     WebKitLegacy:
-      default: false
+      default: true
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
 
 PopoverAttributeEnabled:
   type: bool
@@ -6202,6 +6189,20 @@ SansSerifFontFamily:
     WebCore:
       default: '""_str'
 
+ScopedCustomElementRegistryEnabled:
+  type: bool
+  status: preview
+  category: dom
+  humanReadableName: "Scoped custom element registry"
+  humanReadableDescription: "Enable scoped custom element registry"
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
 # FIXME: Is this implemented for WebKitLegacy? If not, this should be excluded from WebKitLegacy entirely.
 # FIXME: This should have it's own ENABLE.
 ScreenCaptureEnabled:
@@ -6478,6 +6479,7 @@ SelectionHonorsOverflowScrolling:
   exposed: [ WebKit ]
   defaultValue:
     WebKit:
+      "ENABLE(SELECTION_HONORS_OVERFLOW_SCROLLING_BY_DEFAULT)" : true
       default: false
     WebKitLegacy:
       default: false
@@ -7595,8 +7597,6 @@ UseAVCaptureDeviceRotationCoordinatorAPI:
   condition: HAVE(AVCAPTUREDEVICEROTATIONCOORDINATOR)
   defaultValue:
     WebKit:
-      # FIXME: Re-enable on visionOS once rdar://139112264 is resolved.
-      "PLATFORM(VISION)": false
       default: true
 
 UseAsyncUIKitInteractions:

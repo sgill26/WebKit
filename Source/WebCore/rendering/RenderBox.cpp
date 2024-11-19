@@ -2259,6 +2259,10 @@ LayoutUnit RenderBox::shrinkLogicalWidthToAvoidFloats(LayoutUnit childMarginStar
 
     LayoutUnit logicalHeight = cb.logicalHeightForChild(*this);
     LayoutUnit availableLogicalWidthAtLogicalTopPosition = cb.availableLogicalWidthForLineInFragment(logicalTopPosition, containingBlockFragment, logicalHeight);
+    if (availableLogicalWidthAtLogicalTopPosition == cb.availableLogicalWidth()) {
+        // No float to avoid at this logical top position either becasue float's margin box is shrunk to 0 (non-zero border box with large enough margins) or no float at all.
+        return availableLogicalWidthAtLogicalTopPosition - childMarginStart - childMarginEnd;
+    }
     // We need to see if margins on either the start side or the end side can contain the floats in question. If they can,
     // then just using the line width is inaccurate. In the case where a float completely fits, we don't need to use the line
     // offset at all, but can instead push all the way to the content edge of the containing block. In the case where the float
@@ -2993,8 +2997,8 @@ LayoutUnit RenderBox::computeOrTrimInlineMargin(const RenderBlock& containingBlo
 void RenderBox::computeInlineDirectionMargins(const RenderBlock& containingBlock, LayoutUnit containerWidth, std::optional<LayoutUnit> availableSpaceAdjustedWithFloats, LayoutUnit childWidth, LayoutUnit& marginStart, LayoutUnit& marginEnd) const
 {
     const RenderStyle& containingBlockStyle = containingBlock.style();
-    Length marginStartLength = style().marginStartUsing(&containingBlockStyle);
-    Length marginEndLength = style().marginEndUsing(&containingBlockStyle);
+    Length marginStartLength = style().marginStart(containingBlockStyle.writingMode());
+    Length marginEndLength = style().marginEnd(containingBlockStyle.writingMode());
 
     if (isFloating()) {
         marginStart = minimumValueForLength(marginStartLength, containerWidth);
@@ -3837,7 +3841,9 @@ LayoutUnit RenderBox::constrainBlockMarginInAvailableSpaceOrTrim(const RenderBox
         return 0_lu;
     }
     
-    return marginSide == MarginTrimType::BlockStart ? minimumValueForLength(style().marginBeforeUsing(&containingBlock.style()), availableSpace) : minimumValueForLength(style().marginAfterUsing(&containingBlock.style()), availableSpace);
+    return marginSide == MarginTrimType::BlockStart
+        ? minimumValueForLength(style().marginBefore(containingBlock.writingMode()), availableSpace)
+        : minimumValueForLength(style().marginAfter(containingBlock.writingMode()), availableSpace);
 }
 
 LayoutUnit RenderBox::containingBlockLogicalWidthForPositioned(const RenderBoxModelObject& containingBlock, RenderFragmentContainer* fragment, bool checkForPerpendicularWritingMode) const

@@ -54,12 +54,6 @@ Ref<AccessibilityListBox> AccessibilityListBox::create(AXID axID, RenderObject& 
     return adoptRef(*new AccessibilityListBox(axID, renderer));
 }
 
-bool AccessibilityListBox::canSetSelectedChildren() const
-{
-    auto* selectElement = dynamicDowncast<HTMLSelectElement>(node());
-    return selectElement && !selectElement->isDisabledFormControl();
-}
-
 void AccessibilityListBox::addChildren()
 {
     m_childrenInitialized = true;
@@ -81,7 +75,7 @@ void AccessibilityListBox::setSelectedChildren(const AccessibilityChildrenVector
         return;
 
     // Unselect any selected option.
-    for (const auto& child : unignoredChildren(/* updateChildrenIfNeeded */ false)) {
+    for (const auto& child : unignoredChildren()) {
         if (child->isSelected())
             child->setSelected(false);
     }
@@ -98,7 +92,7 @@ std::optional<AXCoreObject::AccessibilityChildrenVector> AccessibilityListBox::s
         addChildren();
 
     AccessibilityChildrenVector result;
-    for (const auto& child : unignoredChildren(/* updateChildrenIfNeeded */ false)) {
+    for (const auto& child : unignoredChildren()) {
         if (child->isSelected())
             result.append(child.get());
     }
@@ -115,7 +109,7 @@ AXCoreObject::AccessibilityChildrenVector AccessibilityListBox::visibleChildren(
     if (!childrenInitialized())
         addChildren();
     
-    const auto& children = const_cast<AccessibilityListBox*>(this)->unignoredChildren(/* updateChildrenIfNeeded */ false);
+    const auto& children = const_cast<AccessibilityListBox*>(this)->unignoredChildren();
     AccessibilityChildrenVector result;
     size_t size = children.size();
     for (size_t i = 0; i < size; i++) {

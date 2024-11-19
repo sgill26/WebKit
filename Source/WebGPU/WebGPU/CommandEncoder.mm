@@ -502,7 +502,7 @@ Ref<RenderPassEncoder> CommandEncoder::beginRenderPass(const WGPURenderPassDescr
     uint32_t textureWidth = 0, textureHeight = 0, sampleCount = 0;
     using SliceSet = HashSet<uint64_t, DefaultHash<uint64_t>, WTF::UnsignedWithZeroKeyHashTraits<uint64_t>>;
     HashMap<void*, SliceSet> depthSlices;
-    for (auto [ i, attachment ] : IndexedRange(descriptor.colorAttachmentsSpan())) {
+    for (auto [ i, attachment ] : indexedRange(descriptor.colorAttachmentsSpan())) {
         if (!attachment.view)
             continue;
 
@@ -661,7 +661,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
             return RenderPassEncoder::createInvalid(*this, m_device, @"depth clear value is invalid");
 
         if (zeroColorTargets) {
-            mtlDescriptor.defaultRasterSampleCount = textureView->sampleCount();
+            mtlDescriptor.defaultRasterSampleCount = metalDepthStencilTexture.sampleCount;
             if (!mtlDescriptor.defaultRasterSampleCount)
                 return RenderPassEncoder::createInvalid(*this, m_device, @"no color targets and depth-stencil texture is nil");
             mtlDescriptor.renderTargetWidth = metalDepthStencilTexture.width;
@@ -2170,18 +2170,6 @@ void CommandEncoder::lock(bool shouldLock)
 
 void CommandEncoder::trackEncoder(CommandEncoder& commandEncoder, WeakHashSet<CommandEncoder>& encoderHashSet)
 {
-    bool removedItem;
-    do {
-        removedItem = false;
-        for (Ref commandEncoder : encoderHashSet) {
-            if (!commandEncoder->isValid()) {
-                encoderHashSet.remove(commandEncoder.get());
-                removedItem = true;
-                break;
-            }
-        }
-    } while (removedItem);
-
     encoderHashSet.add(commandEncoder);
 }
 

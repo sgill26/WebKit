@@ -32,7 +32,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #if ENABLE(ASSEMBLER)
 
 #include "JSCJSValue.h"
-#include <wtf/TZoneMalloc.h>
+#include <wtf/TZoneMallocInlines.h>
 
 #define DEFINE_SIMD_FUNC(name, func, lane) \
     template <typename ...Args> \
@@ -124,7 +124,7 @@ typedef Vector<PrintRecord> PrintRecordList;
 using MacroAssemblerBase = TARGET_MACROASSEMBLER;
 
 class MacroAssembler : public MacroAssemblerBase {
-    WTF_MAKE_TZONE_ALLOCATED(MacroAssemblerBase);
+    WTF_MAKE_TZONE_ALLOCATED(MacroAssembler);
 public:
     using Base = MacroAssemblerBase;
 
@@ -177,6 +177,9 @@ public:
 #endif
 #if CPU(X86_64)
     using MacroAssemblerBase::branch64;
+#endif
+#if CPU(RISCV64)
+    using MacroAssemblerRISCV64::lshift64;
 #endif
     using MacroAssemblerBase::branchSub32;
     using MacroAssemblerBase::lshift32;
@@ -1479,7 +1482,7 @@ public:
 
         // Try to force normalisation, and check that there's no change
         // in the bit pattern
-        if (bitwise_cast<uint64_t>(value * 1.0) != bitwise_cast<uint64_t>(value))
+        if (std::bit_cast<uint64_t>(value * 1.0) != std::bit_cast<uint64_t>(value))
             return shouldConsiderBlinding();
 
         value = std::abs(value);
@@ -1613,7 +1616,7 @@ public:
             if (jsValue.isDouble() && !shouldBlindDouble(jsValue.asDouble()))
                 return false;
 
-            if (!shouldBlindDouble(bitwise_cast<double>(value)))
+            if (!shouldBlindDouble(std::bit_cast<double>(value)))
                 return false;
         }
         }

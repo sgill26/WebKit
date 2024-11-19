@@ -470,7 +470,6 @@ accessibility/AccessibilitySVGObject.cpp
 accessibility/AccessibilitySVGRoot.cpp
 accessibility/AccessibilityScrollView.cpp
 accessibility/AccessibilitySlider.cpp
-accessibility/AccessibilitySpinButton.cpp
 accessibility/AccessibilityTable.cpp
 accessibility/AccessibilityTableCell.cpp
 accessibility/AccessibilityTableColumn.cpp
@@ -738,6 +737,7 @@ dom/TreeScope.cpp
 dom/TrustedType.cpp
 dom/TypedElementDescendantIteratorInlines.h
 domjit/JSDocumentDOMJIT.cpp
+editing/ApplyStyleCommand.cpp
 editing/ChangeListTypeCommand.cpp
 editing/Editing.cpp
 editing/EditingStyle.cpp
@@ -1026,7 +1026,6 @@ platform/ScrollAnimator.cpp
 platform/ScrollView.cpp
 platform/ScrollableArea.cpp
 platform/ScrollbarsController.cpp
-platform/SharedBuffer.cpp
 platform/ThreadGlobalData.cpp
 platform/ThreadGlobalData.h
 platform/animation/AcceleratedEffect.cpp

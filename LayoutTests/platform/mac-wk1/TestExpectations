@@ -912,6 +912,9 @@ accessibility/dynamic-table-descendants.html [ Skip ]
 accessibility/indeterminate-progressbar-custom-element.html [ Skip ]
 accessibility/progress-indeterminate-value.html [ Skip ]
 
+# Missing AccessibilityUIElement::isInTable() implementation.
+accessibility/table-ancestry.html [ Skip ]
+
 # Missing AccessibilityUIElement::brailleLabel and AccessibilityUIElement::brailleRoleDescription implementations.
 accessibility/aria-braillelabel.html [ Skip ]
 accessibility/aria-brailleroledescription.html [ Skip ]
@@ -1139,6 +1142,7 @@ http/tests/media/video-src-webm-blob.html [ Failure ]
 http/tests/media/video-srcobject-webm-blob.html [ Failure ]
 media/media-vp8-hiddenframes.html [ Skip ]
 media/media-vp8-webm-error.html [ Failure ]
+media/media-vp8-webm-error-offscreen.html [ Failure ]
 media/media-vp8-webm.html [ Skip ]
 media/media-vp8-webm-seek-to-start.html [ Skip ]
 media/media-vp8-webm-with-poster.html [ Skip ]
@@ -1149,12 +1153,17 @@ media/track/audio-track-configuration-webm.html [ Skip ]
 media/track/media-audio-track.html [ Failure ]
 media/media-sources-selection.html [ ImageOnlyFailure ]
 media/media-video-fullrange.html [ Skip ]
+media/media-video-videorange.html [ Skip ]
+media/media-video-fullrange-offscreen.html [ Skip ]
+media/media-video-videorange-offscreen.html [ Skip ]
 
 # VP9/VP8 are not supported on WK1 and turned off by default
 media/media-source/media-source-vp8-hiddenframes.html [ Skip ]
 media/media-source/media-source-webm-configuration-change.html [ Failure ]
 media/media-source/media-source-webm-configuration-framerate.html [ Failure ]
 media/media-source/media-source-webm-configuration-vp9-header-color.html [ Failure ]
+media/media-source/media-source-vp8-webm-error.html [ Skip ]
+media/media-source/media-source-vp8-webm-error-offscreen.html [ Skip ]
 http/tests/media/video-webm-stall-seek.html [ Skip ]
 
 # Managed MediaSource isn't enabled on WK1
@@ -1754,6 +1763,7 @@ accessibility/mixed-contenteditable-double-br-visible-character-range-hang.html 
 accessibility/visible-character-range-basic.html [ Skip ]
 accessibility/visible-character-range-height-changes.html [ Skip ]
 accessibility/visible-character-range-scrolling.html [ Skip ]
+accessibility/visible-character-range-vertical-rl.html [ Skip ]
 accessibility/visible-character-range-width-changes.html [ Skip ]
 accessibility/aria-description.html [ Skip ]
 
@@ -2587,7 +2597,6 @@ http/tests/inspector/network/resource-security-certificate.html [ Pass Failure ]
 [ Ventura+ arm64 ] fast/writing-mode/english-bt-text-with-spelling-marker.html [ ImageOnlyFailure ]
 css3/scroll-snap/scroll-padding-mainframe-paging.html [ Failure ]
 [ Ventura+ ] compositing/fixed-with-main-thread-scrolling.html [ ImageOnlyFailure ]
-[ Debug x86_64 ] editing/execCommand/delete-non-editable-range-crash.html [ Pass Timeout ]
 
 # https://bugs.webkit.org/show_bug.cgi?id=249544
 # Generic Permissions API is not supported in WK1
@@ -2989,3 +2998,12 @@ webkit.org/b/281594 imported/w3c/web-platform-tests/html/semantics/document-meta
 [ Sonoma+ ] imported/w3c/web-platform-tests/xhr/event-error-order.sub.html [ Skip ]
 [ Sonoma+ ] imported/w3c/web-platform-tests/xhr/send-authentication-basic-cors.htm [ Skip ]
 [ Sonoma+ ] imported/w3c/web-platform-tests/xhr/send-network-error-async-events.sub.htm [ Skip ]
+
+# webkit.org/b/281923  [ Sequoia+ ] 3 tests in http/tests/cookies/same-site are constant failure (failure in EWS)
+[ Sequoia+ ] http/tests/cookies/same-site/fetch-after-navigating-iframe-in-cross-origin-page.html [ Failure ]
+[ Sequoia+ ] http/tests/cookies/same-site/popup-cross-site-post.html [ Failure ]
+
+webkit.org/b/283013 [ Sequoia+ ] imported/w3c/web-platform-tests/css/css-color/predefined-011.html [ ImageOnlyFailure ]
+webkit.org/b/283013 [ Sequoia+ ] imported/w3c/web-platform-tests/css/css-color/predefined-012.html [ ImageOnlyFailure ]
+webkit.org/b/283013 [ Sequoia+ ] imported/w3c/web-platform-tests/css/css-color/rec2020-001.html [ ImageOnlyFailure ]
+webkit.org/b/283013 [ Sequoia+ ] imported/w3c/web-platform-tests/css/css-color/relative-currentcolor-rec2020-01.html [ ImageOnlyFailure ]

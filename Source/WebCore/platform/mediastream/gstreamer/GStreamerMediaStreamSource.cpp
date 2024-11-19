@@ -27,10 +27,8 @@
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
 #include "AudioTrackPrivateMediaStream.h"
-#include "GStreamerAudioCaptureSource.h"
 #include "GStreamerAudioData.h"
 #include "GStreamerCommon.h"
-#include "GStreamerVideoCaptureSource.h"
 #include "MediaStreamPrivate.h"
 #include "VideoFrameGStreamer.h"
 #include "VideoFrameMetadataGStreamer.h"
@@ -180,17 +178,8 @@ public:
 
         // RealtimeMediaSource::source() is usable only from the main thread, so keep track of
         // capture sources separately.
-        m_captureSource = nullptr;
-        auto& trackSource = m_track->source();
-        if (trackSource.isCaptureSource()) {
-            if (trackSource.isVideo()) {
-                auto& videoSource = static_cast<GStreamerVideoCaptureSource&>(trackSource);
-                m_captureSource = ThreadSafeWeakPtr<GStreamerVideoCaptureSource> { &videoSource };
-            } else {
-                auto& audioSource = static_cast<GStreamerAudioCaptureSource&>(trackSource);
-                m_captureSource = ThreadSafeWeakPtr<GStreamerAudioCaptureSource> { &audioSource };
-            }
-        }
+        if (m_track->source().isCaptureSource())
+            m_trackSource = &(m_track->source());
 
         auto pad = adoptGRef(gst_element_get_static_pad(m_src.get(), "src"));
         gst_pad_add_probe(pad.get(), GST_PAD_PROBE_TYPE_QUERY_UPSTREAM, reinterpret_cast<GstPadProbeCallback>(+[](GstPad*, GstPadProbeInfo* info, gpointer userData) -> GstPadProbeReturn {
@@ -204,18 +193,8 @@ public:
 #endif
             case GST_QUERY_LATENCY: {
                 std::pair<GstClockTime, GstClockTime> latency { GST_CLOCK_TIME_NONE, GST_CLOCK_TIME_NONE };
-                WTF::switchOn(self->m_captureSource, [&](ThreadSafeWeakPtr<GStreamerVideoCaptureSource>& source) {
-                    RefPtr videoSource = source.get();
-                    if (!videoSource)
-                        return;
-                    latency = videoSource->queryLatency();
-                }, [&](ThreadSafeWeakPtr<GStreamerAudioCaptureSource>& source) {
-                    RefPtr audioSource = source.get();
-                    if (!audioSource)
-                        return;
-                    latency = audioSource->queryLatency();
-                }, [](std::nullptr_t) {
-                });
+                if (self->m_trackSource)
+                    latency = self->m_trackSource->queryCaptureLatency();
 
                 auto [minLatency, maxLatency] = latency;
                 GST_DEBUG_OBJECT(self->m_src.get(), "Latency from capture source is min: %" GST_TIME_FORMAT " max: %" GST_TIME_FORMAT, GST_TIME_ARGS(minLatency), GST_TIME_ARGS(maxLatency));
@@ -257,7 +236,7 @@ public:
             }
             clientId = source.registerClient(WTFMove(client));
         } else {
-            RELEASE_ASSERT((trackSource.isIncomingVideoSource()));
+            RELEASE_ASSERT(trackSource.isIncomingVideoSource());
             auto& source = static_cast<RealtimeIncomingVideoSourceGStreamer&>(trackSource);
             if (source.hasClient(client)) {
                 GST_DEBUG_OBJECT(m_src.get(), "Incoming video track already registered.");
@@ -633,9 +612,11 @@ private:
         auto buffer = adoptGRef(webkitGstBufferSetVideoFrameTimeMetadata(gst_buffer_new_allocate(nullptr, GST_VIDEO_INFO_SIZE(&info), nullptr), metadata));
         {
             GstMappedBuffer data(buffer, GST_MAP_WRITE);
+            WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN // GLib port
             auto yOffset = GST_VIDEO_INFO_PLANE_OFFSET(&info, 1);
             memset(data.data(), 0, yOffset);
             memset(data.data() + yOffset, 128, data.size() - yOffset);
+            WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
         }
         gst_buffer_add_video_meta_full(buffer.get(), GST_VIDEO_FRAME_FLAG_NONE, GST_VIDEO_INFO_FORMAT(&info), GST_VIDEO_INFO_WIDTH(&info),
             GST_VIDEO_INFO_HEIGHT(&info), GST_VIDEO_INFO_N_PLANES(&info), info.offset, info.stride);
@@ -672,7 +653,7 @@ private:
 
     GstElement* m_parent { nullptr };
     RefPtr<MediaStreamTrackPrivate> m_track;
-    std::variant<ThreadSafeWeakPtr<GStreamerVideoCaptureSource>, ThreadSafeWeakPtr<GStreamerAudioCaptureSource>, std::nullptr_t> m_captureSource;
+    RefPtr<RealtimeMediaSource> m_trackSource;
     GRefPtr<GstElement> m_src;
     GstClockTime m_firstBufferPts { GST_CLOCK_TIME_NONE };
     bool m_enoughData { false };

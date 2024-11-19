@@ -926,6 +926,13 @@ imported/w3c/web-platform-tests/html/rendering/the-details-element/details-page-
 imported/w3c/web-platform-tests/html/rendering/the-details-element/details-page-break-after-2-print.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/html/rendering/the-details-element/details-page-break-before-1-print.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/html/rendering/the-details-element/details-page-break-before-2-print.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-display-type-001.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-display-type-002.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-pseudo-elements-001.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-pseudo-elements-002.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-pseudo-elements-003.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-pseudo-elements-004.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/html/rendering/the-details-element/details-pseudo-elements-005.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/html/rendering/widgets/the-select-element/option-empty-label-to-empty-string.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/html/rendering/widgets/the-select-element/option-empty-label.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/html/semantics/embedded-content/the-img-element/adopt-from-image-document.html [ ImageOnlyFailure ]
@@ -1763,14 +1770,6 @@ imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/fragmentation/mas
 
 webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/grid-placement/masonry-grid-placement-named-lines-002.html [ ImageOnlyFailure ]
 
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-003-auto.html [ ImageOnlyFailure ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-003-fr.html [ ImageOnlyFailure ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-003-mix1.html [ ImageOnlyFailure ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-003-mix2.html [ ImageOnlyFailure ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-004-auto.html [ ImageOnlyFailure ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-004-fr.html [ ImageOnlyFailure ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/intrinsic-sizing/masonry-intrinsic-sizing-rows-004-mix1.html [ ImageOnlyFailure ]
-
 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/item-placement/masonry-columns-item-placement-auto-flow-next-001.html [ Skip ]
 webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/item-placement/masonry-item-placement-004.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/item-placement/masonry-item-placement-005.html [ ImageOnlyFailure ]
@@ -2138,6 +2137,9 @@ imported/w3c/web-platform-tests/infrastructure/assumptions/min-font-size.html [ 
 webkit.org/b/187039 imported/w3c/web-platform-tests/infrastructure/testdriver [ Skip ] # testdriver not supported yet.
 webkit.org/b/187093 [ Debug ] imported/w3c/web-platform-tests/infrastructure/assumptions/html-elements.html [ Skip ]
 imported/w3c/web-platform-tests/infrastructure/server/wpt-server-websocket.sub.html [ Skip ] # non deterministic URL in text dump
+
+# application-xml.xml doesn't dispatch load event
+imported/w3c/web-platform-tests/scroll-to-text-fragment/non-html-documents.html [ Skip ]
 
 # Imported W3C SVG failed tests
 imported/w3c/web-platform-tests/svg/animations/beginelement-instance-time-1.html [ Skip ]
@@ -3195,7 +3197,6 @@ imported/w3c/web-platform-tests/css/css-text/text-align/text-align-justify-tabs-
 imported/w3c/web-platform-tests/css/css-text/text-align/text-align-justify-tabs-002.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-text/text-align/text-align-justify-tabs-003.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-text/text-align/text-align-justify-tabs-004.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/css/css-text/text-autospace/text-autospace-break-001.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-text/text-justify/text-justify-word-separators.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-text/text-transform/text-transform-uppercase-dynamic.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-text/white-space/eol-spaces-bidi-004.html [ ImageOnlyFailure ]
@@ -7362,39 +7363,19 @@ imported/w3c/web-platform-tests/dom/events/scrolling/scrollend-event-not-fired-o
 imported/w3c/web-platform-tests/dom/events/scrolling/input-text-scroll-event-when-using-arrow-keys.html [ Skip ]
 
 # webkit.org/b/263870 [scroll-animations] some WPT tests are timing out
+imported/w3c/web-platform-tests/css/css-contain/content-visibility/content-visibility-animation-with-scroll-timeline-in-auto-subtree.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/css/deferred-timeline-composited.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-range-update-reversed-animation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-overflow-hidden.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-range-animation.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-range-animation.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-root-scroller.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/cancel-animation.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/constructor-no-document.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/finish-animation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/pause-animation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/play-animation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/reverse-animation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/scroll-animation-effect-fill-modes.tentative.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/scroll-animation-effect-phases.tentative.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/scroll-animation-inactive-timeline.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/scroll-animation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/scroll-timeline-invalidation.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/set-current-time-before-play.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/setting-current-time.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/setting-playback-rate.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/setting-start-time.html [ Skip ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/update-playback-rate.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/updating-the-finished-state.html [ Skip ]
 
 # webkit.org/b/263871 [scroll-animations] some WPT tests are failures or flaky failures
-imported/w3c/web-platform-tests/scroll-animations/css/animation-timeline-named-scroll-progress-timeline.tentative.html [ Pass Failure ]
 imported/w3c/web-platform-tests/scroll-animations/css/animation-timeline-none.html [ Pass Failure ]
-imported/w3c/web-platform-tests/scroll-animations/css/animation-timeline-scroll-functional-notation.tentative.html [ Pass Failure ]
-imported/w3c/web-platform-tests/scroll-animations/css/animation-timeline-view-functional-notation.tentative.html [ Pass Failure ]
-imported/w3c/web-platform-tests/scroll-animations/css/progress-based-animation-animation-longhand-properties.tentative.html [ Pass Failure ]
 imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-dynamic.html [ Pass Failure ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/effect-updateTiming.html [ Pass Failure ]
-imported/w3c/web-platform-tests/scroll-animations/view-timelines/change-animation-range-updates-play-state.html [ Pass Failure ]
 imported/w3c/web-platform-tests/scroll-animations/view-timelines/view-timeline-root-source.html [ Pass Failure ]
-imported/w3c/web-platform-tests/web-animations/interfaces/Animation/scroll-timeline-progress.tentative.html [ Pass Failure ]
 
 webkit.org/b/282373 imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-dynamic.tentative.html [ Pass Failure ]
 
@@ -7404,28 +7385,22 @@ imported/w3c/web-platform-tests/scroll-animations/css/animation-range-visual-tes
 imported/w3c/web-platform-tests/scroll-animations/css/printing/animation-timeline-none-with-progress-print.tentative.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/css/printing/scroll-timeline-default-iframe-print.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/css/printing/scroll-timeline-default-print.tentative.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-default-quirks-mode.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-default-writing-mode-rl.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-default.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-frame-size-changed.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-inline-orientation.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-animatable-interface.html [ Pass ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-display-none.html [ Pass ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-transform.html [ Pass ImageOnlyFailure ]
-imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/custom-property.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/layout-changes-on-percentage-based-timeline.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/progress-based-effect-delay.tentative.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/two-animations-attach-to-same-scroll-timeline-cancel-one.html [ Pass ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/two-animations-attach-to-same-scroll-timeline.html [ Pass ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/view-timelines/range-boundary.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/scroll-animations/css/animation-inactive-outside-range-test.html [ ImageOnlyFailure ]
 
 # webkit.org/b/281482 [scroll-animations] some WPT reftests can't find their reference
 imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-update-reversed-animation.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-range-update-reversed-animation.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-range-update.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-subject-bounds-update.html [ Skip ]
 
-# webkit.org/b/281837 [scroll-animations] calc() values in `view-timeline-inset` lead to a failed assertion under `ViewTimeline::computeTimelineData()`
-imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-inset-animation.html [ Skip ]
+webkit.org/b/283149 imported/w3c/web-platform-tests/scroll-animations/css/view-timeline-inset-animation.html [ Skip ]
 
 # CSS @scope with shadow DOM
 imported/w3c/web-platform-tests/css/css-cascade/scope-visited.html [ ImageOnlyFailure ]
@@ -7998,6 +7973,12 @@ webkit.org/b/268995 [ Debug ] fast/misc/out-of-flow-position-inside-mathml-crash
 
 webkit.org/b/261557 media/video-remove-insert-repaints.html [ Pass Crash ]
 
+# CSS match :not(:not(:host))
+# webkit.org/b/283062
+imported/w3c/web-platform-tests/css/css-scoping/host-multiple-002.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/css/css-scoping/host-multiple-004.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/css/css-scoping/host-multiple-006.html [ ImageOnlyFailure ]
+
 # Out-of-flow line break handling
 [ Debug ] fast/text/remove-renderer-and-select-crash.html [ Skip ]
 
@@ -8137,6 +8118,9 @@ imported/w3c/web-platform-tests/WebIDL/idlharness.any.worker.html [ Skip ]
 # Platform-specific tests enabled on macOS and iOS separately.
 webanimations/scroll-timeline-clamped-current-time-while-rubber-banding-mac.html [ Skip ]
 webanimations/scroll-timeline-clamped-current-time-while-rubber-banding-ios.html [ Skip ]
+
+# macOS-only test.
+media/webkit-media-controls-not-visible-after-exiting-fullscreen.html [ Skip ]
 
 # webkit.org/b/280685 imported/w3c/web-platform-tests/css/selectors/featureless-004/5.html are failures.
 imported/w3c/web-platform-tests/css/selectors/featureless-004.html [ ImageOnlyFailure ]

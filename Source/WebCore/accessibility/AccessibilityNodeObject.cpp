@@ -204,12 +204,12 @@ AccessibilityObject* AccessibilityNodeObject::parentObject() const
         return ownerParent;
 
     CheckedPtr cache = axObjectCache();
-#if !USE(ATSPI)
-    return cache ? cache->getOrCreate(composedParentIgnoringDocumentFragments(*node)) : nullptr;
-#else
+#if USE(ATSPI)
     // FIXME: Consider removing this ATSPI-only branch with https://bugs.webkit.org/show_bug.cgi?id=282117.
     return cache ? cache->getOrCreate(node->parentNode()) : nullptr;
-#endif // !USE(ATSPI)
+#else
+    return cache ? cache->getOrCreate(composedParentIgnoringDocumentFragments(*node)) : nullptr;
+#endif // USE(ATSPI)
 }
 
 LayoutRect AccessibilityNodeObject::checkboxOrRadioRect() const
@@ -245,7 +245,7 @@ LayoutRect AccessibilityNodeObject::boundingBoxRect() const
 {
     if (hasDisplayContents()) {
         LayoutRect contentsRect;
-        for (const auto& child : const_cast<AccessibilityNodeObject*>(this)->unignoredChildren(/* updateChildrenIfNeeded */ false))
+        for (const auto& child : const_cast<AccessibilityNodeObject*>(this)->unignoredChildren())
             contentsRect.unite(child->elementRect());
 
         if (!contentsRect.isEmpty())
@@ -594,16 +594,16 @@ void AccessibilityNodeObject::addChildren()
     if (!cache)
         return;
 
-#if !USE(ATSPI)
+#if USE(ATSPI)
+    // FIXME: Consider removing this ATSPI-only branch with https://bugs.webkit.org/show_bug.cgi?id=282117.
+    for (auto* child = node->firstChild(); child; child = child->nextSibling())
+        addChild(cache->getOrCreate(*child));
+#else
     if (auto* containerNode = dynamicDowncast<ContainerNode>(*node)) {
         for (Ref child : composedTreeChildren(*containerNode))
             addChild(cache->getOrCreate(child.get()));
     }
-#else
-    // FIXME: Consider removing this ATSPI-only branch with https://bugs.webkit.org/show_bug.cgi?id=282117.
-    for (auto* child = node->firstChild(); child; child = child->nextSibling())
-        addChild(cache->getOrCreate(*child));
-#endif // !USE(ATSPI)
+#endif // USE(ATSPI)
 
     updateOwnedChildren();
 }
@@ -937,35 +937,6 @@ bool AccessibilityNodeObject::supportsARIAOwns() const
     return !getAttribute(aria_ownsAttr).isEmpty();
 }
 
-bool AccessibilityNodeObject::supportsRequiredAttribute() const
-{
-    switch (roleValue()) {
-    case AccessibilityRole::Button:
-        return isFileUploadButton();
-    case AccessibilityRole::Cell:
-    case AccessibilityRole::ColumnHeader:
-    case AccessibilityRole::Checkbox:
-    case AccessibilityRole::ComboBox:
-    case AccessibilityRole::Grid:
-    case AccessibilityRole::GridCell:
-    case AccessibilityRole::ListBox:
-    case AccessibilityRole::PopUpButton:
-    case AccessibilityRole::RadioButton:
-    case AccessibilityRole::RadioGroup:
-    case AccessibilityRole::RowHeader:
-    case AccessibilityRole::Slider:
-    case AccessibilityRole::SpinButton:
-    case AccessibilityRole::Switch:
-    case AccessibilityRole::TableHeaderContainer:
-    case AccessibilityRole::TextArea:
-    case AccessibilityRole::TextField:
-    case AccessibilityRole::ToggleButton:
-        return true;
-    default:
-        return false;
-    }
-}
-
 AXCoreObject::AccessibilityChildrenVector AccessibilityNodeObject::radioButtonGroup() const
 {
     AccessibilityChildrenVector result;
@@ -1108,23 +1079,9 @@ AccessibilityOrientation AccessibilityNodeObject::orientation() const
     return AccessibilityObject::orientation();
 }
 
-bool AccessibilityNodeObject::isLink() const
-{
-    return roleValue() == AccessibilityRole::WebCoreLink;
-}
-
 bool AccessibilityNodeObject::isBusy() const
 {
     return elementAttributeValue(aria_busyAttr);
-}
-
-bool AccessibilityNodeObject::isControl() const
-{
-    Node* node = this->node();
-    if (!node)
-        return false;
-
-    return is<HTMLFormControlElement>(*node) || AccessibilityObject::isARIAControl(ariaRoleAttribute()) || roleValue() == AccessibilityRole::Button;
 }
 
 bool AccessibilityNodeObject::isRadioInput() const
@@ -1276,31 +1233,19 @@ Element* AccessibilityNodeObject::actionElement() const
         break;
     }
 
-    Element* elt = anchorElement();
-    if (!elt)
-        elt = mouseButtonListener();
-    return elt;
-}
+    if (auto* element = anchorElement())
+        return element;
 
-Element* AccessibilityNodeObject::mouseButtonListener(MouseButtonListenerResultFilter filter) const
-{
-    WeakPtr node = this->node();
-    if (!node)
-        return nullptr;
-
-    // check if our parent is a mouse button listener
-    // FIXME: Do the continuation search like anchorElement does
-    for (auto& element : lineageOfType<Element>(*node)) {
-        // If we've reached the body and this is not a control element, do not expose press action for this element unless filter is IncludeBodyElement.
-        // It can cause false positives, where every piece of text is labeled as accepting press actions.
-        if (element.hasTagName(bodyTag) && isStaticText() && filter == ExcludeBodyElement)
-            break;
-
-        if (element.hasEventListeners(eventNames().clickEvent) || element.hasEventListeners(eventNames().mousedownEvent) || element.hasEventListeners(eventNames().mouseupEvent))
-            return &element;
-    }
+    if (auto* clickableObject = this->clickableSelfOrAncestor())
+        return clickableObject->element();
 
     return nullptr;
+}
+
+bool AccessibilityNodeObject::hasClickHandler() const
+{
+    RefPtr element = this->element();
+    return element && element->hasAnyEventListeners({ eventNames().clickEvent, eventNames().mousedownEvent, eventNames().mouseupEvent });
 }
 
 bool AccessibilityNodeObject::isDescendantOfBarrenParent() const

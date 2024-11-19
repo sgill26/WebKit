@@ -144,10 +144,12 @@
 #import <WebCore/RenderImage.h>
 #import <WebCore/RenderLayer.h>
 #import <WebCore/RenderLayerBacking.h>
+#import <WebCore/RenderLayerScrollableArea.h>
 #import <WebCore/RenderThemeIOS.h>
 #import <WebCore/RenderVideo.h>
 #import <WebCore/RenderView.h>
 #import <WebCore/RenderedDocumentMarker.h>
+#import <WebCore/ScrollableArea.h>
 #import <WebCore/Settings.h>
 #import <WebCore/ShadowRoot.h>
 #import <WebCore/SharedBuffer.h>
@@ -160,6 +162,7 @@
 #import <WebCore/ViewportArguments.h>
 #import <WebCore/VisibleUnits.h>
 #import <WebCore/WebEvent.h>
+#import <WebCore/WritingSuggestionData.h>
 #import <pal/system/ios/UserInterfaceIdiom.h>
 #import <wtf/MathExtras.h>
 #import <wtf/MemoryPressureHandler.h>
@@ -1244,7 +1247,9 @@ void WebPage::potentialTapAtPosition(WebKit::TapIdentifier requestID, const WebC
         m_potentialTapNode = localMainFrame->nodeRespondingToClickEvents(position, m_potentialTapLocation, m_potentialTapSecurityOrigin.get());
     m_wasShowingInputViewForFocusedElementDuringLastPotentialTap = m_isShowingInputViewForFocusedElement;
 
-    if (shouldRequestMagnificationInformation && m_potentialTapNode && m_viewGestureGeometryCollector) {
+    RefPtr viewGestureGeometryCollector = m_viewGestureGeometryCollector;
+
+    if (shouldRequestMagnificationInformation && m_potentialTapNode && viewGestureGeometryCollector) {
         // FIXME: Could this be combined into tap highlight?
         FloatPoint origin = position;
         FloatRect absoluteBoundingRect;
@@ -1252,7 +1257,7 @@ void WebPage::potentialTapAtPosition(WebKit::TapIdentifier requestID, const WebC
         double viewportMinimumScale;
         double viewportMaximumScale;
 
-        m_viewGestureGeometryCollector->computeZoomInformationForNode(*m_potentialTapNode, origin, absoluteBoundingRect, fitEntireRect, viewportMinimumScale, viewportMaximumScale);
+        viewGestureGeometryCollector->computeZoomInformationForNode(*m_potentialTapNode, origin, absoluteBoundingRect, fitEntireRect, viewportMinimumScale, viewportMaximumScale);
 
         bool nodeIsRootLevel = is<WebCore::Document>(*m_potentialTapNode) || is<WebCore::HTMLBodyElement>(*m_potentialTapNode);
         send(Messages::WebPageProxy::HandleSmartMagnificationInformationForPotentialTap(requestID, absoluteBoundingRect, fitEntireRect, viewportMinimumScale, viewportMaximumScale, nodeIsRootLevel));
@@ -2040,7 +2045,38 @@ void WebPage::extendSelectionForReplacement(CompletionHandler<void()>&& completi
     if (!rangeToSelect)
         return;
 
+    if (auto lastRange = std::exchange(m_lastSelectedReplacementRange, { }); lastRange && makeSimpleRange(*lastRange) == rangeToSelect)
+        return;
+
     setSelectedRangeDispatchingSyntheticMouseEventsIfNeeded(*rangeToSelect, position.affinity());
+    m_lastSelectedReplacementRange = rangeToSelect->makeWeakSimpleRange();
+}
+
+void WebPage::resetLastSelectedReplacementRangeIfNeeded()
+{
+    if (!m_lastSelectedReplacementRange)
+        return;
+
+    auto replacementRange = makeSimpleRange(*m_lastSelectedReplacementRange);
+    if (!replacementRange) {
+        m_lastSelectedReplacementRange = { };
+        return;
+    }
+
+    RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
+    if (!frame) {
+        m_lastSelectedReplacementRange = { };
+        return;
+    }
+
+    auto selectedRange = frame->selection().selection().toNormalizedRange();
+    if (!selectedRange) {
+        m_lastSelectedReplacementRange = { };
+        return;
+    }
+
+    if (!contains(ComposedTree, *replacementRange, *selectedRange))
+        m_lastSelectedReplacementRange = { };
 }
 
 void WebPage::extendSelection(WebCore::TextGranularity granularity, CompletionHandler<void()>&& completionHandler)
@@ -5299,6 +5335,11 @@ void WebPage::requestDocumentEditingContext(DocumentEditingContextRequest&& requ
             static_cast<uint64_t>(distanceToSelectionStart),
             static_cast<uint64_t>(distanceToSelectionEnd - distanceToSelectionStart)
         };
+    } else if (auto* suggestion = frame->editor().writingSuggestionData()) {
+        if (auto suffix = suggestion->content(); !suffix.isEmpty()) {
+            context.markedText = AttributedString::fromNSAttributedString(adoptNS([[NSAttributedString alloc] initWithString:WTFMove(suffix)]));
+            context.selectedRangeInMarkedText = { 0, 0 };
+        }
     }
 
     auto characterRectsForRange = [](const SimpleRange& range, unsigned startOffset) {
@@ -5627,6 +5668,7 @@ void WebPage::computeEnclosingLayerID(EditorState& state, const VisibleSelection
     if (!endLayer)
         return;
 
+    CheckedPtr<RenderLayer> enclosingLayer;
     for (CheckedPtr layer = startLayer->commonAncestorWithLayer(*endLayer); layer; layer = layer->enclosingContainingBlockLayer(CrossFrameBoundaries::Yes)) {
         if (!layer->isComposited())
             continue;
@@ -5640,8 +5682,37 @@ void WebPage::computeEnclosingLayerID(EditorState& state, const VisibleSelection
         if (!identifier)
             continue;
 
+        enclosingLayer = layer;
         state.visualData->enclosingLayerID = WTFMove(identifier);
+        break;
+    }
+
+    if (!state.visualData->enclosingLayerID)
         return;
+
+    auto nextScroller = [](RenderLayer& layer, IncludeSelfOrNot includeSelf) {
+        return layer.enclosingScrollableLayer(includeSelf, CrossFrameBoundaries::Yes);
+    };
+
+    for (CheckedPtr layer = nextScroller(*enclosingLayer, IncludeSelfOrNot::IncludeSelf); layer; layer = nextScroller(*layer, IncludeSelfOrNot::ExcludeSelf)) {
+        CheckedRef renderer = layer->renderer();
+        WeakPtr scrollableArea = [&] -> ScrollableArea* {
+            if (renderer->isRenderView())
+                return renderer->document().isTopDocument() ? nullptr : renderer->frame().view();
+
+            return layer->scrollableArea();
+        }();
+
+        if (!scrollableArea)
+            continue;
+
+        auto scrollingNodeID = scrollableArea->scrollingNodeID();
+        if (!scrollingNodeID)
+            continue;
+
+        state.visualData->enclosingScrollPosition = scrollableArea->scrollPosition();
+        state.visualData->enclosingScrollingNodeID = WTFMove(scrollingNodeID);
+        break;
     }
 }
 

@@ -339,7 +339,7 @@ public:
 
     void reportWebContentCPUTime(Seconds cpuTime, uint64_t activityState);
 
-    Ref<WebProcessProxy> processForSite(WebsiteDataStore&, const WebCore::Site&, WebProcessProxy::LockdownMode, const API::PageConfiguration&); // Will return an existing one if limit is met or due to caching.
+    Ref<WebProcessProxy> processForSite(WebsiteDataStore&, const std::optional<WebCore::Site>&, WebProcessProxy::LockdownMode, const API::PageConfiguration&); // Will return an existing one if limit is met or due to caching.
 
     void prewarmProcess();
 
@@ -802,7 +802,7 @@ private:
     RetainPtr<NSObject> m_deactivationObserver;
     RetainPtr<WKWebInspectorPreferenceObserver> m_webInspectorPreferenceObserver;
 
-    std::unique_ptr<PerActivityStateCPUUsageSampler> m_perActivityStateCPUUsageSampler;
+    UniqueRef<PerActivityStateCPUUsageSampler> m_perActivityStateCPUUsageSampler;
 #endif
 
 #if PLATFORM(COCOA)

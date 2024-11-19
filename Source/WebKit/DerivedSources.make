@@ -184,7 +184,6 @@ MESSAGE_RECEIVERS = \
 	UIProcess/Cocoa/VideoPresentationManagerProxy \
 	UIProcess/ViewGestureController \
 	UIProcess/WebProcessProxy \
-	UIProcess/Automation/WebAutomationSession \
 	UIProcess/WebProcessPool \
 	UIProcess/WebScreenOrientationManagerProxy \
 	UIProcess/Downloads/DownloadProxy \
@@ -600,6 +599,7 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	Shared/Cocoa/SharedCARingBuffer.serialization.in \
 	Shared/Cocoa/WebCoreArgumentCodersCocoa.serialization.in \
 	Shared/CallbackID.serialization.in \
+	Shared/ContentWorldData.serialization.in \
 	Shared/ContextMenuContextData.serialization.in \
 	Shared/CoordinateSystem.serialization.in \
 	Shared/DebuggableInfoData.serialization.in \
@@ -844,6 +844,7 @@ WEBCORE_SERIALIZATION_DESCRIPTION_FILES = \
 	PlatformScreen.serialization.in \
 	PlatformWheelEvent.serialization.in \
 	PlaybackSessionModel.serialization.in \
+	ProcessSyncData.serialization.in \
 	ProtectionSpaceBase.serialization.in \
 	ScrollTypes.serialization.in \
 	WebGPU.serialization.in \

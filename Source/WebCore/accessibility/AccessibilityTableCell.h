@@ -56,7 +56,6 @@ public:
     // Returns the start location and column span of the cell.
     std::pair<unsigned, unsigned> columnIndexRange() const final;
 
-    AccessibilityChildrenVector columnHeaders() override;
     AccessibilityChildrenVector rowHeaders() override;
 
     int axColumnIndex() const override;
@@ -81,7 +80,6 @@ protected:
 
     AccessibilityTableRow* parentRow() const;
     AccessibilityRole determineAccessibilityRole() final;
-    AccessibilityObject* parentObjectUnignored() const override;
 
 private:
     // If a table cell is not exposed as a table cell, a TH element can serve as its title UI element.

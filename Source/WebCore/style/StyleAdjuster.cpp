@@ -373,14 +373,6 @@ static bool shouldInlinifyForRuby(const RenderStyle& style, const RenderStyle& p
     return hasRubyParent && !style.hasOutOfFlowPosition() && !style.isFloating();
 }
 
-static bool isRubyContainerOrInternalRubyBox(const RenderStyle& style)
-{
-    auto display = style.display();
-    return display == DisplayType::Ruby
-        || display == DisplayType::RubyAnnotation
-        || display == DisplayType::RubyBase;
-}
-
 static bool hasUnsupportedRubyDisplay(DisplayType display, const Element* element)
 {
     // Only allow ruby elements to have ruby display types for now.
@@ -497,7 +489,7 @@ void Adjuster::adjust(RenderStyle& style, const RenderStyle* userAgentAppearance
         if (shouldInlinifyForRuby(style, m_parentBoxStyle))
             style.setEffectiveDisplay(equivalentInlineDisplay(style));
         // https://drafts.csswg.org/css-ruby-1/#bidi
-        if (isRubyContainerOrInternalRubyBox(style))
+        if (style.isRubyContainerOrInternalRubyBox())
             style.setUnicodeBidi(forceBidiIsolationForRuby(style.unicodeBidi()));
     }
 
@@ -972,6 +964,14 @@ void Adjuster::adjustForSiteSpecificQuirks(RenderStyle& style) const
         if (m_element->hasClassName(className))
             style.setUserSelect(UserSelect::None);
     }
+
+#if PLATFORM(IOS_FAMILY)
+    if (m_document->quirks().needsGoogleMapsScrollingQuirk()) {
+        static MainThreadNeverDestroyed<const AtomString> className("PUtLdf"_s);
+        if (is<HTMLBodyElement>(*m_element) && m_element->hasClassName(className))
+            style.setUsedTouchActions({ TouchAction::Auto });
+    }
+#endif
 
 #if ENABLE(VIDEO)
     if (m_document->quirks().needsFullscreenDisplayNoneQuirk()) {

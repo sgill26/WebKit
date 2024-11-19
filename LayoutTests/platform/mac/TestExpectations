@@ -800,6 +800,13 @@ imported/w3c/web-platform-tests/webvtt/rendering/cues-with-video/processing-mode
 ## --- End W3C Imported WebVTT Tests ---
 # --- End WebVTT Tests
 
+# webkit.org/b/261038 localhost alias
+imported/w3c/web-platform-tests/scroll-to-text-fragment/iframe-scroll.sub.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-to-text-fragment/iframes.sub.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-to-text-fragment/scroll-to-text-fragment-security.sub.html [ Skip ]
+
+imported/w3c/web-platform-tests/scroll-to-text-fragment/sequential-focus.html [ Failure ]
+
 # FIXME: Needs bugzilla
 editing/mac/input/undo-grouping-on-text-insertion.html [ Skip ]
 
@@ -2046,6 +2053,7 @@ http/tests/media/fairplay/fps-mse-unmuxed-key-rotation.html [ Pass Failure ]
 imported/w3c/web-platform-tests/html/semantics/embedded-content/media-elements/autoplay-allowed-by-feature-policy-attribute-redirect-on-load.https.sub.html [ Pass Failure ]
 [ Ventura+ ] fast/text/synthetic-bold-transformed.html [ Pass ImageOnlyFailure ]
 [ x86_64 ] js/promises-tests/promises-tests-2-3-3.html [ Pass Timeout ]
+[ Ventura+ ] editing/execCommand/delete-non-editable-range-crash.html [ Pass Timeout ]
 
 webkit.org/b/254637 fast/text/web-font-load-invisible-during-loading.html [ Pass Failure ]
 
@@ -2423,8 +2431,6 @@ webkit.org/b/257011 imported/w3c/web-platform-tests/css/css-text/hyphens/hyphena
 # webkit.org/b/280646 [macOS Debug EWS] media/video-webkit-playsinline.html is a flaky crash
 [ Debug ] media/video-webkit-playsinline.html [ Skip ]
 
-webkit.org/b/280792 inspector/worker/debugger-pause-subworker.html [ Skip ]
-
 # webkit.org/b/280985 [macOS Debug]: media/track/track-text-track-destructor-crash.html is a flaky crash (failure in EWS)
 [ Debug ] media/track/track-text-track-destructor-crash.html [ Pass Crash ]
 
@@ -2437,8 +2443,21 @@ webkit.org/b/280792 inspector/worker/debugger-pause-subworker.html [ Skip ]
 # Platform-specific test enabled on macOS and iOS separately.
 webanimations/scroll-timeline-clamped-current-time-while-rubber-banding-mac.html [ Pass ]
 
+# macOS-only test.
+media/webkit-media-controls-not-visible-after-exiting-fullscreen.html [ Pass ]
+
 # webkit.org/b/281765 PROGRESSION (285251@main): [ macOS iOS ] imported/w3c/web-platform-tests/navigation-api/navigate-event/cross-origin-traversal-redirect.html is a constant failure. 
 imported/w3c/web-platform-tests/navigation-api/navigate-event/cross-origin-traversal-redirect.html [ Skip ]
 
 # Modern AVContentKeySession is only available on Sonoma
 [ Ventura Sonoma ] http/tests/media/fairplay/legacy-fairplay-mse-muxed-nowait.html [ Skip ]
+
+# webkit.org/b/280304 [ Sequoia ] fast/ruby/ruby-expansion-cjk-4.html is a constant image only failure.
+[ Sequoia ] fast/ruby/ruby-expansion-cjk-4.html [ ImageOnlyFailure ]
+
+# webkit.org/b/280792 [macOS] ASSERTION FAILED: Unsafe to ref/deref from different threads (flaky in EWS)
+inspector/worker/debugger-pause-subworker.html [ Skip ]
+inspector/worker/console-basic-subworker.html [ Skip ]
+
+webkit.org/b/283203 [ Ventura+ ] fast/canvas/imageData-consistency.html [ Pass Timeout ]
+

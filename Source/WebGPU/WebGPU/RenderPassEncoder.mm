@@ -96,7 +96,7 @@ RenderPassEncoder::RenderPassEncoder(id<MTLRenderCommandEncoder> renderCommandEn
     parentEncoder->lock(true);
 
     m_attachmentsToClear = [NSMutableDictionary dictionary];
-    for (auto [ i, attachment ] : IndexedRange(colorAttachments)) {
+    for (auto [ i, attachment ] : indexedRange(colorAttachments)) {
         if (!attachment.view)
             continue;
 
@@ -244,8 +244,8 @@ static void setViewportMinMaxDepthIntoBuffer(auto& fragmentDynamicOffsets, float
         fragmentDynamicOffsets.grow(RenderBundleEncoder::startIndexForFragmentDynamicOffsets);
 
     using destType = typename std::remove_reference<decltype(fragmentDynamicOffsets[0])>::type;
-    fragmentDynamicOffsets[0] = bitwise_cast<destType>(minDepth);
-    fragmentDynamicOffsets[1] = bitwise_cast<destType>(maxDepth);
+    fragmentDynamicOffsets[0] = std::bit_cast<destType>(minDepth);
+    fragmentDynamicOffsets[1] = std::bit_cast<destType>(maxDepth);
 }
 
 void RenderPassEncoder::addResourceToActiveResources(const void* resourceAddress, id<MTLResource> mtlResource, OptionSet<BindGroupEntryUsage> initialUsage, uint32_t baseMipLevel, uint32_t baseArrayLayer, WGPUTextureAspect aspect)
@@ -1047,7 +1047,7 @@ void RenderPassEncoder::executeBundles(Vector<Ref<RenderBundle>>&& bundles)
                     CHECKED_SET_PSO(commandEncoder, renderPipelineState);
                     [commandEncoder setVertexBytes:&data.indexData length:sizeof(data.indexData) atIndex:0];
                     [commandEncoder setVertexBuffer:icb.indirectCommandBufferContainer offset:0 atIndex:1];
-
+                    [commandEncoder useResource:indexBuffer->buffer() usage:MTLResourceUsageRead stages:MTLRenderStageVertex];
                     [commandEncoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:0 vertexCount:data.indexData.indexCount];
                     indexBuffer->indirectBufferRecomputed(data.indexData.firstIndex, data.indexData.indexCount, data.indexData.minVertexCount, data.indexData.minInstanceCount, data.indexType, data.indexData.firstInstance);
                     splitPass = true;

@@ -140,8 +140,13 @@ media/media-source/media-managedmse-airplay.html [ Pass ]
 media/media-source/media-managedmse-airplay-withsrc.html [ Pass ]
 media/media-source/media-managedmse-idl.html [ Pass ]
 media/media-source/media-managedmse-video-with-poster.html [ Pass ]
+media/media-source/media-source-vp8-webm-error.html [ Pass ]
+media/media-source/media-source-vp8-webm-error-offscreen.html [ Pass ]
 
 webkit.org/b/269897 media/media-source/media-managedmse-poster.html [ Skip ]
+
+webkit.org/b/282969 media/media-video-fullrange.html [ Timeout Pass ]
+webkit.org/b/282969 media/media-video-videorange.html [ Timeout Pass ]
 
 fast/images/text-recognition [ Pass ]
 fast/images/text-recognition/ios [ Pass ]
@@ -2336,6 +2341,7 @@ accessibility/slot-default-contents-accname.html [ Pass ]
 accessibility/spinbutton-increment-decrement.html [ Pass ]
 accessibility/display-contents/text-under-element.html [ Pass ]
 accessibility/text-updates-after-dynamic-change.html [ Pass ]
+accessibility/table-ancestry.html [ Pass ]
 accessibility/table-display-block.html [ Pass ]
 accessibility/table-display-flex.html [ Pass ]
 accessibility/table-display-grid.html [ Pass ]
@@ -2347,6 +2353,7 @@ accessibility/url-test.html [ Pass ]
 accessibility/video-element-url-attribute.html [ Pass ]
 accessibility/visible-character-range-basic.html [ Pass ]
 accessibility/visible-character-range-height-changes.html [ Pass ]
+accessibility/visible-character-range-vertical-rl.html [ Pass ]
 accessibility/visible-character-range-width-changes.html [ Pass ]
 accessibility/ancestor-computation.html [ Pass ]
 
@@ -2896,8 +2903,6 @@ webkit.org/b/177323 imported/w3c/web-platform-tests/fetch/security/embedded-cred
 webkit.org/b/177445 fast/loader/form-submission-after-beforeunload-cancel.html [ Pass Timeout ]
 
 webkit.org/b/177617 http/tests/storageAccess/request-storage-access-top-frame.html [ Pass Timeout ]
-
-webkit.org/b/177547 imported/w3c/web-platform-tests/fetch/security/dangling-markup-mitigation-data-url.tentative.sub.html [ Pass Failure ]
 
 # macOS only test
 fast/canvas/webgl/large-drawing-buffer-resize.html [ Skip ]
@@ -7181,14 +7186,19 @@ webkit.org/b/236926 webrtc/vp9-profile2.html [ Timeout Pass ]
 # This passes only on the arm64 host
 imported/w3c/web-platform-tests/html/semantics/embedded-content/the-img-element/adopt-from-image-document.html [ Pass ImageOnlyFailure ]
 
-webkit.org/b/242748 [ Release arm64 ] css3/color-filters/svg/color-filter-inline-svg.html [ ImageOnlyFailure ]
-
 webkit.org/b/254872 webrtc/video-rotation.html [ Pass Timeout ]
 
 fast/overflow/infiniteRecursion.html [ Failure Pass ]
 tables/mozilla/bugs/bug2479-2.html [ Failure Pass ]
 
 webkit.org/b/263872 imported/w3c/web-platform-tests/scroll-animations/css/scroll-timeline-default-iframe.html [ ImageOnlyFailure ]
+
+webkit.org/b/283366 imported/w3c/web-platform-tests/scroll-animations/view-timelines/svg-graphics-element-001.html [ Pass Failure ]
+webkit.org/b/283366 imported/w3c/web-platform-tests/scroll-animations/view-timelines/svg-graphics-element-002.html [ Pass Failure ]
+webkit.org/b/283366 imported/w3c/web-platform-tests/scroll-animations/view-timelines/svg-graphics-element-003.html [ Pass Failure ]
+
+webkit.org/b/283367 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-display-none.html [ ImageOnlyFailure ]
+webkit.org/b/283367 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/animation-with-animatable-interface.html [ ImageOnlyFailure ]
 
 webkit.org/b/269506 fast/forms/ios/autocapitalize-words.html [ Pass Failure ]
 
@@ -7408,6 +7418,15 @@ imported/w3c/web-platform-tests/screen-orientation/lock-sandboxed-iframe.html [ 
 # webkit.org/b/278330 [ iOS ] imported/w3c/web-platform-tests/scroll-to-text-fragment/scroll-to-text-fragment.html is a flaky text failure
 imported/w3c/web-platform-tests/scroll-to-text-fragment/scroll-to-text-fragment.html [ Pass Failure ]
 
+# webkit.org/b/261038 localhost alias
+imported/w3c/web-platform-tests/scroll-to-text-fragment/iframe-scroll.sub.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-to-text-fragment/iframes.sub.html [ Skip ]
+imported/w3c/web-platform-tests/scroll-to-text-fragment/scroll-to-text-fragment-security.sub.html [ Skip ]
+
+imported/w3c/web-platform-tests/scroll-to-text-fragment/sequential-focus.html [ Failure ]
+
+webkit.org/b/282970 imported/w3c/web-platform-tests/scroll-to-text-fragment/drag-selection-over-target-text.html [ Failure ]
+
 # webkit.org/b/278333 [ iOS ] media/remove-video-best-media-element-in-main-frame-crash.html is a flaky timeout
 media/remove-video-best-media-element-in-main-frame-crash.html [ Pass Timeout ]
 
@@ -7522,3 +7541,19 @@ fast/events/ios/key-events-comprehensive/key-events-control-option.html [ Pass T
 fast/events/ios/key-events-comprehensive/key-events-meta.html [ Pass Timeout ]
 fast/events/ios/key-events-comprehensive/key-events-option.html [ Pass Timeout ]
 fast/events/ios/key-events-comprehensive/key-events-shift.html [ Pass Timeout ]
+
+# webkit.org/b/283215 ([iOS Sim, x86_64] 4 webgl swizzler tests are flakily failing.)
+[ x86_64 ] webgl/1.0.x/conformance/ogles/GL/swizzlers/swizzlers_009_to_016.html [ Pass Failure ]
+[ x86_64 ] webgl/1.0.x/conformance/ogles/GL/swizzlers/swizzlers_041_to_048.html [ Pass Failure ]
+[ x86_64 ] webgl/1.0.x/conformance/ogles/GL/swizzlers/swizzlers_113_to_120.html [ Pass Failure ]
+[ x86_64 ] webgl/2.0.y/conformance/ogles/GL/swizzlers/swizzlers_097_to_104.html [ Pass Failure ]
+
+# webkit.org/b/280991 (NEW TEST (280648@main): [ wk2 ] 2 media/media-vp8-webm*.html tests are flaky ImageOnlyFailures.)
+# Missing AVSampleBufferDisplayLayer's ReadyForDisplayDidChangeNotification
+media/media-vp8-webm.html [ Pass ImageOnlyFailure ]
+media/media-vp8-webm-seek-to-start.html [ Pass ImageOnlyFailure ]
+
+# webkit.org/b/283218 ([ iOS ] 3 CSS filters tests are flaky ImageOnlyFailures.)
+css3/color-filters/color-filter-animation.html [ Pass ImageOnlyFailure ]
+css3/color-filters/svg/color-filter-inline-svg.html [ Pass ImageOnlyFailure ]
+css3/filters/hidpi-backdrop-filter-rasterization-scale.html [ Pass ImageOnlyFailure ]

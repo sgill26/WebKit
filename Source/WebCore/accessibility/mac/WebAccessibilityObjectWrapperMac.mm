@@ -827,16 +827,15 @@ ALLOW_DEPRECATED_IMPLEMENTATIONS_END
     static NeverDestroyed<RetainPtr<NSArray>> incrementorActions = [defaultElementActions.get() arrayByAddingObjectsFromArray:@[NSAccessibilityIncrementAction, NSAccessibilityDecrementAction]];
 
     NSArray *actions;
-    if (backingObject->supportsPressAction())
-        actions = actionElementActions.get().get();
-    else if (backingObject->isMenuRelated())
-        actions = menuElementActions.get().get();
-    else if (backingObject->isSlider() || (backingObject->isSpinButton() && backingObject->spinButtonType() == SpinButtonType::Standalone)) {
+    if (backingObject->isSlider() || (backingObject->isSpinButton() && backingObject->spinButtonType() == SpinButtonType::Standalone)) {
         // Non-standalone spinbuttons should not advertise the increment and decrement actions because they have separate increment and decrement controls.
         actions = incrementorActions.get().get();
-    }
+    } else if (backingObject->isMenuRelated())
+        actions = menuElementActions.get().get();
     else if (backingObject->isAttachment())
         actions = [[self attachmentView] accessibilityActionNames];
+    else if (backingObject->supportsPressAction())
+        actions = actionElementActions.get().get();
     else
         actions = defaultElementActions.get().get();
 
@@ -2341,6 +2340,13 @@ id attributeValueForTesting(const RefPtr<AXCoreObject>& backingObject, NSString 
     if ([attributeName isEqualToString:@"AXIsOnScreen"])
         return [NSNumber numberWithBool:backingObject->isOnScreen()];
 
+    if ([attributeName isEqualToString:@"_AXIsInTable"]) {
+        auto* table = Accessibility::findAncestor(*backingObject, false, [&] (const auto& ancestor) {
+            return ancestor.isTable();
+        });
+        return [NSNumber numberWithBool:!!table];
+    }
+
     return nil;
 }
 
@@ -3124,6 +3130,10 @@ enum class TextUnit {
             return inputMarker.nextSentenceEnd().platformData().autorelease();
         case TextUnit::PreviousSentenceStart:
             return inputMarker.previousSentenceStart().platformData().autorelease();
+        case TextUnit::NextParagraphEnd:
+            return inputMarker.nextParagraphEnd().platformData().autorelease();
+        case TextUnit::PreviousParagraphStart:
+            return inputMarker.previousParagraphStart().platformData().autorelease();
         default:
             // TODO: Not implemented!
             break;

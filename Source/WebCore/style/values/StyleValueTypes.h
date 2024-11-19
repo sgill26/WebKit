@@ -25,7 +25,6 @@
 #pragma once
 
 #include "CSSCalcSymbolTable.h"
-#include "CSSCalcValue.h"
 #include "CSSValueTypes.h"
 #include <optional>
 #include <tuple>
@@ -35,6 +34,7 @@
 
 namespace WebCore {
 
+class CSSToLengthConversionData;
 class RenderStyle;
 struct BlendingContext;
 
@@ -89,11 +89,17 @@ template<typename CSSType> using PrimaryCSSType = typename ToPrimaryCSSTypeMappi
 
 // MARK: Common Types.
 
-// Helper type used to represent a constant identifier.
+// Helper type used to represent a known constant identifier.
 template<CSSValueID C> using Constant = CSS::Constant<C>;
 
-// Specialize TreatAsNonConverting for Constant<C>, to indicate that its type does not change from the CSS representation.
+// Specialize `TreatAsNonConverting` for `Constant<C>`, to indicate that its type does not change from the CSS representation.
 template<CSSValueID C> inline constexpr bool TreatAsNonConverting<Constant<C>> = true;
+
+// Helper type used to represent an arbitrary constant identifier.
+using CustomIdentifier = CSS::CustomIdentifier;
+
+// Specialize `TreatAsNonConverting` for `CustomIdentifier`, to indicate that its type does not change from the CSS representation.
+template<> inline constexpr bool TreatAsNonConverting<CustomIdentifier> = true;
 
 // Helper type used to represent a CSS function.
 template<CSSValueID C, typename T> using FunctionNotation = CSS::FunctionNotation<C, T>;

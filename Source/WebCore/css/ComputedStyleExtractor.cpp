@@ -28,6 +28,7 @@
 #include "CSSBasicShapeValue.h"
 #include "CSSBorderImage.h"
 #include "CSSBorderImageSliceValue.h"
+#include "CSSColorSchemeValue.h"
 #include "CSSCounterValue.h"
 #include "CSSFontFeatureValue.h"
 #include "CSSFontStyleWithAngleValue.h"
@@ -81,6 +82,7 @@
 #include "ScaleTransformOperation.h"
 #include "ScrollTimeline.h"
 #include "SkewTransformOperation.h"
+#include "StyleColorScheme.h"
 #include "StylePathData.h"
 #include "StylePrimitiveNumericTypes+Conversions.h"
 #include "StylePropertyShorthand.h"
@@ -999,7 +1001,10 @@ static Ref<CSSValue> computedTranslate(RenderObject* renderer, const RenderStyle
         return CSSValueList::createSpaceSeparated(value(translate->x()), value(translate->y()), value(translate->z()));
     if (includeLength(translate->y()))
         return CSSValueList::createSpaceSeparated(value(translate->x()), value(translate->y()));
-    return CSSValueList::createSpaceSeparated(value(translate->x()));
+    if (!translate->x().isUndefined() && !translate->x().isEmptyValue())
+        return CSSValueList::createSpaceSeparated(value(translate->x()));
+
+    return CSSPrimitiveValue::create(CSSValueNone);
 }
 
 static Ref<CSSValue> computedScale(RenderObject* renderer, const RenderStyle& style)
@@ -4833,21 +4838,8 @@ RefPtr<CSSValue> ComputedStyleExtractor::valueForPropertyInStyle(const RenderSty
 #endif
 
 #if ENABLE(DARK_MODE_CSS)
-    case CSSPropertyColorScheme: {
-        auto colorScheme = style.colorScheme();
-        if (colorScheme.isNormal())
-            return CSSPrimitiveValue::create(CSSValueNormal);
-
-        CSSValueListBuilder list;
-        if (colorScheme.contains(ColorScheme::Light))
-            list.append(CSSPrimitiveValue::create(CSSValueLight));
-        if (colorScheme.contains(ColorScheme::Dark))
-            list.append(CSSPrimitiveValue::create(CSSValueDark));
-        if (!colorScheme.allowsTransformations())
-            list.append(CSSPrimitiveValue::create(CSSValueOnly));
-        ASSERT(!list.isEmpty());
-        return CSSValueList::createSpaceSeparated(WTFMove(list));
-    }
+    case CSSPropertyColorScheme:
+        return CSSColorSchemeValue::create(Style::toCSS(style.colorScheme(), style));
 #endif
 
     // Length properties for SVG.
@@ -4895,6 +4887,22 @@ RefPtr<CSSValue> ComputedStyleExtractor::valueForPropertyInStyle(const RenderSty
         if (style.positionAnchor().isNull())
             return CSSPrimitiveValue::create(CSSValueAuto);
         return CSSPrimitiveValue::createCustomIdent(style.positionAnchor());
+    case CSSPropertyPositionTryOrder: {
+        switch (style.positionTryOrder()) {
+        case Style::PositionTryOrder::Normal:
+            return CSSPrimitiveValue::create(CSSValueNormal);
+        case Style::PositionTryOrder::MostWidth:
+            return CSSPrimitiveValue::create(CSSValueMostWidth);
+        case Style::PositionTryOrder::MostHeight:
+            return CSSPrimitiveValue::create(CSSValueMostHeight);
+        case Style::PositionTryOrder::MostBlockSize:
+            return CSSPrimitiveValue::create(CSSValueMostBlockSize);
+        case Style::PositionTryOrder::MostInlineSize:
+            return CSSPrimitiveValue::create(CSSValueMostInlineSize);
+        }
+        ASSERT_NOT_REACHED();
+        return CSSPrimitiveValue::create(CSSValueNormal);
+    }
     case CSSPropertyTimelineScope:
         switch (style.timelineScope().type) {
         case TimelineScope::Type::None:

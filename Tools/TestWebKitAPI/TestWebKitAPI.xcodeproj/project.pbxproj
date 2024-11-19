@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 55;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -53,6 +53,7 @@
 		07492B3B1DF8B14C00633DE1 /* EnumerateMediaDevices.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 07492B3A1DF8AE2D00633DE1 /* EnumerateMediaDevices.cpp */; };
 		075A9CF526177218006DFA3A /* MediaSessionCoordinatorTest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 075A9CF426177217006DFA3A /* MediaSessionCoordinatorTest.mm */; };
 		076E507F1F4513D6006E9F5A /* Logging.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 076E507E1F45031E006E9F5A /* Logging.cpp */; };
+		077489CC2CE4061A00133938 /* WKWebViewSwiftOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070721142CE2F5F6004D9EC8 /* WKWebViewSwiftOverlay.swift */; };
 		077A5AF3230638A600A7105C /* AccessibilityTestPlugin.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0746645822FF630500E3451A /* AccessibilityTestPlugin.mm */; };
 		079D45F22A2A6BBE003830C7 /* Viewport.mm in Sources */ = {isa = PBXBuildFile; fileRef = 079D45F12A2A6BBE003830C7 /* Viewport.mm */; };
 		07C046CA1E4262A8007201E7 /* CARingBufferTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 07C046C91E42573E007201E7 /* CARingBufferTest.cpp */; };
@@ -1311,6 +1312,7 @@
 		F48D6C10224B377000E3E2FB /* PreferredContentMode.mm in Sources */ = {isa = PBXBuildFile; fileRef = F48D6C0F224B377000E3E2FB /* PreferredContentMode.mm */; };
 		F49153762901CEED004E2E97 /* CustomContentViewGestures.mm in Sources */ = {isa = PBXBuildFile; fileRef = F491536E2901CEED004E2E97 /* CustomContentViewGestures.mm */; };
 		F494B36A263120780060A310 /* TextServicesTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = F494B369263120780060A310 /* TextServicesTests.mm */; };
+		F4A26ECC2CE59C0F0008F62A /* test.json in Copy Resources */ = {isa = PBXBuildFile; fileRef = F4A26ECB2CE59C0F0008F62A /* test.json */; };
 		F4A2E64D284541BA0001FEEF /* FocusWebView.mm in Sources */ = {isa = PBXBuildFile; fileRef = F4A2E64C284541BA0001FEEF /* FocusWebView.mm */; };
 		F4A715A82950C8D900B4D0D6 /* AdvancedPrivacyProtections.mm in Sources */ = {isa = PBXBuildFile; fileRef = F4A715A72950C8D900B4D0D6 /* AdvancedPrivacyProtections.mm */; };
 		F4A7CE782662D6E800228685 /* TouchEventTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = F4A7CE772662D6E800228685 /* TouchEventTests.mm */; };
@@ -1987,6 +1989,7 @@
 				A17C46F52C98E54B0023F3C7 /* test-mse.webm in Copy Resources */,
 				A17C46F62C98E54B0023F3C7 /* test-without-audio-track.mp4 in Copy Resources */,
 				A17C48092C98E5C20023F3C7 /* test.jpg in Copy Resources */,
+				F4A26ECC2CE59C0F0008F62A /* test.json in Copy Resources */,
 				A17C46F72C98E54B0023F3C7 /* test.mp4 in Copy Resources */,
 				A17C480A2C98E5C20023F3C7 /* test.pages in Copy Resources */,
 				A17C46F82C98E54B0023F3C7 /* test.pdf in Copy Resources */,
@@ -2111,6 +2114,8 @@
 		02ABB97C2C46EE2100696FE3 /* WKWebExtensionAPISidebar.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = WKWebExtensionAPISidebar.mm; sourceTree = "<group>"; };
 		041A1E33216FFDBC00789E0A /* PublicSuffix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PublicSuffix.cpp; sourceTree = "<group>"; };
 		0451A5A6235E438E009DF945 /* BumpPointerAllocator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BumpPointerAllocator.cpp; sourceTree = "<group>"; };
+		070721102CE2F4B8004D9EC8 /* TestWebKitAPIBundle-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestWebKitAPIBundle-Bridging-Header.h"; sourceTree = "<group>"; };
+		070721142CE2F5F6004D9EC8 /* WKWebViewSwiftOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WKWebViewSwiftOverlay.swift; sourceTree = "<group>"; };
 		0711DF51226A95FB003DD2F7 /* AVFoundationSoftLinkTest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AVFoundationSoftLinkTest.mm; sourceTree = "<group>"; };
 		07137049265320E500CA2C9A /* AudioBufferSize.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioBufferSize.mm; sourceTree = "<group>"; };
 		0721D4582838295400A95853 /* start-offset.ts */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.typescript; path = "start-offset.ts"; sourceTree = "<group>"; };
@@ -3478,6 +3483,7 @@
 		CD78E11A1DB7EA360014A2DE /* FullscreenDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FullscreenDelegate.mm; sourceTree = "<group>"; };
 		CD78E11B1DB7EA360014A2DE /* FullscreenDelegate.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = FullscreenDelegate.html; sourceTree = "<group>"; };
 		CD7F89DB22A86CDA00D683AE /* WKWebViewSuspendAllMediaPlayback.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = WKWebViewSuspendAllMediaPlayback.mm; sourceTree = "<group>"; };
+		CD7FC5D82CDAF7160032C1FC /* FullscreenScrollAndResize.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = FullscreenScrollAndResize.mm; sourceTree = "<group>"; };
 		CD8394DE232AF15E00149495 /* media-loading.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "media-loading.html"; sourceTree = "<group>"; };
 		CD89D0381C4EDB2A00040A04 /* WebCoreNSURLSession.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WebCoreNSURLSession.mm; sourceTree = "<group>"; };
 		CD9E292B1C90A71F000BB800 /* RequiresUserActionForPlayback.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RequiresUserActionForPlayback.mm; sourceTree = "<group>"; };
@@ -3760,6 +3766,7 @@
 		F491DBAD281DE0980081705F /* image-controls.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "image-controls.html"; sourceTree = "<group>"; };
 		F494B369263120780060A310 /* TextServicesTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TextServicesTests.mm; sourceTree = "<group>"; };
 		F49992C5248DABE400034167 /* overflow-hidden.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = "overflow-hidden.html"; sourceTree = "<group>"; };
+		F4A26ECB2CE59C0F0008F62A /* test.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test.json; sourceTree = "<group>"; };
 		F4A2E64C284541BA0001FEEF /* FocusWebView.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = FocusWebView.mm; sourceTree = "<group>"; };
 		F4A2E64E28455D230001FEEF /* open-in-new-tab.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = "open-in-new-tab.html"; sourceTree = "<group>"; };
 		F4A32EC31F05F3780047C544 /* dragstart-change-selection-offscreen.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "dragstart-change-selection-offscreen.html"; sourceTree = "<group>"; };
@@ -3981,6 +3988,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0707210D2CE2F3A0004D9EC8 /* WebKit Swift */ = {
+			isa = PBXGroup;
+			children = (
+				070721102CE2F4B8004D9EC8 /* TestWebKitAPIBundle-Bridging-Header.h */,
+				070721142CE2F5F6004D9EC8 /* WKWebViewSwiftOverlay.swift */,
+			);
+			path = "WebKit Swift";
+			sourceTree = "<group>";
+		};
 		08FB7794FE84155DC02AAC07 /* TestWebKitAPI */ = {
 			isa = PBXGroup;
 			children = (
@@ -4286,6 +4302,7 @@
 				3F1B52681D3D7129008D60C4 /* FullscreenLayoutConstraints.mm */,
 				A1AD38272C3D9FAF003499BE /* FullscreenLifecycle.mm */,
 				CDDC7C6825FFF6D000224278 /* FullscreenRemoveNodeBeforeEnter.mm */,
+				CD7FC5D82CDAF7160032C1FC /* FullscreenScrollAndResize.mm */,
 				F4BDA42E27F8BF2F00F9647D /* FullscreenVideoTextRecognition.mm */,
 				631EFFF51E7B5E8D00D2EBB8 /* Geolocation.mm */,
 				07E1F6A01FFC3A080096C7EC /* GetDisplayMedia.mm */,
@@ -5248,6 +5265,7 @@
 				31727A4A29F7338C00A7FB0F /* system-preview.html */,
 				313C3A0121E5677A00DBA86E /* SystemPreviewBlobNaming.html */,
 				F46D43AA26D7090300969E5E /* test.jpg */,
+				F4A26ECB2CE59C0F0008F62A /* test.json */,
 				49C64FD628349C19005BF0C2 /* test.pages */,
 				F45EB60327739F2B003571AE /* TestModalContainerControls.mlmodelc */,
 				2E9896141D8F092B00739892 /* text-and-password-inputs.html */,
@@ -5881,6 +5899,7 @@
 				BC9096411255616000083756 /* WebKit */,
 				1ABC3DEC1899BE55004F0626 /* WebKit Cocoa */,
 				BC3C4C6F14575B1D0025FB62 /* WebKit Objective-C */,
+				0707210D2CE2F3A0004D9EC8 /* WebKit Swift */,
 				CDC8E4981BC728AE00594FEC /* WebKitLegacy */,
 				3A15785D28D150BB00142DB1 /* WGSL */,
 				BC9096461255618900083756 /* WTF */,
@@ -6435,6 +6454,7 @@
 					};
 					A17C582D2C9B3EAD009DD0B5 = {
 						CreatedOnToolsVersion = 16.0;
+						LastSwiftMigration = 1620;
 						TestTargetID = A17C58012C9AA12F009DD0B5;
 					};
 					BC57597F126E74AF006F0F12 = {
@@ -7387,6 +7407,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A17C58472C9BF524009DD0B5 /* GoogleTests.mm in Sources */,
+				077489CC2CE4061A00133938 /* WKWebViewSwiftOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

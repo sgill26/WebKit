@@ -3918,7 +3918,7 @@ bool EventHandler::internalKeyEvent(const PlatformKeyboardEvent& initialKeyEvent
     if (initialKeyEvent.type() == PlatformEvent::Type::RawKeyDown) {
         element->dispatchEvent(keydown);
         // If frame changed as a result of keydown dispatch, then return true to avoid sending a subsequent keypress message to the new frame.
-        bool changedFocusedFrame = frame->page() && frame.ptr() != frame->page()->focusController().focusedOrMainFrame();
+        bool changedFocusedFrame = frame->page() && frame.ptr() != frame->page()->checkedFocusController()->focusedOrMainFrame();
         return keydown->defaultHandled() || keydown->defaultPrevented() || changedFocusedFrame;
     }
 
@@ -3952,7 +3952,7 @@ bool EventHandler::internalKeyEvent(const PlatformKeyboardEvent& initialKeyEvent
     }
 
     // If frame changed as a result of keydown dispatch, then return early to avoid sending a subsequent keypress message to the new frame.
-    bool changedFocusedFrame = frame->page() && frame.ptr() != frame->page()->focusController().focusedOrMainFrame();
+    bool changedFocusedFrame = frame->page() && frame.ptr() != frame->page()->checkedFocusController()->focusedOrMainFrame();
     bool keydownResult = keydown->defaultHandled() || keydown->defaultPrevented() || changedFocusedFrame;
     if (keydownResult && !backwardCompatibilityMode)
         return keydownResult;
@@ -4968,12 +4968,14 @@ HandleUserInputEventResult EventHandler::handleTouchEvent(const PlatformTouchEve
 
     // Array of touches per state, used to assemble the 'changedTouches' list in the JS event.
     typedef HashSet<RefPtr<EventTarget>> EventTargetSet;
+    WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
     struct {
         // The touches corresponding to the particular change state this struct instance represents.
         RefPtr<TouchList> m_touches;
         // Set of targets involved in m_touches.
         EventTargetSet m_targets;
     } changedTouches[PlatformTouchPoint::TouchStateEnd];
+    WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 
     const Vector<PlatformTouchPoint>& points = event.touchPoints();
 

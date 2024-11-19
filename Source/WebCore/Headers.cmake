@@ -763,6 +763,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     bindings/js/JSDOMConvertSequences.h
     bindings/js/JSDOMConvertSerializedScriptValue.h
     bindings/js/JSDOMConvertStrings.h
+    bindings/js/JSDOMConvertUndefined.h
     bindings/js/JSDOMConvertUnion.h
     bindings/js/JSDOMConvertWebGL.h
     bindings/js/JSDOMConvertXPathNSResolver.h
@@ -948,11 +949,15 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     css/values/backgrounds/CSSBorderRadius.h
     css/values/backgrounds/CSSMinimallySerializingRectEdges.h
 
+    css/values/color-adjust/CSSColorScheme.h
+
     css/values/images/CSSGradient.h
 
     css/values/motion/CSSRayFunction.h
 
+    css/values/primitives/CSSNone.h
     css/values/primitives/CSSPosition.h
+    css/values/primitives/CSSPrimitiveNumericRange.h
     css/values/primitives/CSSPrimitiveNumericTypes.h
     css/values/primitives/CSSUnevaluatedCalc.h
 
@@ -1635,9 +1640,9 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     page/PointerLockController.h
     page/PrewarmInformation.h
     page/PrintContext.h
-    page/ProcessSyncClient.h
     page/ProcessWarming.h
     page/Quirks.h
+    page/QuirksData.h
     page/ReducedResolutionSeconds.h
     page/RemoteDOMWindow.h
     page/RemoteFrame.h
@@ -2539,7 +2544,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     rendering/style/ShapeValue.h
     rendering/style/StyleBackgroundData.h
     rendering/style/StyleBoxData.h
-    rendering/style/StyleColorScheme.h
     rendering/style/StyleContentAlignmentData.h
     rendering/style/StyleCustomPropertyData.h
     rendering/style/StyleDeprecatedFlexibleBoxData.h
@@ -2595,10 +2599,13 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     style/values/backgrounds/StyleBorderRadius.h
     style/values/backgrounds/StyleMinimallySerializingRectEdges.h
 
+    style/values/color-adjust/StyleColorScheme.h
+
     style/values/images/StyleGradient.h
 
     style/values/motion/StyleRayFunction.h
 
+    style/values/primitives/StyleNone.h
     style/values/primitives/StylePosition.h
     style/values/primitives/StylePrimitiveNumericTypes.h
 
@@ -2786,6 +2793,8 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     ${WebCore_DERIVED_SOURCES_DIR}/Namespace.h
     ${WebCore_DERIVED_SOURCES_DIR}/NodeName.h
     ${WebCore_DERIVED_SOURCES_DIR}/PlugInsResources.h
+    ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.h
+    ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncData.h
     ${WebCore_DERIVED_SOURCES_DIR}/ReadableByteStreamInternalsBuiltins.h
     ${WebCore_DERIVED_SOURCES_DIR}/ReadableStreamInternalsBuiltins.h
     ${WebCore_DERIVED_SOURCES_DIR}/Settings.h
