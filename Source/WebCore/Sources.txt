@@ -950,6 +950,7 @@ css/CSSVariableData.cpp
 css/CSSVariableReferenceValue.cpp
 css/CSSViewValue.cpp
 css/CSSViewTransitionRule.cpp
+css/ComputedStyleDependencies.cpp
 css/ComputedStyleExtractor.cpp
 css/DOMCSSNamespace.cpp
 css/DOMCSSPaintWorklet.cpp
@@ -1290,6 +1291,7 @@ dom/PendingScript.cpp
 dom/PointerEvent.cpp
 dom/PointerEventTypeNames.cpp
 dom/PopStateEvent.cpp
+dom/PopoverData.cpp
 dom/Position.cpp
 dom/PositionIterator.cpp
 dom/ProcessingInstruction.cpp
@@ -1332,6 +1334,7 @@ dom/TextEncoderStreamEncoder.cpp
 dom/TextEvent.cpp
 dom/TextNodeTraversal.cpp
 dom/ToggleEvent.cpp
+dom/ToggleEventTask.cpp
 dom/Touch.cpp @no-unify
 dom/TouchEvent.cpp @no-unify
 dom/TouchList.cpp @no-unify
@@ -1743,7 +1746,6 @@ html/parser/HTMLTreeBuilder.cpp
 html/parser/TextDocumentParser.cpp
 html/shadow/AutoFillButtonElement.cpp
 html/shadow/DataListButtonElement.cpp
-html/shadow/DetailsMarkerControl.cpp
 html/shadow/DateTimeEditElement.cpp
 html/shadow/DateTimeFieldElement.cpp
 html/shadow/DateTimeFieldElements.cpp
@@ -1913,7 +1915,7 @@ layout/integration/inline/LayoutIntegrationInlineContentPainter.cpp
 layout/integration/inline/LayoutIntegrationLineLayout.cpp
 layout/integration/inline/LayoutIntegrationPagination.cpp
 layout/integration/LayoutIntegrationBoxGeometryUpdater.cpp
-layout/integration/LayoutIntegrationBoxTree.cpp
+layout/integration/LayoutIntegrationBoxTreeUpdater.cpp
 layout/integration/LayoutIntegrationCoverage.cpp
 layout/integration/LayoutIntegrationFormattingContextLayout.cpp
 layout/integration/LayoutIntegrationUtils.cpp
@@ -2778,7 +2780,6 @@ rendering/RenderButton.cpp
 rendering/RenderCombineText.cpp
 rendering/RenderCounter.cpp
 rendering/RenderDeprecatedFlexibleBox.cpp
-rendering/RenderDetailsMarker.cpp
 rendering/RenderElement.cpp
 rendering/RenderEmbeddedObject.cpp
 rendering/RenderFileUploadControl.cpp

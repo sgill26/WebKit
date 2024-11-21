@@ -1630,6 +1630,7 @@ http/tests/webgpu/webgpu/api/validation/buffer/mapping.html [ Pass ]
 http/tests/webgpu/webgpu/api/validation/queue/buffer_mapped.html [ Pass ]
 http/tests/webgpu/webgpu/api/validation/queue/submit.html [ Pass ]
 http/tests/webgpu/webgpu/api/validation/queue/destroyed [ Pass ]
+[ arm64 ] http/tests/webgpu/webgpu/api/operation/command_buffer/queries [ Pass ]
 
 http/tests/webgpu/webgpu/shader/execution/flow_control/switch.html [ Pass ]
 # arm64 release only because the tests are incredibly slow due to their extensiveness
@@ -1725,8 +1726,6 @@ webkit.org/b/274709 imported/w3c/web-platform-tests/pointerevents/pointer-events
 webkit.org/b/274766 http/wpt/webauthn/public-key-credential-get-success-u2f.https.html [ Failure ]
 
 webkit.org/b/258228 [ Sonoma+ Debug ] accessibility/mac/text-input-session-notifications.html [ Skip ]
-
-webkit.org/b/274852 imported/w3c/web-platform-tests/css/css-view-transitions/new-content-flat-transform-ancestor.html [ ImageOnlyFailure ]
 
 # rdar://129424261 (REGRESSION (279443@main): [ Sonoma Release ] WindowServer watchdog timeout on Intel machine)
 [ Release x86_64 ] http/tests/webgpu/webgpu/idl/constructable.html [ Skip ]
@@ -1937,3 +1936,7 @@ webkit.org/b/283210 http/wpt/mediarecorder/MediaRecorder-AV-audio-video-dataavai
 
 # webkit.org/b/283368 [macOS Debug ] fast/css/view-transitions-hide-under-page-background-color.html is a flaky crash (flaky in EWS)
 [ Sonoma+ Debug ] fast/css/view-transitions-hide-under-page-background-color.html [ Pass Crash ]
+
+# webkit.org/b/283445 REGRESSION(286802@main?): [macOS Debug wk2] ASSERTION FAILED: !m_messageReceiverMapCount in webrtc/vp8-then-h264.html
+[ Debug ] webrtc/vp8-then-h264.html [ Skip ]
+[ Debug ] webrtc/vp8-then-h264-gpu-process-crash.html [ Skip ]

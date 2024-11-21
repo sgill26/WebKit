@@ -567,8 +567,9 @@ void Adjuster::adjust(RenderStyle& style, const RenderStyle* userAgentAppearance
         if (RefPtr input = dynamicDowncast<HTMLInputElement>(*element); input && input->isPasswordField())
             style.setTextSecurity(style.inputSecurity() == InputSecurity::Auto ? TextSecurity::Disc : TextSecurity::None);
 
-        // Disallow -webkit-user-modify on :pseudo and ::pseudo elements.
-        if (element->isInUserAgentShadowTree() && !element->userAgentPart().isNull())
+        // Disallow -webkit-user-modify on ::pseudo elements, except if that pseudo-element targets a slot,
+        // in which case we want the editability to be passed onto the slotted contents.
+        if (element->isInUserAgentShadowTree() && !element->userAgentPart().isNull() && !is<HTMLSlotElement>(element))
             style.setUserModify(UserModify::ReadOnly);
 
         if (is<HTMLMarqueeElement>(*element)) {
@@ -751,9 +752,21 @@ void Adjuster::adjust(RenderStyle& style, const RenderStyle* userAgentAppearance
             adjustForTextAutosizing(style, *m_element);
 #endif
     }
-    if (isSkippedContentRoot(style, m_element.get()) && m_parentStyle.contentVisibility() != ContentVisibility::Hidden)
-        style.setUsedContentVisibility(style.contentVisibility());
 
+    if (m_parentStyle.contentVisibility() != ContentVisibility::Hidden) {
+        auto isSkippedContentRoot = [&] {
+            // FIXME: This can be removed soon after we can identify replaced elements using DOM.
+            if (style.contentVisibility() == ContentVisibility::Visible)
+                return false;
+            auto displayType = style.display();
+            auto doesSizeContainmentApplyByDisplayType = displayType != DisplayType::None && displayType != DisplayType::Contents && displayType != DisplayType::Table && displayType != DisplayType::InlineTable && !style.isInternalTableBox() && !style.isRubyContainerOrInternalRubyBox();
+            if (!doesSizeContainmentApplyByDisplayType)
+                return false;
+            return style.contentVisibility() == ContentVisibility::Hidden || (m_element && !m_element->isRelevantToUser());
+        };
+        if (isSkippedContentRoot())
+            style.setUsedContentVisibility(style.contentVisibility());
+    }
     if (style.contentVisibility() == ContentVisibility::Auto) {
         style.containIntrinsicWidthAddAuto();
         style.containIntrinsicHeightAddAuto();
@@ -964,6 +977,14 @@ void Adjuster::adjustForSiteSpecificQuirks(RenderStyle& style) const
         if (m_element->hasClassName(className))
             style.setUserSelect(UserSelect::None);
     }
+
+#if PLATFORM(IOS)
+    if (m_document->quirks().hideForbesVolumeSlider()) {
+        static MainThreadNeverDestroyed<const AtomString> localName("cnx-volume-slider"_s);
+        if (m_element->hasLocalName(localName))
+            style.setEffectiveDisplay(DisplayType::None);
+    }
+#endif
 
 #if PLATFORM(IOS_FAMILY)
     if (m_document->quirks().needsGoogleMapsScrollingQuirk()) {
