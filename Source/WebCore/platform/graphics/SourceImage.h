@@ -42,6 +42,11 @@ public:
     >;
 
     SourceImage(ImageVariant&&);
+
+    SourceImage(const SourceImage&);
+    SourceImage(SourceImage&&);
+    SourceImage& operator=(const SourceImage&);
+    SourceImage& operator=(SourceImage&&);
     ~SourceImage();
 
     bool operator==(const SourceImage&) const;

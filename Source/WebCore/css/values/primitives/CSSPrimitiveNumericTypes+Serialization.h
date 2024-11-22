@@ -48,8 +48,6 @@ template<RawNumeric RawType> struct Serialize<PrimitiveNumeric<RawType>> {
     }
 };
 
-template<> struct Serialize<SymbolRaw> { void operator()(StringBuilder&, const SymbolRaw&); };
-template<> struct Serialize<Symbol> { void operator()(StringBuilder&, const Symbol&); };
 
 } // namespace CSS
 } // namespace WebCore
