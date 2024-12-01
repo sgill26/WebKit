@@ -64,6 +64,7 @@ class AccessibilityTable;
 class AccessibilityTableCell;
 class Document;
 class HTMLAreaElement;
+class HTMLDetailsElement;
 class HTMLTableElement;
 class HTMLTextFormControlElement;
 class Node;
@@ -255,6 +256,19 @@ protected:
     WEBCORE_AXNOTIFICATION_KEYS_DEFAULT(macro)
 #endif
 
+enum class AXNotification {
+#define WEBCORE_DEFINE_AXNOTIFICATION_ENUM(name) name,
+WEBCORE_AXNOTIFICATION_KEYS(WEBCORE_DEFINE_AXNOTIFICATION_ENUM)
+#undef WEBCORE_DEFINE_AXNOTIFICATION_ENUM
+};
+
+enum class AXLoadingEvent : uint8_t {
+    Started,
+    Reloaded,
+    Failed,
+    Finished
+};
+
 #if !PLATFORM(COCOA)
 enum AXTextChange { AXTextInserted, AXTextDeleted, AXTextAttributesChanged };
 #endif
@@ -344,6 +358,7 @@ public:
     void childrenChanged(AccessibilityObject*);
     void onEventListenerAdded(Node&, const AtomString& eventType);
     void onEventListenerRemoved(Node&, const AtomString& eventType);
+    void onExpandedChanged(HTMLDetailsElement&);
     void onFocusChange(Element* oldElement, Element* newElement);
     void onInertOrVisibilityChange(RenderElement&);
     void onPopoverToggle(const HTMLElement&);
@@ -446,7 +461,7 @@ public:
     bool elementIsTextControl(const Element&);
 
     AccessibilityObject* objectForID(const AXID id) const { return m_objects.get(id); }
-    template<typename U> Vector<RefPtr<AXCoreObject>> objectsForIDs(const U&) const;
+    template<typename U> Vector<Ref<AXCoreObject>> objectsForIDs(const U&) const;
     Node* nodeForID(std::optional<AXID>) const;
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
@@ -504,12 +519,6 @@ public:
     // Index
     CharacterOffset characterOffsetForIndex(int, const AXCoreObject*);
 
-    enum AXNotification {
-#define WEBCORE_DEFINE_AXNOTIFICATION_ENUM(name) AX##name,
-    WEBCORE_AXNOTIFICATION_KEYS(WEBCORE_DEFINE_AXNOTIFICATION_ENUM)
-#undef WEBCORE_DEFINE_AXNOTIFICATION_ENUM
-    };
-
     void postNotification(RenderObject*, AXNotification, PostTarget = PostTarget::Element);
     void postNotification(Node*, AXNotification, PostTarget = PostTarget::Element);
     void postNotification(AccessibilityObject*, Document*, AXNotification, PostTarget = PostTarget::Element);
@@ -535,13 +544,6 @@ public:
     void postTextStateChangeNotification(Node*, const AXTextStateChangeIntent&, const VisibleSelection&);
     void postTextStateChangeNotification(const Position&, const AXTextStateChangeIntent&, const VisibleSelection&);
     void postLiveRegionChangeNotification(AccessibilityObject&);
-
-    enum AXLoadingEvent {
-        AXLoadingStarted,
-        AXLoadingReloaded,
-        AXLoadingFailed,
-        AXLoadingFinished
-    };
 
     void frameLoadingEventNotification(LocalFrame*, AXLoadingEvent);
 
@@ -870,13 +872,13 @@ private:
 };
 
 template<typename U>
-inline Vector<RefPtr<AXCoreObject>> AXObjectCache::objectsForIDs(const U& axIDs) const
+inline Vector<Ref<AXCoreObject>> AXObjectCache::objectsForIDs(const U& axIDs) const
 {
     ASSERT(isMainThread());
 
-    return WTF::compactMap(axIDs, [&](auto& axID) -> std::optional<RefPtr<AXCoreObject>> {
+    return WTF::compactMap(axIDs, [&](auto& axID) -> std::optional<Ref<AXCoreObject>> {
         if (auto* object = objectForID(axID))
-            return RefPtr { object };
+            return Ref { *object };
         return std::nullopt;
     });
 }
@@ -943,8 +945,9 @@ bool hasAccNameAttribute(Element&);
 
 bool isNodeFocused(Node&);
 
-bool isDOMHidden(const RenderStyle*);
+bool isRenderHidden(const RenderStyle*);
+bool isRenderHidden(const RenderStyle&);
 
-WTF::TextStream& operator<<(WTF::TextStream&, AXObjectCache::AXNotification);
+WTF::TextStream& operator<<(WTF::TextStream&, AXNotification);
 
 } // namespace WebCore

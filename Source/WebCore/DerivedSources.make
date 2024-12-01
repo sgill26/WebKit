@@ -1081,6 +1081,8 @@ JS_BINDING_IDLS := \
     $(WebCore)/dom/BeforeUnloadEvent.idl \
     $(WebCore)/dom/BroadcastChannel.idl \
     $(WebCore)/dom/CDATASection.idl \
+    $(WebCore)/dom/CaretPositionFromPointOptions.idl \
+    $(WebCore)/dom/CaretPosition.idl \
     $(WebCore)/dom/CharacterData.idl \
     $(WebCore)/dom/CheckVisibilityOptions.idl \
     $(WebCore)/dom/ChildNode.idl \
@@ -1117,6 +1119,7 @@ JS_BINDING_IDLS := \
     $(WebCore)/dom/DeviceOrientationOrMotionPermissionState.idl \
     $(WebCore)/dom/Document.idl \
     $(WebCore)/dom/Document+CSSOMView.idl \
+    $(WebCore)/dom/Document+CaretPositionFromPoint.idl \
     $(WebCore)/dom/Document+Fullscreen.idl \
     $(WebCore)/dom/Document+HTML.idl \
     $(WebCore)/dom/Document+HTMLObsolete.idl \
@@ -1340,6 +1343,7 @@ JS_BINDING_IDLS := \
     $(WebCore)/html/ImageBitmapOptions.idl \
     $(WebCore)/html/ImageData.idl \
     $(WebCore)/html/ImageDataSettings.idl \
+    $(WebCore)/html/ImageDataStorageFormat.idl \
     $(WebCore)/html/InvokerElement.idl \
     $(WebCore)/html/MediaController.idl \
     $(WebCore)/html/MediaEncryptedEvent.idl \

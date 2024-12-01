@@ -337,7 +337,7 @@ constexpr AspectRatioType RenderStyle::initialAspectRatioType() { return AspectR
 constexpr BackfaceVisibility RenderStyle::initialBackfaceVisibility() { return BackfaceVisibility::Visible; }
 inline StyleColor RenderStyle::initialBackgroundColor() { return Color::transparentBlack; }
 inline BlockEllipsis RenderStyle::initialBlockEllipsis() { return { }; }
-constexpr BlockStepInsert RenderStyle::initialBlockStepInsert() { return BlockStepInsert::Margin; }
+constexpr BlockStepInsert RenderStyle::initialBlockStepInsert() { return BlockStepInsert::MarginBox; }
 inline std::optional<Length> RenderStyle::initialBlockStepSize() { return std::nullopt; }
 constexpr BorderCollapse RenderStyle::initialBorderCollapse() { return BorderCollapse::Separate; }
 inline LengthSize RenderStyle::initialBorderRadius() { return { zeroLength(), zeroLength() }; }
@@ -1067,6 +1067,8 @@ inline bool shouldApplyLayoutContainment(const RenderStyle& style, const Element
     //   if the element does not generate a principal box (as is the case with display: contents or display: none)
     //   if its principal box is an internal table box other than table-cell
     //   if its principal box is an internal ruby box or a non-atomic inline-level box
+    if (style.display() == DisplayType::None || style.display() == DisplayType::Contents)
+        return false;
     if (style.isInternalTableBox() && style.display() != DisplayType::TableCell)
         return false;
     if (style.isRubyContainerOrInternalRubyBox() || (style.display() == DisplayType::Inline && !element.isReplaced(style)))
@@ -1084,6 +1086,8 @@ inline bool shouldApplySizeContainment(const RenderStyle& style, const Element& 
     //   if its inner display type is table
     //   if its principal box is an internal table box
     //   if its principal box is an internal ruby box or a non-atomic inline-level box
+    if (style.display() == DisplayType::None || style.display() == DisplayType::Contents)
+        return false;
     if (style.display() == DisplayType::Table || style.display() == DisplayType::InlineTable)
         return false;
     if (style.isInternalTableBox())
@@ -1102,6 +1106,8 @@ inline bool shouldApplyInlineSizeContainment(const RenderStyle& style, const Ele
     //   if its inner display type is table
     //   if its principal box is an internal table box
     //   if its principal box is an internal ruby box or a non-atomic inline-level box
+    if (style.display() == DisplayType::None || style.display() == DisplayType::Contents)
+        return false;
     if (style.display() == DisplayType::Table || style.display() == DisplayType::InlineTable)
         return false;
     if (style.isInternalTableBox())
@@ -1127,6 +1133,8 @@ inline bool shouldApplyPaintContainment(const RenderStyle& style, const Element&
     //   if the element does not generate a principal box (as is the case with display: contents or display: none)
     //   if its principal box is an internal table box other than table-cell
     //   if its principal box is an internal ruby box or a non-atomic inline-level box
+    if (style.display() == DisplayType::None || style.display() == DisplayType::Contents)
+        return false;
     if (style.isInternalTableBox() && style.display() != DisplayType::TableCell)
         return false;
     if (style.isRubyContainerOrInternalRubyBox() || (style.display() == DisplayType::Inline && !element.isReplaced(style)))

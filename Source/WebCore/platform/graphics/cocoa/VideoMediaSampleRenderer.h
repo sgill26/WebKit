@@ -30,6 +30,7 @@
 #include <CoreMedia/CMTime.h>
 #include <wtf/Function.h>
 #include <wtf/Lock.h>
+#include <wtf/MonotonicTime.h>
 #include <wtf/Ref.h>
 #include <wtf/RetainPtr.h>
 #include <wtf/ThreadSafeWeakPtr.h>
@@ -67,7 +68,7 @@ public:
     void enqueueSample(const MediaSample&);
     void stopRequestingMediaData();
 
-    void notifyWhenHasAvailableVideoFrame(Function<void()>&&);
+    void notifyWhenHasAvailableVideoFrame(Function<void(const MediaTime&, double)>&&);
     void notifyWhenDecodingErrorOccurred(Function<void(OSStatus)>&&);
 
     void flush();
@@ -84,6 +85,7 @@ public:
     };
     DisplayedPixelBufferEntry copyDisplayedPixelBuffer();
 
+    unsigned totalDisplayedFrames() const;
     unsigned totalVideoFrames() const;
     unsigned droppedVideoFrames() const;
     unsigned corruptedVideoFrames() const;
@@ -95,6 +97,8 @@ private:
     VideoMediaSampleRenderer(WebSampleBufferVideoRendering *);
 
     void clearTimebase();
+    using TimebaseAndTimerSource = std::pair<RetainPtr<CMTimebaseRef>, OSObjectPtr<dispatch_source_t>>;
+    TimebaseAndTimerSource timebaseAndTimerSource() const;
 
     WebSampleBufferVideoRendering *rendererOrDisplayLayer() const;
 
@@ -109,17 +113,25 @@ private:
         AlreadyDisplayed,
         Displayed
     };
-    DecodedFrameResult maybeQueueFrameForDisplay(CMSampleBufferRef, FlushId);
+    DecodedFrameResult maybeQueueFrameForDisplay(const CMTime&, CMSampleBufferRef, FlushId);
     void flushCompressedSampleQueue();
     void flushDecodedSampleQueue();
-    bool purgeDecodedSampleQueue();
+    void cancelTimer();
+    void purgeDecodedSampleQueueAndDisplay(FlushId);
+    bool purgeDecodedSampleQueue(const CMTime&);
+    void schedulePurgeAndDisplayAtTime(const CMTime&);
+    void maybeReschedulePurgeAndDisplay(FlushId);
+    void enqueueDecodedSample(RetainPtr<CMSampleBufferRef>&&);
     size_t decodedSamplesCount() const;
+    RetainPtr<CMSampleBufferRef> nextDecodedSample() const;
+    CMTime nextDecodedSampleEndTime() const;
+
     void assignResourceOwner(CMSampleBufferRef);
     bool areSamplesQueuesReadyForMoreMediaData(size_t waterMark) const;
     void maybeBecomeReadyForMoreMediaData();
     bool shouldDecodeSample(CMSampleBufferRef, bool displaying);
 
-    void notifyHasAvailableVideoFrame(FlushId);
+    void notifyHasAvailableVideoFrame(const MediaTime&, double, FlushId);
     void notifyErrorHasOccurred(OSStatus);
 
     Ref<GuaranteedSerialFunctionDispatcher> dispatcher() const;
@@ -127,16 +139,13 @@ private:
     void ensureOnDispatcherSync(Function<void()>&&) const;
     dispatch_queue_t dispatchQueue() const;
 
-    void cancelTimer();
-
     const RefPtr<WTF::WorkQueue> m_workQueue;
     RetainPtr<AVSampleBufferDisplayLayer> m_displayLayer;
 #if HAVE(AVSAMPLEBUFFERVIDEORENDERER)
     RetainPtr<AVSampleBufferVideoRenderer> m_renderer;
 #endif
     mutable Lock m_lock;
-    RetainPtr<CMTimebaseRef> m_timebase WTF_GUARDED_BY_LOCK(m_lock);
-    OSObjectPtr<dispatch_source_t> m_timerSource WTF_GUARDED_BY_LOCK(m_lock);
+    TimebaseAndTimerSource m_timebaseAndTimerSource WTF_GUARDED_BY_LOCK(m_lock);
     std::atomic<ssize_t> m_framesBeingDecoded { 0 };
     std::atomic<FlushId> m_flushId { 0 };
     Deque<std::pair<RetainPtr<CMSampleBufferRef>, FlushId>> m_compressedSampleQueue WTF_GUARDED_BY_CAPABILITY(dispatcher().get());
@@ -144,7 +153,11 @@ private:
     RefPtr<WebCoreDecompressionSession> m_decompressionSession;
     bool m_isDecodingSample WTF_GUARDED_BY_CAPABILITY(dispatcher().get()) { false };
     bool m_isDisplayingSample WTF_GUARDED_BY_CAPABILITY(dispatcher().get()) { false };
+    bool m_forceLateSampleToBeDisplayed WTF_GUARDED_BY_CAPABILITY(dispatcher().get()) { false };
     std::optional<CMTime> m_lastDisplayedTime WTF_GUARDED_BY_CAPABILITY(dispatcher().get());
+    std::optional<CMTime> m_lastDisplayedSample WTF_GUARDED_BY_CAPABILITY(dispatcher().get());
+    std::optional<CMTime> m_nextScheduledPurge WTF_GUARDED_BY_CAPABILITY(dispatcher().get());
+
     Function<void()> m_readyForMoreSampleFunction;
     bool m_prefersDecompressionSession { false };
     std::optional<uint32_t> m_currentCodec;
@@ -154,11 +167,13 @@ private:
     std::atomic<unsigned> m_totalVideoFrames { 0 };
     std::atomic<unsigned> m_droppedVideoFrames { 0 };
     std::atomic<unsigned> m_corruptedVideoFrames { 0 };
+    std::atomic<unsigned> m_presentedVideoFrames { 0 };
     MediaTime m_totalFrameDelay { MediaTime::zeroTime() };
 
-    Function<void()> m_hasAvailableFrameCallback WTF_GUARDED_BY_CAPABILITY(mainThread);
+    Function<void(const MediaTime&, double)> m_hasAvailableFrameCallback WTF_GUARDED_BY_CAPABILITY(mainThread);
     Function<void(OSStatus)> m_errorOccurredFunction WTF_GUARDED_BY_CAPABILITY(mainThread);
     ProcessIdentity m_resourceOwner;
+    MonotonicTime m_startupTime;
 };
 
 } // namespace WebCore

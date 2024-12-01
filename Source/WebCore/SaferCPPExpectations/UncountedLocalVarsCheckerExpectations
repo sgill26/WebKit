@@ -297,7 +297,6 @@ Modules/async-clipboard/Clipboard.cpp
 Modules/async-clipboard/ClipboardItemBindingsDataSource.cpp
 Modules/cache/DOMCache.cpp
 Modules/cache/DOMCacheStorage.cpp
-Modules/encryptedmedia/CDM.cpp
 Modules/encryptedmedia/MediaKeySystemRequest.cpp
 Modules/fetch/FetchBody.cpp
 Modules/fetch/FetchRequest.cpp
@@ -647,7 +646,6 @@ dom/EventTarget.cpp
 dom/FragmentDirectiveGenerator.cpp
 dom/FragmentDirectiveRangeFinder.cpp
 dom/FullscreenManager.cpp
-dom/ImageOverlay.cpp
 dom/InlineStyleSheetOwner.cpp
 dom/KeyboardEvent.cpp
 dom/MessageEvent.cpp
@@ -741,7 +739,6 @@ html/HTMLFrameOwnerElement.cpp
 html/HTMLImageElement.cpp
 html/HTMLImageLoader.cpp
 html/HTMLInputElement.cpp
-html/HTMLLIElement.cpp
 html/HTMLLabelElement.cpp
 html/HTMLMapElement.cpp
 html/HTMLMediaElement.cpp

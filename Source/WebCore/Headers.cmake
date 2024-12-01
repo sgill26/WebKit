@@ -888,6 +888,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     css/CSSValueList.h
     css/CSSVariableData.h
     css/CSSVariableReferenceValue.h
+    css/ComputedStyleDependencies.h
     css/Counter.h
     css/DeprecatedCSSOMCounter.h
     css/DeprecatedCSSOMPrimitiveValue.h
@@ -991,6 +992,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     dom/BroadcastChannelRegistry.h
     dom/CDATASection.h
     dom/CallbackResult.h
+    dom/CaretPosition.h
     dom/CharacterData.h
     dom/CheckVisibilityOptions.h
     dom/CollectionIndexCache.h
@@ -1334,6 +1336,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     html/ImageBitmap.h
     html/ImageData.h
     html/ImageDataSettings.h
+    html/ImageDataStorageFormat.h
     html/ImageDocument.h
     html/InputMode.h
     html/LinkIconCollector.h
@@ -2418,6 +2421,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/sql/SQLiteTransaction.h
 
     platform/text/BidiContext.h
+    platform/text/PlatformLocale.h
     platform/text/StringWithDirection.h
     platform/text/TextBoundaries.h
     platform/text/TextCheckerClient.h
