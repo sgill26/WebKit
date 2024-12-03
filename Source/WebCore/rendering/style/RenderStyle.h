@@ -116,7 +116,9 @@ enum class AutoRepeatType : uint8_t;
 enum class BackfaceVisibility : uint8_t;
 enum class BlendMode : uint8_t;
 enum class FlowDirection : uint8_t;
+enum class BlockStepAlign : uint8_t;
 enum class BlockStepInsert : uint8_t;
+enum class BlockStepRound : uint8_t;
 enum class BorderCollapse : bool;
 enum class BorderStyle : uint8_t;
 enum class BoxAlignment : uint8_t;
@@ -2255,9 +2257,18 @@ public:
     inline std::optional<Length> blockStepSize() const;
     inline void setBlockStepSize(std::optional<Length>);
 
+    static constexpr BlockStepAlign initialBlockStepAlign();
+    inline BlockStepAlign blockStepAlign() const;
+    inline void setBlockStepAlign(BlockStepAlign);
+
     static constexpr BlockStepInsert initialBlockStepInsert();
     inline BlockStepInsert blockStepInsert() const;
     inline void setBlockStepInsert(BlockStepInsert);
+
+    static constexpr BlockStepRound initialBlockStepRound();
+    inline BlockStepRound blockStepRound() const;
+    inline void setBlockStepRound(BlockStepRound);
+
     bool scrollAnchoringSuppressionStyleDidChange(const RenderStyle*) const;
     bool outOfFlowPositionStyleDidChange(const RenderStyle*) const;
 

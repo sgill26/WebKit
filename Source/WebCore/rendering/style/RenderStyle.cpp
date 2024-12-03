@@ -1810,8 +1810,12 @@ void RenderStyle::conservativelyCollectChangedAnimatableProperties(const RenderS
     };
 
     auto conservativelyCollectChangedAnimatablePropertiesViaNonInheritedRareData = [&](auto& first, auto& second) {
+        if (first.blockStepAlign != second.blockStepAlign)
+            changingProperties.m_properties.set(CSSPropertyBlockStepAlign);
         if (first.blockStepInsert != second.blockStepInsert)
             changingProperties.m_properties.set(CSSPropertyBlockStepInsert);
+        if (first.blockStepRound != second.blockStepRound)
+            changingProperties.m_properties.set(CSSPropertyBlockStepRound);
         if (first.blockStepSize != second.blockStepSize)
             changingProperties.m_properties.set(CSSPropertyBlockStepSize);
         if (first.containIntrinsicWidth != second.containIntrinsicWidth || first.containIntrinsicWidthType != second.containIntrinsicWidthType)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #
 # Copyright (C) 2022-2024 Apple Inc. All rights reserved.
+# Copyright (C) 2024 Sony Interactive Entertainment Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -43,6 +44,7 @@ import sys
 # WebKitPlatform - put serializer into a file built as part of WebKitPlatform
 # CustomEncoder - Only generate the decoder, not the encoder.
 # WebKitSecureCodingClass - For webkit_secure_coding declarations that need a custom way of establishing the Obj-C class to instantiate (e.g. softlinked frameworks)
+# Wrapper - use a wrapper class to get members and to construct for an external type
 #
 # Supported member attributes:
 #
@@ -101,6 +103,7 @@ class SerializedType(object):
         self.support_wkkeyedcoder = False
         self.disableMissingMemberCheck = False
         self.debug_decoding_failure = False
+        self.generic_wrapper = None
         if attributes is not None:
             for attribute in attributes.split(', '):
                 if '=' in attribute:
@@ -121,6 +124,8 @@ class SerializedType(object):
                         self.forward_declaration = value
                     if key == 'WebKitSecureCodingClass':
                         self.custom_secure_coding_class = value
+                    if key == 'Wrapper':
+                        self.generic_wrapper = value
                 else:
                     if attribute == 'Nested':
                         self.nested = True
@@ -169,6 +174,8 @@ class SerializedType(object):
         fulltype = None
         if self.construct_subclass:
             fulltype = self.namespace + '::' + self.construct_subclass
+        elif self.generic_wrapper is not None:
+            fulltype = self.generic_wrapper
         else:
             fulltype = self.namespace_and_name()
         if specialization:
@@ -527,19 +534,11 @@ def one_argument_coder_declaration(type, template_argument):
         name_with_template = name_with_template + '<' + template_argument.namespace + '::' + template_argument.name + '>'
     result.append('template<> struct ArgumentCoder<' + name_with_template + '> {')
     for encoder in type.encoders:
-        if type.cf_type is not None:
-            result.append('    static void encode(' + encoder + '&, ' + name_with_template + ');')
-            result.append('    static void encode(' + encoder + '& encoder, const RetainPtr<' + name_with_template + '>& retainPtr)')
-            result.append('    {')
-            result.append('        ArgumentCoder<' + name_with_template + '>::encode(encoder, retainPtr.get());')
-            result.append('    }')
-        elif type.rvalue:
+        if type.rvalue:
             result.append('    static void encode(' + encoder + '&, ' + name_with_template + '&&);')
         else:
             result.append('    static void encode(' + encoder + '&, const ' + name_with_template + '&);')
-    if type.cf_type is not None:
-        result.append('    static std::optional<RetainPtr<' + name_with_template + '>> decode(Decoder&);')
-    elif type.return_ref:
+    if type.return_ref:
         result.append('    static std::optional<Ref<' + name_with_template + '>> decode(Decoder&);')
     else:
         result.append('    static std::optional<' + name_with_template + '> decode(Decoder&);')
@@ -843,7 +842,6 @@ def decode_cf_type(type):
     result.append('    auto result = decoder.decode<' + type.cf_wrapper_type() + '>();')
     result.append('    if (UNLIKELY(!decoder.isValid()))')
     result.append('        return std::nullopt;')
-    cf_method = 'toCF'
     if type.to_cf_method is not None:
         result.append('    return ' + type.to_cf_method + ';')
     else:
@@ -1023,13 +1021,19 @@ def generate_one_impl(type, template_argument):
             continue
         if type.members_are_subclasses:
             result.append('IGNORE_WARNINGS_BEGIN("missing-noreturn")')
+        instanceArgName = 'instance' if type.generic_wrapper is None else 'passedInstance'
         if type.cf_type is not None:
-            result.append('void ArgumentCoder<' + name_with_template + '>::encode(' + encoder + '& encoder, ' + name_with_template + ' instance)')
+            result.append(f'void ArgumentCoder<{name_with_template}>::encode({encoder}& encoder, {name_with_template} {instanceArgName})')
         elif type.rvalue:
-            result.append('void ArgumentCoder<' + name_with_template + '>::encode(' + encoder + '& encoder, ' + name_with_template + '&& instance)')
+            result.append(f'void ArgumentCoder<{name_with_template}>::encode({encoder}& encoder, {name_with_template}&& {instanceArgName})')
         else:
-            result.append('void ArgumentCoder<' + name_with_template + '>::encode(' + encoder + '& encoder, const ' + name_with_template + '& instance)')
+            result.append(f'void ArgumentCoder<{name_with_template}>::encode({encoder}& encoder, const {name_with_template}& {instanceArgName})')
         result.append('{')
+        if type.generic_wrapper is not None:
+            if type.rvalue:
+                result.append(f'    auto instance = {type.generic_wrapper}(WTFMove({instanceArgName}));')
+            else:
+                result.append(f'    auto instance = {type.generic_wrapper}({instanceArgName});')
         if not type.members_are_subclasses and type.cf_type is None:
             result = result + check_type_members(type, False)
         result = result + encode_type(type)

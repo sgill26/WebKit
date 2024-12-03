@@ -3582,18 +3582,12 @@ RefPtr<CSSValue> ComputedStyleExtractor::valueForPropertyInStyle(const RenderSty
             ASSERT_NOT_REACHED();
         }
         return CSSPrimitiveValue::create(CSSValueNone);
+    case CSSPropertyBlockStepAlign:
+        return createConvertingToCSSValueID(style.blockStepAlign());
     case CSSPropertyBlockStepInsert:
-        switch (style.blockStepInsert()) {
-        case BlockStepInsert::MarginBox:
-            return CSSPrimitiveValue::create(CSSValueMarginBox);
-        case BlockStepInsert::PaddingBox:
-            return CSSPrimitiveValue::create(CSSValuePaddingBox);
-        case BlockStepInsert::ContentBox:
-            return CSSPrimitiveValue::create(CSSValueContentBox);
-        default:
-            ASSERT_NOT_REACHED();
-            return CSSPrimitiveValue::create(CSSValueNone);
-        }
+        return createConvertingToCSSValueID(style.blockStepInsert());
+    case CSSPropertyBlockStepRound:
+        return createConvertingToCSSValueID(style.blockStepRound());
     case CSSPropertyBlockStepSize: {
         auto blockStepSize = style.blockStepSize();
         if (!blockStepSize)
