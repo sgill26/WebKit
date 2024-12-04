@@ -22,21 +22,23 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 
 import Foundation
+
+#if ENABLE_SWIFTUI
 import SwiftUI
+#endif
 
 @_objcImplementation(Swift_Implementation) extension BrowserAppDelegate {
     @nonobjc private static let windowSize = NSSize(width: 800, height: 600)
 
     @MainActor @objc public func createSwiftUIWindow(_ sender: Any?) {
-        // FIXME: Replace this with a more useful view
-        let rootView = Color.indigo
-
-        let hostingController = NSHostingController(rootView: rootView)
+#if ENABLE_SWIFTUI && compiler(>=6.0)
+        let hostingController = NSHostingController(rootView: MiniBrowserView())
 
         let window = NSWindow(contentViewController: hostingController)
         window.setContentSize(Self.windowSize)
 
         let controller = NSWindowController(window: window)
         controller.showWindow(sender)
+#endif
     }
 }
