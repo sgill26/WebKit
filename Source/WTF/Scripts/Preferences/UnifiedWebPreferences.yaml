@@ -7658,6 +7658,7 @@ UseAVCaptureDeviceRotationCoordinatorAPI:
   defaultValue:
     WebKit:
       default: true
+  sharedPreferenceForWebProcess: true
 
 UseAsyncUIKitInteractions:
   type: bool
@@ -7770,6 +7771,19 @@ UseGiantTiles:
     WebKit:
       default: false
     WebCore:
+      default: false
+
+UseIFCForSVGText:
+  type: bool
+  status: internal
+  humanReadableName: "Use IFC for SVG text"
+  humanReadableDescription: "Use IFC for SVG text rendering"
+  defaultValue:
+    WebCore:
+      default: false
+    WebKitLegacy:
+      default: false
+    WebKit:
       default: false
 
 UseImageDocumentForSubframePDF:
