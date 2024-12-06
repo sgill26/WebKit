@@ -2991,6 +2991,22 @@ FileSystemAccessEnabled:
       default: false
   disableInLockdownMode: true
 
+FileSystemWritableStreamEnabled:
+  type: bool
+  status: testable
+  category: dom
+  humanReadableName: "File System WritableStream"
+  humanReadableDescription: "Enable File System WritableStream API"
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+  disableInLockdownMode: true
+  sharedPreferenceForWebProcess: true
+
 FilterLinkDecorationByDefaultEnabled:
   type: bool
   status: stable
@@ -8506,7 +8522,7 @@ WebGPUEnabled:
 
 WebGPUHDREnabled:
   type: bool
-  status: testable
+  status: Webgpuhdr_feature_status
   category: dom
   humanReadableName: "WebGPU support for HDR"
   humanReadableDescription: "WebGPU High Dynamic Range through canvas configuration tone mapping mode"

@@ -1592,6 +1592,7 @@ webkit.org/b/261356 [ Debug ] fast/mediastream/device-change-event-2.html [ Pass
 webkit.org/b/263396 css3/color/text.html [ Skip ]
 
 # WebGPU
+[ Release ] http/tests/webgpu/webgpu/api/validation/encoding/cmds/copyTextureToTexture.html
 
 # skipped outside of macOS Sequoia due to crash in failed allocation
 [ Ventura Sonoma ] fast/webgpu/nocrash/fuzz-279086.html [ Skip ]
@@ -1939,3 +1940,9 @@ webkit.org/b/283740 [ Debug ] http/wpt/webauthn/public-key-credential-get-succes
 
 # webkit.org/b/283999 REGRESSION(286110@main?): [macOS] http/tests/workers/service/shownotification-allowed.html is a constant failure (flaky in EWS) 
 [ Ventura+ ] http/tests/workers/service/shownotification-allowed.html [ Failure ]
+
+# webkit.org/b/284113 REGRESSION(287390@main?): [macOS Release] 4x imported/w3c/web-platform-tests/fs tests are flaky (Failure in EWS)
+[ Release ] imported/w3c/web-platform-tests/fs/FileSystemBaseHandle-postMessage-Error.https.window.html [ Pass Failure ]
+[ Release ] imported/w3c/web-platform-tests/fs/FileSystemFileHandle-getFile.https.any.worker.html [ Pass Failure ]
+[ Release ] imported/w3c/web-platform-tests/fs/FileSystemWritableFileStream-piped.https.any.worker.html [ Pass Failure ]
+[ Release ] imported/w3c/web-platform-tests/fs/FileSystemDirectoryHandle-removeEntry.https.any.worker.html [ Pass Failure ]

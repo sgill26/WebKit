@@ -2189,10 +2189,15 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
 
 - (void)scrollView:(WKBaseScrollView *)scrollView handleScrollUpdate:(WKBEScrollViewScrollUpdate *)update completion:(void (^)(BOOL handled))completion
 {
-    if (_pointerTouchCompatibilitySimulator)
-        _pointerTouchCompatibilitySimulator->handleScrollUpdate(scrollView, update);
+    if (_pointerTouchCompatibilitySimulator->handleScrollUpdate(scrollView, update))
+        return completion(YES);
 
-    BOOL isHandledByDefault = !scrollView.scrollEnabled;
+    BOOL isHandledByDefault = [self, update] -> BOOL {
+        RetainPtr hitView = [_scrollView hitTest:[update locationInView:_scrollView.get()] withEvent:nil];
+        return ![_contentView _hasEnclosingScrollView:hitView.get() matchingCriteria:[](UIScrollView *scroller) {
+            return scroller.scrollEnabled;
+        }];
+    }();
 
 #if ENABLE(OVERLAY_REGIONS_IN_EVENT_REGION)
     if (update._scrollDeviceCategory == _UIScrollDeviceCategoryOverlayScroll) {
@@ -2245,9 +2250,10 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
 
     _wheelEventCountInCurrentScrollGesture++;
     _page->dispatchWheelEventWithoutScrolling(event, [weakSelf = WeakObjCPtr<WKWebView>(self), strongCompletion = makeBlockPtr(completion), isCancelable, isHandledByDefault](bool defaultPrevented) {
-        auto strongSelf = weakSelf.get();
+        RetainPtr strongSelf = weakSelf.get();
         if (!strongSelf) {
-            strongCompletion(isHandledByDefault);
+            if (isCancelable)
+                strongCompletion(isHandledByDefault);
             return;
         }
 
@@ -3816,7 +3822,22 @@ static bool isLockdownModeWarningNeeded()
     [self _scheduleVisibleContentRectUpdate];
 }
 
+- (void)_setPointerTouchCompatibilitySimulatorEnabled:(BOOL)enabled
+{
+    _pointerTouchCompatibilitySimulator->setEnabled(enabled);
+}
+
+- (BOOL)_isSimulatingCompatibilityPointerTouches
+{
+    return _pointerTouchCompatibilitySimulator->isSimulatingTouches();
+}
+
 #pragma mark - WKBaseScrollViewDelegate
+
+- (BOOL)shouldAllowPanGestureRecognizerToReceiveTouchesInScrollView:(WKBaseScrollView *)scrollView
+{
+    return !self._isSimulatingCompatibilityPointerTouches;
+}
 
 - (UIAxis)axesToPreventScrollingForPanGestureInScrollView:(WKBaseScrollView *)scrollView
 {

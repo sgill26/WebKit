@@ -141,6 +141,8 @@ Modules/filesystemaccess/FileSystemDirectoryHandle.cpp
 Modules/filesystemaccess/FileSystemFileHandle.cpp
 Modules/filesystemaccess/FileSystemHandle.cpp
 Modules/filesystemaccess/FileSystemSyncAccessHandle.cpp
+Modules/filesystemaccess/FileSystemWritableFileStream.cpp
+Modules/filesystemaccess/FileSystemWritableFileStreamSink.cpp
 Modules/filesystemaccess/WorkerFileSystemStorageConnection.cpp
 Modules/geolocation/GeoNotifier.cpp
 Modules/geolocation/Geolocation.cpp
@@ -2753,6 +2755,7 @@ rendering/AutoTableLayout.cpp
 rendering/BackgroundPainter.cpp
 rendering/BaselineAlignment.cpp
 rendering/BidiRun.cpp
+rendering/BlockStepSizing.cpp
 rendering/BorderEdge.cpp
 rendering/BorderPainter.cpp
 rendering/BorderShape.cpp
@@ -2876,7 +2879,6 @@ rendering/RenderVTTCue.cpp
 rendering/RenderVideo.cpp
 rendering/RenderView.cpp
 rendering/RenderViewTransitionCapture.cpp
-rendering/RenderViewTransitionRoot.cpp
 rendering/RenderWidget.cpp
 rendering/StyledMarkedText.cpp
 rendering/TableLayout.cpp
@@ -3784,6 +3786,7 @@ JSFileSystemFileEntry.cpp
 JSFileSystemFileHandle.cpp
 JSFileSystemHandle.cpp
 JSFileSystemSyncAccessHandle.cpp
+JSFileSystemWritableFileStream.cpp
 JSFillMode.cpp
 JSFillLightMode.cpp
 JSFlacEncoderConfig.cpp

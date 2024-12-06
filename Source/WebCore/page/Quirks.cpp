@@ -34,10 +34,12 @@
 #include "DocumentInlines.h"
 #include "DocumentLoader.h"
 #include "DocumentStorageAccess.h"
+#include "ElementAncestorIteratorInlines.h"
 #include "ElementInlines.h"
 #include "ElementTargetingTypes.h"
 #include "EventNames.h"
 #include "FrameLoader.h"
+#include "HTMLArticleElement.h"
 #include "HTMLBodyElement.h"
 #include "HTMLCollection.h"
 #include "HTMLDivElement.h"
@@ -64,6 +66,7 @@
 #include "Settings.h"
 #include "SpaceSplitString.h"
 #include "TrustedFonts.h"
+#include "TypedElementDescendantIteratorInlines.h"
 #include "UserAgent.h"
 #include "UserContentTypes.h"
 #include "UserScript.h"
@@ -249,13 +252,7 @@ bool Quirks::hasBrokenEncryptedMediaAPISupportQuirk() const
 bool Quirks::isTouchBarUpdateSuppressedForHiddenContentEditable() const
 {
 #if PLATFORM(MAC)
-    if (!needsQuirks())
-        return false;
-
-    if (!m_quirksData.isTouchBarUpdateSuppressedForHiddenContentEditableQuirk)
-        m_quirksData.isTouchBarUpdateSuppressedForHiddenContentEditableQuirk = topDocumentURL().host() == "docs.google.com"_s;
-
-    return *m_quirksData.isTouchBarUpdateSuppressedForHiddenContentEditableQuirk;
+    return needsQuirks() && isGoogleDocs();
 #else
     return false;
 #endif
@@ -303,15 +300,7 @@ bool Quirks::isNeverRichlyEditableForTouchBar() const
 bool Quirks::shouldSuppressAutocorrectionAndAutocapitalizationInHiddenEditableAreas() const
 {
 #if PLATFORM(IOS_FAMILY)
-    if (!needsQuirks())
-        return false;
-
-    if (!m_quirksData.shouldSuppressAutocorrectionAndAutocapitalizationInHiddenEditableAreasQuirk) {
-        auto host = topDocumentURL().host();
-        m_quirksData.shouldSuppressAutocorrectionAndAutocapitalizationInHiddenEditableAreasQuirk = host == "docs.google.com"_s;
-    }
-
-    return *m_quirksData.shouldSuppressAutocorrectionAndAutocapitalizationInHiddenEditableAreasQuirk;
+    return needsQuirks() && isGoogleDocs();
 #else
     return false;
 #endif
@@ -434,6 +423,21 @@ bool Quirks::isAmazon() const
     return *m_quirksData.isAmazon;
 }
 
+bool Quirks::isCBSSports() const
+{
+    if (!m_quirksData.isCBSSports)
+        m_quirksData.isCBSSports = isDomain("cbssports.com"_s);
+
+    return *m_quirksData.isCBSSports;
+}
+
+bool Quirks::isGoogleDocs() const
+{
+    if (!m_quirksData.isGoogleDocs)
+        m_quirksData.isGoogleDocs = topDocumentURL().host() == "docs.google.com"_s;
+
+    return *m_quirksData.isGoogleDocs;
+}
 
 bool Quirks::isESPN() const
 {
@@ -526,8 +530,6 @@ bool Quirks::shouldDispatchSimulatedMouseEvents(const EventTarget* target) const
             return startsWithLettersIgnoringASCIICase(url.path(), "/website/templates/"_s) ? QuirksData::ShouldDispatchSimulatedMouseEvents::No : QuirksData::ShouldDispatchSimulatedMouseEvents::Yes;
         }
 
-        if (isDomain("trello.com"_s))
-            return QuirksData::ShouldDispatchSimulatedMouseEvents::Yes;
         if (isDomain("airtable.com"_s))
             return QuirksData::ShouldDispatchSimulatedMouseEvents::Yes;
         if (isDomain("flipkart.com"_s))
@@ -681,15 +683,7 @@ bool Quirks::needsDeferKeyDownAndKeyPressTimersUntilNextEditingCommand() const
     if (m_document->settings().needsDeferKeyDownAndKeyPressTimersUntilNextEditingCommandQuirk())
         return true;
 
-    if (!needsQuirks())
-        return false;
-
-    if (!m_quirksData.needsDeferKeyDownAndKeyPressTimersUntilNextEditingCommandQuirk) {
-        auto url = topDocumentURL();
-        m_quirksData.needsDeferKeyDownAndKeyPressTimersUntilNextEditingCommandQuirk = url.host() == "docs.google.com"_s && startsWithLettersIgnoringASCIICase(url.path(), "/spreadsheets/"_s);
-    }
-
-    return *m_quirksData.needsDeferKeyDownAndKeyPressTimersUntilNextEditingCommandQuirk;
+    return needsQuirks() && isGoogleDocs();
 #else
     return false;
 #endif
@@ -1697,19 +1691,6 @@ bool Quirks::needsResettingTransitionCancelsRunningTransitionQuirk() const
 #endif
 }
 
-bool Quirks::shouldStarBePermissionsPolicyDefaultValue() const
-{
-    if (!needsQuirks())
-        return false;
-
-    if (!m_quirksData.shouldStarBePermissionsPolicyDefaultValueQuirk) {
-        auto domain = m_document->securityOrigin().domain();
-        m_quirksData.shouldStarBePermissionsPolicyDefaultValueQuirk = domain == "jsfiddle.net"_s;
-    }
-
-    return *m_quirksData.shouldStarBePermissionsPolicyDefaultValueQuirk;
-}
-
 // Microsoft office online generates data URLs with incorrect padding on Safari only (rdar://114573089).
 bool Quirks::shouldDisableDataURLPaddingValidation() const
 {
@@ -2087,19 +2068,28 @@ bool Quirks::needsChromeMediaControlsPseudoElement() const
 }
 
 #if PLATFORM(IOS_FAMILY)
-// Remove this once rdar://139478801 is resolved.
-bool Quirks::shouldSynthesizeTouchEventsAfterNonSyntheticClick(const Node& target) const
+// cbssports.com <rdar://139478801>.
+// docs.google.com <rdar://59402637>.
+bool Quirks::shouldSynthesizeTouchEventsAfterNonSyntheticClick(const Element& target) const
 {
     if (!needsQuirks())
         return false;
 
-    if (!m_quirksData.shouldSynthesizeTouchEventsAfterNonSyntheticClickQuirk)
-        m_quirksData.shouldSynthesizeTouchEventsAfterNonSyntheticClickQuirk = isDomain("cbssports.com"_s);
+    if (isCBSSports())
+        return target.nodeName() == "AVIA-BUTTON"_s;
 
-    if (!m_quirksData.shouldSynthesizeTouchEventsAfterNonSyntheticClickQuirk.value())
-        return false;
+    if (isGoogleDocs()) {
+        unsigned numberOfAncestorsToCheck = 3;
+        for (Ref ancestor : lineageOfType<HTMLElement>(target)) {
+            if (ancestor->hasClassName("docs-ml-promotion-action-container"_s))
+                return true;
 
-    return target.nodeName() == "AVIA-BUTTON"_s;
+            if (!--numberOfAncestorsToCheck)
+                break;
+        }
+    }
+
+    return false;
 }
 
 bool Quirks::shouldIgnoreContentObservationForClick(const Node& targetNode) const
@@ -2181,6 +2171,37 @@ bool Quirks::shouldAvoidStartingSelectionOnMouseDown(const Node& target) const
 #endif
     return false;
 }
+
+#if PLATFORM(IOS_FAMILY)
+
+bool Quirks::needsPointerTouchCompatibility(const Element& target) const
+{
+    if (!needsQuirks())
+        return false;
+
+    if (WTF::IOSApplication::isFeedly()) {
+        RefPtr pageContainer = [&target] -> const HTMLElement* {
+            for (Ref ancestor : lineageOfType<HTMLElement>(target)) {
+                if (ancestor->hasClassName("PageContainer"_s))
+                    return ancestor.ptr();
+            }
+            return nullptr;
+        }();
+        if (pageContainer) {
+            if (RefPtr article = descendantsOfType<HTMLArticleElement>(*pageContainer).first())
+                return article->hasClassName("MobileFullEntry"_s);
+        }
+    } else if (WTF::IOSApplication::isAmazon()) {
+        for (Ref ancestor : lineageOfType<HTMLElement>(target)) {
+            if (ancestor->hasClassName("a-gesture-horizontal"_s))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+#endif
 
 #if PLATFORM(IOS)
 // forbes.com rdar://117093458

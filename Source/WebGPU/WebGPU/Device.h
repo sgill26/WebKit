@@ -29,9 +29,12 @@
 #import "Adapter.h"
 #import "HardwareCapabilities.h"
 #import "Queue.h"
+#import "WebGPU.h"
+#import "WebGPUExt.h"
 #import <CoreVideo/CVMetalTextureCache.h>
 #import <CoreVideo/CoreVideo.h>
 #import <IOSurface/IOSurfaceRef.h>
+#import <Metal/Metal.h>
 #import <simd/matrix_types.h>
 #import <wtf/CompletionHandler.h>
 #import <wtf/FastMalloc.h>
@@ -138,7 +141,11 @@ public:
     void generateAnInternalError(String&& message);
 
     RefPtr<Instance> instance() const { return m_instance.get(); }
+#if CPU(X86_64)
+    bool hasUnifiedMemory() const { return false; }
+#else
     bool hasUnifiedMemory() const { return m_device.hasUnifiedMemory; }
+#endif
 
     uint32_t maxBuffersPlusVertexBuffersForVertexStage() const
     {

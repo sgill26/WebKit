@@ -31,7 +31,34 @@ public import SwiftUI // FIXME: (283455) Do not import SwiftUI in WebKit proper.
 @MainActor
 @Observable
 public class WebPage_v0 {
+    public static func handlesURLScheme(_ scheme: String) -> Bool {
+        WKWebView.handlesURLScheme(scheme)
+    }
+
+    public init(configuration: Configuration = Configuration()) {
+        self.configuration = configuration
+
+        // FIXME: Consider whether we want to have a single value here or if the getter for `navigations` should return a fresh sequence every time.
+        let (stream, continuation) = AsyncStream.makeStream(of: NavigationEvent.self)
+        navigations = Navigations(source: stream)
+
+        backingNavigationDelegate = WKNavigationDelegateAdapter(navigationProgressContinuation: continuation)
+
+        observations.contents = [
+            createObservation(for: \.url, backedBy: \.url),
+            createObservation(for: \.title, backedBy: \.title),
+            createObservation(for: \.estimatedProgress, backedBy: \.estimatedProgress),
+            createObservation(for: \.isLoading, backedBy: \.isLoading),
+            createObservation(for: \.serverTrust, backedBy: \.serverTrust),
+            createObservation(for: \.hasOnlySecureContent, backedBy: \.hasOnlySecureContent),
+            createObservation(for: \.isWritingToolsActive, backedBy: \.isWritingToolsActive),
+            createObservation(for: \.themeColor, backedBy: \.themeColor),
+        ]
+    }
+
     public let navigations: Navigations
+
+    public let configuration: Configuration
 
     public var url: URL? {
         self.access(keyPath: \.url)
@@ -63,6 +90,11 @@ public class WebPage_v0 {
     public var hasOnlySecureContent: Bool {
         self.access(keyPath: \.hasOnlySecureContent)
         return backingWebView.hasOnlySecureContent
+    }
+
+    public var isWritingToolsActive: Bool {
+        self.access(keyPath: \.isWritingToolsActive)
+        return backingWebView.isWritingToolsActive
     }
 
     public var themeColor: Color? {
@@ -101,28 +133,10 @@ public class WebPage_v0 {
 
     @ObservationIgnored
     lazy var backingWebView: WKWebView = {
-        let webView = WKWebView(frame: .zero)
+        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration(configuration))
         webView.navigationDelegate = backingNavigationDelegate
         return webView
     }()
-
-    public init() {
-        // FIXME: Consider whether we want to have a single value here or if the getter for `navigations` should return a fresh sequence every time.
-        let (stream, continuation) = AsyncStream.makeStream(of: NavigationEvent.self)
-        navigations = Navigations(source: stream)
-
-        backingNavigationDelegate = WKNavigationDelegateAdapter(navigationProgressContinuation: continuation)
-
-        observations.contents = [
-            createObservation(for: \.url, backedBy: \.url),
-            createObservation(for: \.title, backedBy: \.title),
-            createObservation(for: \.estimatedProgress, backedBy: \.estimatedProgress),
-            createObservation(for: \.isLoading, backedBy: \.isLoading),
-            createObservation(for: \.serverTrust, backedBy: \.serverTrust),
-            createObservation(for: \.hasOnlySecureContent, backedBy: \.hasOnlySecureContent),
-            createObservation(for: \.themeColor, backedBy: \.themeColor),
-        ]
-    }
 
     @discardableResult
     public func load(_ request: URLRequest) -> NavigationID? {
@@ -130,8 +144,82 @@ public class WebPage_v0 {
     }
 
     @discardableResult
+    public func load(_ data: Data, mimeType: String, characterEncoding: String.Encoding, baseURL: URL) -> NavigationID? {
+        let cfEncoding = CFStringConvertNSStringEncodingToEncoding(characterEncoding.rawValue)
+        guard cfEncoding != kCFStringEncodingInvalidId else {
+            preconditionFailure("\(characterEncoding) is not a valid character encoding")
+        }
+
+        guard let convertedEncoding = CFStringConvertEncodingToIANACharSetName(cfEncoding) as? String else {
+            preconditionFailure("\(characterEncoding) is not a valid character encoding")
+        }
+
+        return backingWebView.load(data, mimeType: mimeType, characterEncodingName: convertedEncoding, baseURL: baseURL).map(NavigationID.init(_:))
+    }
+
+    @discardableResult
     public func load(htmlString: String, baseURL: URL) -> NavigationID? {
         backingWebView.loadHTMLString(htmlString, baseURL: baseURL).map(NavigationID.init(_:))
+    }
+
+    @discardableResult
+    public func load(_ request: URLRequest, allowingReadAccessTo readAccessURL: URL) -> NavigationID? {
+        // `WKWebView` annotates this method as returning non-nil, but it may return nil.
+
+        let navigation = backingWebView.loadFileRequest(request, allowingReadAccessTo: readAccessURL) as WKNavigation?
+        return navigation.map(NavigationID.init(_:))
+    }
+
+    @discardableResult
+    public func loadSimulatedRequest(_ request: URLRequest, response: URLResponse, responseData: Data) -> NavigationID? {
+        // `WKWebView` annotates this method as returning non-nil, but it may return nil.
+
+        let navigation = backingWebView.loadSimulatedRequest(request, response: response, responseData: responseData) as WKNavigation?
+        return navigation.map(NavigationID.init(_:))
+    }
+
+    @discardableResult
+    public func loadSimulatedRequest(_ request: URLRequest, responseHTML: String) -> NavigationID? {
+        // `WKWebView` annotates this method as returning non-nil, but it may return nil.
+
+        let navigation = backingWebView.loadSimulatedRequest(request, responseHTML: responseHTML) as WKNavigation?
+        return navigation.map(NavigationID.init(_:))
+    }
+
+    @discardableResult
+    public func reload(fromOrigin: Bool = false) -> NavigationID? {
+        let navigation = fromOrigin ? backingWebView.reloadFromOrigin() : backingWebView.reload()
+        return navigation.map(NavigationID.init(_:))
+    }
+
+    public func stopLoading() {
+        backingWebView.stopLoading()
+    }
+
+    public func callAsyncJavaScript(_ functionBody: String, arguments: [String : Any] = [:], in frame: FrameInfo? = nil, contentWorld: WKContentWorld = .defaultClient) async throws -> Any? {
+        try await backingWebView.callAsyncJavaScript(functionBody, arguments: arguments, in: frame?.wrapped, contentWorld: contentWorld)
+    }
+
+#if canImport(UIKit)
+    public func snapshot(configuration: WKSnapshotConfiguration = .init()) async throws -> UIImage {
+        try await backingWebView.takeSnapshot(configuration: configuration)
+    }
+#else
+    public func snapshot(configuration: WKSnapshotConfiguration = .init()) async throws -> NSImage {
+        try await backingWebView.takeSnapshot(configuration: configuration)
+    }
+#endif
+
+    public func pdf(configuration: WKPDFConfiguration = .init()) async throws -> Data {
+        try await backingWebView.pdf(configuration: configuration)
+    }
+
+    public func webArchiveData() async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            backingWebView.createWebArchiveData {
+                continuation.resume(with: $0)
+            }
+        }
     }
 
     private func createObservation<Value, BackingValue>(for keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WKWebView, BackingValue>) -> NSKeyValueObservation {
