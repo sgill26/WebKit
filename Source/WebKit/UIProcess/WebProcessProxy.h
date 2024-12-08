@@ -544,7 +544,7 @@ private:
 #endif
 
     // ProcessLauncher::Client
-    void didFinishLaunching(ProcessLauncher*, IPC::Connection::Identifier) override;
+    void didFinishLaunching(ProcessLauncher*, IPC::Connection::Identifier&&) override;
     bool shouldConfigureJSCForTesting() const final;
     bool isJITEnabled() const final;
     bool shouldEnableSharedArrayBuffer() const final { return m_crossOriginMode == WebCore::CrossOriginMode::Isolated; }
@@ -570,7 +570,6 @@ private:
 
     // IPC message handlers.
     void updateBackForwardItem(Ref<FrameState>&&);
-    void didDestroyFrame(IPC::Connection&, WebCore::FrameIdentifier, WebPageProxyIdentifier);
     void didDestroyUserGestureToken(WebCore::PageIdentifier, WebCore::UserGestureTokenIdentifier);
 
     bool canBeAddedToWebProcessCache() const;

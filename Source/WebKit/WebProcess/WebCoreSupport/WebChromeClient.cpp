@@ -56,7 +56,6 @@
 #include "SharedBufferReference.h"
 #include "UserData.h"
 #include "WebColorChooser.h"
-#include "WebCoreArgumentCoders.h"
 #include "WebDataListSuggestionPicker.h"
 #include "WebDateTimeChooser.h"
 #include "WebFrame.h"
@@ -1505,6 +1504,11 @@ void WebChromeClient::isAnyAnimationAllowedToPlayDidChange(bool anyAnimationCanP
     protectedPage()->isAnyAnimationAllowedToPlayDidChange(anyAnimationCanPlay);
 }
 #endif
+
+void WebChromeClient::resolveAccessibilityHitTestForTesting(FrameIdentifier frameID, const IntPoint& point, CompletionHandler<void(String)>&& callback)
+{
+    protectedPage()->sendWithAsyncReply(Messages::WebPageProxy::ResolveAccessibilityHitTestForTesting(frameID, point), WTFMove(callback));
+}
 
 void WebChromeClient::isPlayingMediaDidChange(MediaProducerMediaStateFlags state)
 {

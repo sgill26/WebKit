@@ -2178,6 +2178,7 @@ public:
     void getProcessDisplayName(CompletionHandler<void(String&&)>&&);
 
     void setOrientationForMediaCapture(WebCore::IntDegrees);
+    void setMediaCaptureRotationForTesting(WebCore::IntDegrees, const String&);
 
 #if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
     void setMockCaptureDevicesInterrupted(bool isCameraInterrupted, bool isMicrophoneInterrupted);
@@ -2688,6 +2689,7 @@ private:
 #endif
 
     void updateRemoteFrameSize(WebCore::FrameIdentifier, WebCore::IntSize);
+    void resolveAccessibilityHitTestForTesting(WebCore::FrameIdentifier, WebCore::IntPoint, CompletionHandler<void(String)>&&);
     void updateSandboxFlags(IPC::Connection&, WebCore::FrameIdentifier, WebCore::SandboxFlags);
     void updateOpener(IPC::Connection&, WebCore::FrameIdentifier, WebCore::FrameIdentifier);
     void updateScrollingMode(IPC::Connection&, WebCore::FrameIdentifier, WebCore::ScrollbarMode);

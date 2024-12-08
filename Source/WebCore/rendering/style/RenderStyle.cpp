@@ -2767,10 +2767,24 @@ void RenderStyle::setFontCascade(FontCascade&& fontCascade)
     m_inheritedData.access().fontCascade = fontCascade;
 }
 
-bool RenderStyle::setFontDescription(FontCascadeDescription&& description)
+void RenderStyle::setFontDescription(FontCascadeDescription&& description)
+{
+    if (fontDescription() == description)
+        return;
+
+    auto existingFontCascade = this->fontCascade();
+    RefPtr fontSelector = existingFontCascade.fontSelector();
+
+    auto newCascade = FontCascade { WTFMove(description), existingFontCascade };
+    newCascade.update(WTFMove(fontSelector));
+    setFontCascade(WTFMove(newCascade));
+}
+
+bool RenderStyle::setFontDescriptionWithoutUpdate(FontCascadeDescription&& description)
 {
     if (fontDescription() == description)
         return false;
+
     auto& cascade = m_inheritedData.access().fontCascade;
     cascade = { WTFMove(description), cascade };
     return true;
@@ -2855,11 +2869,9 @@ void RenderStyle::setLetterSpacing(Length&& spacing)
     // Switching letter-spacing between zero and non-zero requires updating fonts (to enable/disable ligatures)
     bool shouldDisableLigatures = fontCascade().letterSpacing();
     if (oldShouldDisableLigatures != shouldDisableLigatures) {
-        auto* selector = fontCascade().fontSelector();
         auto description = fontDescription();
         description.setShouldDisableLigaturesForSpacing(fontCascade().letterSpacing());
         setFontDescription(WTFMove(description));
-        fontCascade().update(selector);
     }
 }
 
@@ -2874,22 +2886,16 @@ void RenderStyle::setWordSpacing(Length&& spacing)
 
 void RenderStyle::setTextSpacingTrim(TextSpacingTrim value)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setTextSpacingTrim(value);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setTextAutospace(TextAutospace value)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setTextAutospace(value);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontSize(float size)
@@ -2903,86 +2909,62 @@ void RenderStyle::setFontSize(float size)
     else
         size = std::min(maximumAllowedFontSize, size);
 
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setSpecifiedSize(size);
     description.setComputedSize(size);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontSizeAdjust(FontSizeAdjust sizeAdjust)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setFontSizeAdjust(sizeAdjust);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontOpticalSizing(FontOpticalSizing opticalSizing)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setOpticalSizing(opticalSizing);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontVariationSettings(FontVariationSettings settings)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setVariationSettings(WTFMove(settings));
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontWeight(FontSelectionValue value)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setWeight(value);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontStretch(FontSelectionValue value)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setStretch(value);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontItalic(std::optional<FontSelectionValue> value)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setItalic(value);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
 void RenderStyle::setFontPalette(const FontPalette& value)
 {
-    auto selector = fontCascade().fontSelector();
     auto description = fontDescription();
     description.setFontPalette(value);
-
     setFontDescription(WTFMove(description));
-    fontCascade().update(selector);
 }
 
-void RenderStyle::getShadowHorizontalExtent(const ShadowData* shadow, LayoutUnit &left, LayoutUnit &right)
+void RenderStyle::getShadowHorizontalExtent(const ShadowData* shadow, LayoutUnit& left, LayoutUnit& right)
 {
     left = 0;
     right = 0;
@@ -2991,13 +2973,13 @@ void RenderStyle::getShadowHorizontalExtent(const ShadowData* shadow, LayoutUnit
         if (shadow->style() == ShadowStyle::Inset)
             continue;
 
-        auto extentAndSpread = shadow->paintingExtent() + LayoutUnit(shadow->spread().value());
-        left = std::min<LayoutUnit>(left, LayoutUnit(shadow->x().value()) - extentAndSpread);
-        right = std::max<LayoutUnit>(right, LayoutUnit(shadow->x().value()) + extentAndSpread);
+        auto extentAndSpread = shadow->paintingExtent() + LayoutUnit(shadow->spread().value);
+        left = std::min<LayoutUnit>(left, LayoutUnit(shadow->x().value) - extentAndSpread);
+        right = std::max<LayoutUnit>(right, LayoutUnit(shadow->x().value) + extentAndSpread);
     }
 }
 
-void RenderStyle::getShadowVerticalExtent(const ShadowData* shadow, LayoutUnit &top, LayoutUnit &bottom)
+void RenderStyle::getShadowVerticalExtent(const ShadowData* shadow, LayoutUnit& top, LayoutUnit& bottom)
 {
     top = 0;
     bottom = 0;
@@ -3006,9 +2988,9 @@ void RenderStyle::getShadowVerticalExtent(const ShadowData* shadow, LayoutUnit &
         if (shadow->style() == ShadowStyle::Inset)
             continue;
 
-        auto extentAndSpread = shadow->paintingExtent() + LayoutUnit(shadow->spread().value());
-        top = std::min<LayoutUnit>(top, LayoutUnit(shadow->y().intValue()) - extentAndSpread);
-        bottom = std::max<LayoutUnit>(bottom, LayoutUnit(shadow->y().intValue()) + extentAndSpread);
+        auto extentAndSpread = shadow->paintingExtent() + LayoutUnit(shadow->spread().value);
+        top = std::min<LayoutUnit>(top, LayoutUnit(static_cast<int>(shadow->y().value)) - extentAndSpread);
+        bottom = std::max<LayoutUnit>(bottom, LayoutUnit(static_cast<int>(shadow->y().value)) + extentAndSpread);
     }
 }
 

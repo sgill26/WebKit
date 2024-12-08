@@ -35,14 +35,15 @@ public class WebPage_v0 {
         WKWebView.handlesURLScheme(scheme)
     }
 
-    public init(configuration: Configuration = Configuration()) {
+    private init(configuration: Configuration, _navigationDecider navigationDecider: (any NavigationDeciding)?) {
         self.configuration = configuration
 
         // FIXME: Consider whether we want to have a single value here or if the getter for `navigations` should return a fresh sequence every time.
         let (stream, continuation) = AsyncStream.makeStream(of: NavigationEvent.self)
         navigations = Navigations(source: stream)
 
-        backingNavigationDelegate = WKNavigationDelegateAdapter(navigationProgressContinuation: continuation)
+        backingNavigationDelegate = WKNavigationDelegateAdapter(navigationProgressContinuation: continuation, navigationDecider: navigationDecider)
+        backingNavigationDelegate.owner = self
 
         observations.contents = [
             createObservation(for: \.url, backedBy: \.url),
@@ -56,9 +57,19 @@ public class WebPage_v0 {
         ]
     }
 
+    public convenience init(configuration: Configuration = Configuration(), navigationDecider: some NavigationDeciding) {
+        self.init(configuration: configuration, _navigationDecider: navigationDecider)
+    }
+
+    public convenience init(configuration: Configuration = Configuration()) {
+        self.init(configuration: configuration, _navigationDecider: nil)
+    }
+
     public let navigations: Navigations
 
     public let configuration: Configuration
+
+    public internal(set) var backForwardList: BackForwardList = BackForwardList()
 
     public var url: URL? {
         self.access(keyPath: \.url)
@@ -187,6 +198,11 @@ public class WebPage_v0 {
     }
 
     @discardableResult
+    public func load(backForwardItem: BackForwardList.Item) -> NavigationID? {
+        backingWebView.go(to: backForwardItem.wrapped).map(NavigationID.init(_:))
+    }
+
+    @discardableResult
     public func reload(fromOrigin: Bool = false) -> NavigationID? {
         let navigation = fromOrigin ? backingWebView.reloadFromOrigin() : backingWebView.reload()
         return navigation.map(NavigationID.init(_:))
@@ -196,7 +212,7 @@ public class WebPage_v0 {
         backingWebView.stopLoading()
     }
 
-    public func callAsyncJavaScript(_ functionBody: String, arguments: [String : Any] = [:], in frame: FrameInfo? = nil, contentWorld: WKContentWorld = .defaultClient) async throws -> Any? {
+    public func callAsyncJavaScript(_ functionBody: String, arguments: [String : Any] = [:], in frame: FrameInfo? = nil, contentWorld: WKContentWorld = .page) async throws -> Any? {
         try await backingWebView.callAsyncJavaScript(functionBody, arguments: arguments, in: frame?.wrapped, contentWorld: contentWorld)
     }
 
@@ -223,11 +239,13 @@ public class WebPage_v0 {
     }
 
     private func createObservation<Value, BackingValue>(for keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WKWebView, BackingValue>) -> NSKeyValueObservation {
+        let boxed = UncheckedSendableKeyPathBox(keyPath: keyPath)
+
         return backingWebView.observe(backingKeyPath, options: [.prior, .old, .new]) { [_$observationRegistrar, unowned self] _, change in
             if change.isPrior {
-                _$observationRegistrar.willSet(self, keyPath: keyPath)
+                _$observationRegistrar.willSet(self, keyPath: boxed.keyPath)
             } else {
-                _$observationRegistrar.didSet(self, keyPath: keyPath)
+                _$observationRegistrar.didSet(self, keyPath: boxed.keyPath)
             }
         }
     }
@@ -243,6 +261,12 @@ extension WebPage_v0 {
             }
         }
     }
+}
+
+/// The key path used within `createObservation` must be Sendable.
+/// This is safe as long as it is not used for object subscripting and isn't created with captured subscript key paths.
+fileprivate struct UncheckedSendableKeyPathBox<Root, Value>: @unchecked Sendable {
+    let keyPath: KeyPath<Root, Value>
 }
 
 #endif

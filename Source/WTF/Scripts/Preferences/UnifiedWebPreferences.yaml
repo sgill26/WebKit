@@ -2435,7 +2435,7 @@ DeclarativeShadowRootsSerializerAPIsEnabled:
 
 DeclarativeWebPush:
   type: bool
-  status: unstable
+  status: testable
   category: dom
   defaultsOverridable: true
   condition: ENABLE(DECLARATIVE_WEB_PUSH)
@@ -4882,7 +4882,7 @@ MediaRecorderEnabled:
 
 MediaRecorderEnabledWebM:
   type: bool
-  status: preview
+  status: stable
   category: media
   humanReadableName: "MediaRecorder WebM"
   humanReadableDescription: "Enable WebM support with MediaRecorder"
@@ -4891,6 +4891,7 @@ MediaRecorderEnabledWebM:
     WebKitLegacy:
       default: false
     WebKit:
+      "PLATFORM(COCOA)": true
       default: false
     WebCore:
       default: false

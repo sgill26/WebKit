@@ -38,7 +38,7 @@ extension WebPage_v0 {
 
         var wrapped: WKFrameInfo
 
-        init(wrapping wrapped: WKFrameInfo) {
+        init(_ wrapped: WKFrameInfo) {
             self.wrapped = wrapped
         }
     }

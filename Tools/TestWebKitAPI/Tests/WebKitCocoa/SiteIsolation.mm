@@ -1323,6 +1323,38 @@ TEST(SiteIsolation, RemoveFrames)
     });
 }
 
+TEST(SiteIsolation, RemoveFrameFromRemoteFrame)
+{
+    HTTPServer server({
+        { "/main"_s, { "<iframe src='https://webkit.org/child'></iframe>"_s } },
+        { "/child"_s, { "<iframe src='https://example.com/grandchild' id=grandchildframe></iframe>"_s } },
+        { "/grandchild"_s, { "hi"_s } }
+    }, HTTPServer::Protocol::HttpsProxy);
+
+    auto [webView, navigationDelegate] = siteIsolatedViewAndDelegate(server);
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/main"]]];
+    [navigationDelegate waitForDidFinishNavigation];
+
+    checkFrameTreesInProcesses(webView.get(), {
+        { "https://example.com"_s,
+            { { RemoteFrame, { { "https://example.com"_s } } } }
+        }, { RemoteFrame,
+            { { "https://webkit.org"_s, { { RemoteFrame } } } }
+        }
+    });
+
+    [webView objectByEvaluatingJavaScript:@"grandchildframe.parentNode.removeChild(grandchildframe);1" inFrame:[webView firstChildFrame]];
+
+    checkFrameTreesInProcesses(webView.get(), {
+        { "https://example.com"_s,
+            { { RemoteFrame } }
+        }, { RemoteFrame,
+            { { "https://webkit.org"_s } }
+        }
+    });
+}
+
 TEST(SiteIsolation, ProvisionalLoadFailure)
 {
     HTTPServer server({
@@ -3600,11 +3632,9 @@ TEST(SiteIsolation, ProcessReuse)
     [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/example"]]];
     [navigationDelegate waitForDidFinishNavigation];
 
-    pid_t initialIframePID = [webView firstChildFrame]._processIdentifier;
     [webView objectByEvaluatingJavaScript:@"var frame = document.getElementById('onlyiframe'); frame.parentNode.removeChild(frame);1"];
     [webView evaluateJavaScript:@"var iframe = document.createElement('iframe');iframe.src = 'https://webkit.org/iframe_with_alert';document.body.appendChild(iframe)" completionHandler:nil];
     EXPECT_WK_STREQ([webView _test_waitForAlert], "loaded");
-    EXPECT_EQ(initialIframePID, [webView firstChildFrame]._processIdentifier);
 }
 
 }

@@ -50,11 +50,12 @@ static bool setCommandEncoder(auto& buffer, auto& renderPassEncoder)
     return !!renderPassEncoder->renderCommandEncoder();
 }
 
-- (instancetype)initWithICB:(id<MTLIndirectCommandBuffer>)icb containerBuffer:(id<MTLBuffer>)containerBuffer pipelineState:(id<MTLRenderPipelineState>)pipelineState depthStencilState:(id<MTLDepthStencilState>)depthStencilState cullMode:(MTLCullMode)cullMode frontFace:(MTLWinding)frontFace depthClipMode:(MTLDepthClipMode)depthClipMode depthBias:(float)depthBias depthBiasSlopeScale:(float)depthBiasSlopeScale depthBiasClamp:(float)depthBiasClamp fragmentDynamicOffsetsBuffer:(id<MTLBuffer>)fragmentDynamicOffsetsBuffer pipeline:(const WebGPU::RenderPipeline*)pipeline minVertexCounts:(WebGPU::RenderBundle::MinVertexCountsContainer*)minVertexCounts
+- (instancetype)initWithICB:(id<MTLIndirectCommandBuffer>)icb containerBuffer:(id<MTLBuffer>)containerBuffer pipelineState:(id<MTLRenderPipelineState>)pipelineState depthStencilState:(id<MTLDepthStencilState>)depthStencilState cullMode:(MTLCullMode)cullMode frontFace:(MTLWinding)frontFace depthClipMode:(MTLDepthClipMode)depthClipMode depthBias:(float)depthBias depthBiasSlopeScale:(float)depthBiasSlopeScale depthBiasClamp:(float)depthBiasClamp fragmentDynamicOffsetsBuffer:(id<MTLBuffer>)fragmentDynamicOffsetsBuffer pipeline:(const WebGPU::RenderPipeline*)pipeline minVertexCounts:(WebGPU::RenderBundle::MinVertexCountsContainer*)minVertexCounts outOfBoundsReadFlag:(id<MTLBuffer>)outOfBoundsReadFlag
 {
     if (!(self = [super init]))
         return nil;
 
+    _outOfBoundsReadFlag = outOfBoundsReadFlag;
     _indirectCommandBuffer = icb;
     _indirectCommandBufferContainer = containerBuffer;
     _currentPipelineState = pipelineState;
@@ -135,7 +136,7 @@ static RenderBundleICBWithResources* makeRenderBundleICBWithResources(id<MTLIndi
     [argumentEncoder setBuffer:outOfBoundsRead offset:0 atIndex:0];
     [argumentEncoder setIndirectCommandBuffer:icb atIndex:1];
 
-    RenderBundleICBWithResources* renderBundle = [[RenderBundleICBWithResources alloc] initWithICB:icb containerBuffer:container pipelineState:renderPipelineState depthStencilState:depthStencilState cullMode:cullMode frontFace:frontFace depthClipMode:depthClipMode depthBias:depthBias depthBiasSlopeScale:depthBiasSlopeScale depthBiasClamp:depthBiasClamp fragmentDynamicOffsetsBuffer:fragmentDynamicOffsetsBuffer pipeline:pipeline minVertexCounts:&vertexCountContainer];
+    RenderBundleICBWithResources* renderBundle = [[RenderBundleICBWithResources alloc] initWithICB:icb containerBuffer:container pipelineState:renderPipelineState depthStencilState:depthStencilState cullMode:cullMode frontFace:frontFace depthClipMode:depthClipMode depthBias:depthBias depthBiasSlopeScale:depthBiasSlopeScale depthBiasClamp:depthBiasClamp fragmentDynamicOffsetsBuffer:fragmentDynamicOffsetsBuffer pipeline:pipeline minVertexCounts:&vertexCountContainer outOfBoundsReadFlag:outOfBoundsRead];
 
     for (size_t stage = 0; stage < maxStageValue; ++stage) {
         for (size_t i = 0; i < maxResourceUsageValue; ++i) {
@@ -321,14 +322,15 @@ bool RenderBundleEncoder::executePreDrawCommands(bool passWasSplit, uint32_t fir
         return false;
     }
 
-    auto vertexDynamicOffsetSum = checkedSum<uint64_t>(m_vertexDynamicOffset, sizeof(uint32_t) * m_pipeline->protectedPipelineLayout()->sizeOfVertexDynamicOffsets());
+    auto pipelineLayout = m_pipeline->protectedPipelineLayout();
+    auto vertexDynamicOffsetSum = checkedSum<uint64_t>(m_vertexDynamicOffset, sizeof(uint32_t) * pipelineLayout->sizeOfVertexDynamicOffsets());
     if (vertexDynamicOffsetSum.hasOverflowed()) {
         makeInvalid(@"Invalid vertexDynamicOffset");
         return false;
     }
     m_vertexDynamicOffset = vertexDynamicOffsetSum.value();
 
-    auto fragmentDynamicOffsetSum = checkedSum<uint64_t>(m_fragmentDynamicOffset, sizeof(uint32_t) * m_pipeline->protectedPipelineLayout()->sizeOfFragmentDynamicOffsets());
+    auto fragmentDynamicOffsetSum = checkedSum<uint64_t>(m_fragmentDynamicOffset, sizeof(uint32_t) * pipelineLayout->sizeOfFragmentDynamicOffsets());
     if (fragmentDynamicOffsetSum.hasOverflowed()) {
         makeInvalid(@"Invalid fragmentDynamicOffset");
         return false;
@@ -374,8 +376,10 @@ bool RenderBundleEncoder::executePreDrawCommands(bool passWasSplit, uint32_t fir
     UNUSED_PARAM(passWasSplit);
 #endif
 
-    for (auto& [_, group] : m_bindGroups) {
-        if (group && (group->makeSubmitInvalid(ShaderStage::Vertex) || group->makeSubmitInvalid(ShaderStage::Fragment)))
+    for (auto& [groupIndex, group] : m_bindGroups) {
+        RefPtr protectedGroup = group;
+        auto pipelineOptionalBindGroupLayout = pipelineLayout->optionalBindGroupLayout(groupIndex);
+        if (protectedGroup && (protectedGroup->makeSubmitInvalid(ShaderStage::Vertex, pipelineOptionalBindGroupLayout) || protectedGroup->makeSubmitInvalid(ShaderStage::Fragment, pipelineOptionalBindGroupLayout)))
             m_makeSubmitInvalid = true;
     }
 

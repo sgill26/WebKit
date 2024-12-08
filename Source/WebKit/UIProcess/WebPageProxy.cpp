@@ -141,7 +141,6 @@
 #include "WebBackForwardListItem.h"
 #include "WebContextMenuItem.h"
 #include "WebContextMenuProxy.h"
-#include "WebCoreArgumentCoders.h"
 #include "WebEditCommandProxy.h"
 #include "WebErrors.h"
 #include "WebEventConversion.h"
@@ -217,6 +216,7 @@
 #include <WebCore/FrameLoaderClient.h>
 #include <WebCore/GlobalFrameIdentifier.h>
 #include <WebCore/GlobalWindowIdentifier.h>
+#include <WebCore/ImageBuffer.h>
 #include <WebCore/LengthBox.h>
 #include <WebCore/LinkDecorationFilteringData.h>
 #include <WebCore/MIMETypeRegistry.h>
@@ -408,7 +408,7 @@
 #include "DrawingAreaProxyCoordinatedGraphics.h"
 #endif
 
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
 #include "WebExtensionController.h"
 #endif
 
@@ -732,7 +732,7 @@ WebPageProxy::Internals::~Internals() = default;
 #endif
 
 WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Ref<API::PageConfiguration>&& configuration)
-    : m_internals(makeUniqueRef<Internals>(*this))
+    : m_internals(makeUniqueRefWithoutRefCountedCheck<Internals>(*this))
     , m_identifier(Identifier::generate())
     , m_webPageID(PageIdentifier::generate())
     , m_pageClient(pageClient)
@@ -753,7 +753,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Ref
     , m_pageGroup(*configuration->pageGroup())
     , m_preferences(configuration->preferences())
     , m_userContentController(configuration->userContentController())
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     , m_webExtensionController(configuration->webExtensionController())
     , m_weakWebExtensionController(configuration->weakWebExtensionController())
 #endif
@@ -815,7 +815,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Ref
 
     protectedPreferences()->addPage(*this);
 
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = this->webExtensionController())
         webExtensionController->addPage(*this);
 #endif
@@ -956,7 +956,7 @@ bool WebPageProxy::modelElementEnabled()
     return protectedPreferences()->modelElementEnabled();
 }
 
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
 WebExtensionController* WebPageProxy::webExtensionController()
 {
     return m_webExtensionController.get() ?: m_weakWebExtensionController.get();
@@ -1696,7 +1696,7 @@ void WebPageProxy::close()
             automationSession->willClosePage(*this);
     }
 
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = m_webExtensionController)
         webExtensionController->removePage(*this);
     if (RefPtr webExtensionController = m_weakWebExtensionController.get())
@@ -6373,6 +6373,11 @@ void WebPageProxy::updateRemoteFrameSize(WebCore::FrameIdentifier frameID, WebCo
     sendToProcessContainingFrame(frameID, Messages::WebPage::UpdateFrameSize(frameID, size));
 }
 
+void WebPageProxy::resolveAccessibilityHitTestForTesting(WebCore::FrameIdentifier frameID, WebCore::IntPoint point, CompletionHandler<void(String)>&& callback)
+{
+    sendWithAsyncReplyToProcessContainingFrame(frameID, Messages::WebPage::ResolveAccessibilityHitTestForTesting(point), WTFMove(callback));
+}
+
 void WebPageProxy::updateSandboxFlags(IPC::Connection& connection, WebCore::FrameIdentifier frameID, WebCore::SandboxFlags sandboxFlags)
 {
     if (RefPtr frame = WebFrameProxy::webFrame(frameID)) {
@@ -9075,7 +9080,7 @@ RefPtr<WebInspectorUIProxy> WebPageProxy::protectedInspector() const
 
 void WebPageProxy::resourceLoadDidSendRequest(ResourceLoadInfo&& loadInfo, WebCore::ResourceRequest&& request)
 {
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = this->webExtensionController())
         webExtensionController->resourceLoadDidSendRequest(identifier(), loadInfo, request);
 #endif
@@ -9086,7 +9091,7 @@ void WebPageProxy::resourceLoadDidSendRequest(ResourceLoadInfo&& loadInfo, WebCo
 
 void WebPageProxy::resourceLoadDidPerformHTTPRedirection(ResourceLoadInfo&& loadInfo, WebCore::ResourceResponse&& response, WebCore::ResourceRequest&& request)
 {
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = this->webExtensionController())
         webExtensionController->resourceLoadDidPerformHTTPRedirection(identifier(), loadInfo, response, request);
 #endif
@@ -9097,7 +9102,7 @@ void WebPageProxy::resourceLoadDidPerformHTTPRedirection(ResourceLoadInfo&& load
 
 void WebPageProxy::resourceLoadDidReceiveChallenge(ResourceLoadInfo&& loadInfo, WebCore::AuthenticationChallenge&& challenge)
 {
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = this->webExtensionController())
         webExtensionController->resourceLoadDidReceiveChallenge(identifier(), loadInfo, challenge);
 #endif
@@ -9108,7 +9113,7 @@ void WebPageProxy::resourceLoadDidReceiveChallenge(ResourceLoadInfo&& loadInfo, 
 
 void WebPageProxy::resourceLoadDidReceiveResponse(ResourceLoadInfo&& loadInfo, WebCore::ResourceResponse&& response)
 {
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = this->webExtensionController())
         webExtensionController->resourceLoadDidReceiveResponse(identifier(), loadInfo, response);
 #endif
@@ -9119,7 +9124,7 @@ void WebPageProxy::resourceLoadDidReceiveResponse(ResourceLoadInfo&& loadInfo, W
 
 void WebPageProxy::resourceLoadDidCompleteWithError(ResourceLoadInfo&& loadInfo, WebCore::ResourceResponse&& response, WebCore::ResourceError&& error)
 {
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (RefPtr webExtensionController = this->webExtensionController())
         webExtensionController->resourceLoadDidCompleteWithError(identifier(), loadInfo, response, error);
 #endif
@@ -11299,7 +11304,7 @@ WebPageCreationParameters WebPageProxy::creationParameters(WebProcessProxy& proc
     parameters.hasResourceLoadClient = !!m_resourceLoadClient;
     parameters.portsForUpgradingInsecureSchemeForTesting = configuration->portsForUpgradingInsecureSchemeForTesting();
 
-#if ENABLE(WK_WEB_EXTENSIONS)
+#if ENABLE(WK_WEB_EXTENSIONS) && PLATFORM(COCOA)
     if (m_webExtensionController)
         parameters.webExtensionControllerParameters = m_webExtensionController->parameters();
     if (m_weakWebExtensionController)
@@ -14433,6 +14438,18 @@ bool WebPageProxy::shouldForceForegroundPriorityForClientNavigation() const
 void WebPageProxy::getProcessDisplayName(CompletionHandler<void(String&&)>&& completionHandler)
 {
     sendWithAsyncReply(Messages::WebPage::GetProcessDisplayName(), WTFMove(completionHandler));
+}
+
+void WebPageProxy::setMediaCaptureRotationForTesting(WebCore::IntDegrees rotation, const String& persistentId)
+{
+#if HAVE(AVCAPTUREDEVICEROTATIONCOORDINATOR)
+    if (preferences().useAVCaptureDeviceRotationCoordinatorAPI() && userMediaPermissionRequestManager().isMonitoringCaptureDeviceRotation(persistentId)) {
+        rotationAngleForCaptureDeviceChanged(persistentId, static_cast<VideoFrameRotation>(rotation));
+        return;
+    }
+#endif
+
+    setOrientationForMediaCapture(rotation);
 }
 
 void WebPageProxy::setOrientationForMediaCapture(WebCore::IntDegrees orientation)
