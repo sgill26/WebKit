@@ -49,6 +49,7 @@ JSCSSMatrixComponent.cpp
 JSCSSNestedDeclarations.cpp
 JSCSSNumericArray.cpp
 JSCSSPageRule.cpp
+JSCSSPositionTryRule.cpp
 JSCSSRotate.cpp
 JSCSSRuleList.cpp
 JSCSSSkew.cpp
@@ -1042,7 +1043,6 @@ dom/ImageOverlay.cpp
 dom/InlineStyleSheetOwner.cpp
 dom/InternalObserverDrop.cpp
 dom/InternalObserverFilter.cpp
-dom/InternalObserverFromScript.cpp
 dom/InternalObserverMap.cpp
 dom/InternalObserverTake.cpp
 dom/KeyboardEvent.cpp
