@@ -591,8 +591,6 @@ JS_BINDING_IDLS := \
     $(WebCore)/Modules/push-api/PushEventInit.idl \
     $(WebCore)/Modules/push-api/PushManager.idl \
     $(WebCore)/Modules/push-api/PushMessageData.idl \
-    $(WebCore)/Modules/push-api/PushNotificationEvent.idl \
-    $(WebCore)/Modules/push-api/PushNotificationEventInit.idl \
     $(WebCore)/Modules/push-api/PushPermissionState.idl \
     $(WebCore)/Modules/push-api/PushSubscription.idl \
     $(WebCore)/Modules/push-api/PushSubscriptionChangeEvent.idl \
@@ -1204,6 +1202,7 @@ JS_BINDING_IDLS := \
     $(WebCore)/dom/Range+CSSOMView.idl \
     $(WebCore)/dom/Range+DOMParsing.idl \
     $(WebCore)/dom/Range.idl \
+    $(WebCore)/dom/ReducerCallback.idl \
     $(WebCore)/dom/RequestAnimationFrameCallback.idl \
     $(WebCore)/dom/SecurityPolicyViolationEvent.idl \
     $(WebCore)/dom/SecurityPolicyViolationEventDisposition.idl \

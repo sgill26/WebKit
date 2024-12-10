@@ -618,8 +618,6 @@ set(WebCore_NON_SVG_IDL_FILES
     Modules/push-api/PushEventInit.idl
     Modules/push-api/PushManager.idl
     Modules/push-api/PushMessageData.idl
-    Modules/push-api/PushNotificationEvent.idl
-    Modules/push-api/PushNotificationEventInit.idl
     Modules/push-api/PushPermissionState.idl
     Modules/push-api/PushSubscription.idl
     Modules/push-api/PushSubscriptionChangeEvent.idl
@@ -1190,6 +1188,7 @@ set(WebCore_NON_SVG_IDL_FILES
     dom/Range+CSSOMView.idl
     dom/Range+DOMParsing.idl
     dom/Range.idl
+    dom/ReducerCallback.idl
     dom/RequestAnimationFrameCallback.idl
     dom/SecurityPolicyViolationEvent.idl
     dom/SecurityPolicyViolationEventDisposition.idl

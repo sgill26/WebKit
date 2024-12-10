@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2024 Marais Rossouw <me@marais.co>. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,16 +23,18 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Experimental but standards tracked
-[
-    Conditional=DECLARATIVE_WEB_PUSH,
-    EnabledBySetting=DeclarativeWebPush,
-    ExportMacro=WEBCORE_EXPORT,
-    Exposed=ServiceWorker,
-    JSGenerateToNativeObject,
-    SecureContext
-] interface PushNotificationEvent {
-    constructor([AtomString] DOMString type, optional PushNotificationEventInit eventInitDict);
-    readonly attribute Notification proposedNotification;
-    readonly attribute unsigned long long? proposedAppBadge;
-};
+#pragma once
+
+#include <wtf/Forward.h>
+
+namespace WebCore {
+
+class DeferredPromise;
+class Observable;
+class ReducerCallback;
+class ScriptExecutionContext;
+struct SubscribeOptions;
+
+void createInternalObserverOperatorReduce(ScriptExecutionContext&, Observable&, Ref<ReducerCallback>&&, JSC::JSValue, const SubscribeOptions&, Ref<DeferredPromise>&&);
+
+} // namespace WebCore

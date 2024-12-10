@@ -4399,12 +4399,12 @@ void WebPageProxy::handlePreventableTouchEvent(NativeWebTouchEvent& event)
     sendPreventableTouchEvent(m_mainFrame->frameID(), event);
 }
 
-void WebPageProxy::didBeginTouchPoint()
+void WebPageProxy::didBeginTouchPoint(FloatPoint locationInRootView)
 {
     if (!hasRunningProcess())
         return;
 
-    send(Messages::WebPage::DidBeginTouchPoint());
+    send(Messages::WebPage::DidBeginTouchPoint(locationInRootView));
 }
 
 void WebPageProxy::sendUnpreventableTouchEvent(WebCore::FrameIdentifier frameID, const NativeWebTouchEvent& event)
@@ -14438,6 +14438,18 @@ bool WebPageProxy::shouldForceForegroundPriorityForClientNavigation() const
 void WebPageProxy::getProcessDisplayName(CompletionHandler<void(String&&)>&& completionHandler)
 {
     sendWithAsyncReply(Messages::WebPage::GetProcessDisplayName(), WTFMove(completionHandler));
+}
+
+void WebPageProxy::setMediaCaptureRotationForTesting(WebCore::IntDegrees rotation, const String& persistentId)
+{
+#if ENABLE(MEDIA_STREAM) && HAVE(AVCAPTUREDEVICEROTATIONCOORDINATOR)
+    if (preferences().useAVCaptureDeviceRotationCoordinatorAPI() && userMediaPermissionRequestManager().isMonitoringCaptureDeviceRotation(persistentId)) {
+        rotationAngleForCaptureDeviceChanged(persistentId, static_cast<VideoFrameRotation>(rotation));
+        return;
+    }
+#endif
+
+    setOrientationForMediaCapture(rotation);
 }
 
 void WebPageProxy::setOrientationForMediaCapture(WebCore::IntDegrees orientation)

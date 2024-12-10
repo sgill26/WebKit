@@ -328,7 +328,6 @@ Modules/push-api/PushDatabase.cpp
 Modules/push-api/PushEvent.cpp
 Modules/push-api/PushMessageCrypto.cpp
 Modules/push-api/PushMessageData.cpp
-Modules/push-api/PushNotificationEvent.cpp
 Modules/push-api/PushSubscription.cpp
 Modules/push-api/PushSubscriptionChangeEvent.cpp
 Modules/push-api/PushSubscriptionData.cpp
@@ -1289,6 +1288,7 @@ dom/InternalObserverFromScript.cpp
 dom/InternalObserverInspect.cpp
 dom/InternalObserverLast.cpp
 dom/InternalObserverMap.cpp
+dom/InternalObserverReduce.cpp
 dom/InternalObserverSome.cpp
 dom/InternalObserverTake.cpp
 dom/KeyboardEvent.cpp
@@ -4344,8 +4344,6 @@ JSPushEvent.cpp
 JSPushEventInit.cpp
 JSPushManager.cpp
 JSPushMessageData.cpp
-JSPushNotificationEvent.cpp
-JSPushNotificationEventInit.cpp
 JSPushPermissionState.cpp
 JSPushSubscription.cpp
 JSPushSubscriptionChangeEvent.cpp
@@ -4354,6 +4352,7 @@ JSPushSubscriptionJSON.cpp
 JSPushSubscriptionOptions.cpp
 JSPushSubscriptionOptionsInit.cpp
 JSRedEyeReduction.cpp
+JSReducerCallback.cpp
 JSRTCAnswerOptions.cpp
 JSRTCLogsCallback.cpp
 JSRTCCertificate.cpp

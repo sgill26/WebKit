@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2024 Marais Rossouw <me@marais.co>. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,17 +25,21 @@
 
 #pragma once
 
-#if ENABLE(DECLARATIVE_WEB_PUSH)
-
-#include "ExtendableEventInit.h"
+#include "ActiveDOMCallback.h"
+#include "CallbackResult.h"
+#include <wtf/RefCounted.h>
 
 namespace WebCore {
 
-struct PushNotificationEventInit : ExtendableEventInit {
-    RefPtr<Notification> proposedNotification;
-    std::optional<unsigned long long> proposedAppBadge;
+class ReducerCallback : public RefCounted<ReducerCallback>, public ActiveDOMCallback {
+public:
+    using ActiveDOMCallback::ActiveDOMCallback;
+
+    virtual CallbackResult<JSC::JSValue> handleEvent(JSC::JSValue, JSC::JSValue, uint64_t) = 0;
+    virtual CallbackResult<JSC::JSValue> handleEventRethrowingException(JSC::JSValue, JSC::JSValue, uint64_t) = 0;
+
+private:
+    virtual bool hasCallback() const = 0;
 };
 
 } // namespace WebCore
-
-#endif // ENABLE(DECLARATIVE_WEB_PUSH)
