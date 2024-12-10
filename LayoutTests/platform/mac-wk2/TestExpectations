@@ -821,9 +821,6 @@ http/tests/storageAccess/ [ Pass ]
 #http/tests/storageAccess/request-and-grant-access-then-navigate-cross-site-should-not-have-access.html [ Pass Timeout ]
 http/tests/storageAccess/deny-with-prompt-does-not-preserve-gesture.html [ Skip ]
 
-# Enable on appropriate platforms: rdar://140222322
-http/tests/storageAccess/grant-with-prompt-under-general-third-party-cookie-blocking-with-partitioned-cookies.https.html [ Skip ]
-
 # Enable again when fixing https://bugs.webkit.org/show_bug.cgi?id=208400.
 http/tests/storageAccess/has-storage-access-true-if-third-party-has-cookies-ephemeral.https.html [ Skip ]
 
@@ -1599,6 +1596,21 @@ webkit.org/b/263396 css3/color/text.html [ Skip ]
 
 # skipped outside of macOS Sequoia due to crash in failed allocation
 [ Ventura Sonoma ] fast/webgpu/nocrash/fuzz-279086.html [ Skip ]
+
+# skipped on non-AS due to requiring features unavailable on Intel
+[ x86_64 ] fast/webgpu/nocrash/fuzz-273021.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-274171.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-276279.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-278474.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-281271.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-281555.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-282499.html [ Skip ]
+
+# skipped on Intel due to intermittently timing out due to the workload
+[ x86_64 ] fast/webgpu/nocrash/fuzz-282052.html [ Skip ]
+
+# skipped due to failing when run in stress test mode
+[ Ventura Sonoma ] fast/webgpu/nocrash/RenderBundle_WRITE.html [ Skip ]
 
 [ Release arm64 ] http/tests/webgpu/webgpu/api [ Pass Failure Timeout ]
 [ Release arm64 ] http/tests/webgpu/webgpu/shader [ Pass Failure Timeout ]

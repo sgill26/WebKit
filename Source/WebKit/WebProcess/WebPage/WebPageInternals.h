@@ -23,18 +23,26 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "VideoPresentationLayerProvider.h"
+#pragma once
 
-#if ENABLE(VIDEO)
+#include "WebPage.h"
+#include <WebCore/VisibleSelection.h>
 
-#include "WebAVPlayerLayerView.h"
-
-namespace WebCore {
-
-VideoPresentationLayerProvider::VideoPresentationLayerProvider() = default;
-VideoPresentationLayerProvider::~VideoPresentationLayerProvider() = default;
-
-}
-
+#if ENABLE(APP_HIGHLIGHTS)
+#include <WebCore/AppHighlight.h>
 #endif
+
+namespace WebKit {
+
+struct WebPage::Internals {
+    WTF_MAKE_STRUCT_FAST_ALLOCATED;
+#if PLATFORM(IOS_FAMILY)
+    WebCore::VisibleSelection storedSelectionForAccessibility { WebCore::VisibleSelection() };
+#endif
+#if ENABLE(APP_HIGHLIGHTS)
+    WebCore::CreateNewGroupForHighlight highlightIsNewGroup { WebCore::CreateNewGroupForHighlight::No };
+    WebCore::HighlightRequestOriginatedInApp highlightRequestOriginatedInApp { WebCore::HighlightRequestOriginatedInApp::No };
+#endif
+};
+
+} // namespace WebKit

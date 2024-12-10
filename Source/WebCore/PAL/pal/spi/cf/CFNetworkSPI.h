@@ -274,9 +274,6 @@ typedef CF_ENUM(int, CFURLCredentialPersistence)
 #if HAVE(ALLOW_PRIVATE_ACCESS_TOKENS_FOR_THIRD_PARTY)
 @property (setter=_setAllowPrivateAccessTokensForThirdParty:) BOOL _allowPrivateAccessTokensForThirdParty;
 #endif
-#if HAVE(ALLOW_ONLY_PARTITIONED_COOKIES)
-@property (setter=_setAllowOnlyPartitionedCookies:) BOOL _allowOnlyPartitionedCookies;
-#endif
 @end
 
 @interface NSURLProtocol ()
