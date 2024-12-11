@@ -32,10 +32,10 @@
 #include "MessageReceiverMap.h"
 #include "NetworkProcessProxy.h"
 #include "ProcessLauncher.h"
-#include "ProcessTerminationReason.h"
 #include "ProcessThrottler.h"
 #include "RemoteWorkerInitializationData.h"
 #include "ResponsivenessTimer.h"
+#include "ScopedActiveMessageReceiveQueue.h"
 #include "SharedPreferencesForWebProcess.h"
 #include "SpeechRecognitionServer.h"
 #include "UserContentControllerIdentifier.h"
@@ -135,6 +135,7 @@ struct WebPageCreationParameters;
 struct WebPreferencesStore;
 struct WebsiteData;
 
+enum class ProcessTerminationReason : uint8_t;
 enum class ProcessThrottleState : uint8_t;
 enum class RemoteWorkerType : uint8_t;
 enum class WebsiteDataType : uint32_t;
@@ -568,6 +569,8 @@ private:
     void platformInitialize();
     void platformDestroy();
 
+    ProcessTerminationReason terminationReason() const;
+
     // IPC message handlers.
     void updateBackForwardItem(Ref<FrameState>&&);
     void didDestroyUserGestureToken(WebCore::PageIdentifier, WebCore::UserGestureTokenIdentifier);
@@ -814,7 +817,7 @@ private:
     WebCore::ProcessIdentity m_processIdentity;
 
 #if ENABLE(LOGD_BLOCKING_IN_WEBCONTENT)
-    LogStream m_logStream;
+    IPC::ScopedActiveMessageReceiveQueue<LogStream> m_logStream;
 #endif
 };
 
