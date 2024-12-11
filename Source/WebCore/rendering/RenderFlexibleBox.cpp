@@ -1690,9 +1690,6 @@ FlexLayoutItem RenderFlexibleBox::constructFlexLayoutItem(RenderBox& flexItem, b
     if (CheckedPtr flexibleBox = dynamicDowncast<RenderFlexibleBox>(flexItem))
         flexibleBox->resetHasDefiniteHeight();
 
-    if (everHadLayout && flexItem.hasTrimmedMargin(std::optional<MarginTrimType> { }))
-        flexItem.clearTrimmedMarginsMarkings();
-    
     if (flexItem.needsPreferredWidthsRecalculation())
         flexItem.setPreferredLogicalWidthsDirty(true, MarkingBehavior::MarkOnlyThis);
 

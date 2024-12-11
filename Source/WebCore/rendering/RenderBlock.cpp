@@ -2965,19 +2965,15 @@ void RenderBlock::setTrimmedMarginForChild(RenderBox &child, MarginTrimType marg
     switch (marginTrimType) {
     case MarginTrimType::BlockStart:
         setMarginBeforeForChild(child, 0_lu);
-        child.markMarginAsTrimmed(MarginTrimType::BlockStart);
         break;
     case MarginTrimType::BlockEnd:
         setMarginAfterForChild(child, 0_lu);
-        child.markMarginAsTrimmed(MarginTrimType::BlockEnd);
         break;
     case MarginTrimType::InlineStart:
         setMarginStartForChild(child, 0_lu);
-        child.markMarginAsTrimmed(MarginTrimType::InlineStart);
         break;
     case MarginTrimType::InlineEnd:
         setMarginEndForChild(child, 0_lu);
-        child.markMarginAsTrimmed(MarginTrimType::InlineEnd);
         break;
     default:
         ASSERT_NOT_IMPLEMENTED_YET();

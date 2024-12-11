@@ -1424,27 +1424,6 @@ void RenderBox::clearOverridingLogicalWidthLength()
         gOverridingLogicalWidthLengthMap->remove(*this);
 }
 
-void RenderBox::markMarginAsTrimmed(MarginTrimType newTrimmedMargin)
-{
-    auto& rareData = ensureRareData();
-    rareData.trimmedMargins = rareData.trimmedMargins | newTrimmedMargin;
-}
-
-void RenderBox::clearTrimmedMarginsMarkings()
-{
-    ASSERT(hasRareData());
-    ensureRareData().trimmedMargins = { };
-}
-
-bool RenderBox::hasTrimmedMargin(std::optional<MarginTrimType> marginTrimType) const
-{
-    if (!isInFlow())
-        return false;
-    if (!hasRareData())
-        return false;
-    return marginTrimType ? rareData().trimmedMargins.contains(*marginTrimType) : !rareData().trimmedMargins.isEmpty();
-}
-
 LayoutUnit RenderBox::adjustBorderBoxLogicalWidthForBoxSizing(const Length& logicalWidth) const
 {
     auto width = LayoutUnit { logicalWidth.value() };
@@ -2969,16 +2948,8 @@ bool RenderBox::sizesLogicalWidthToFitContent(SizeType widthType) const
 template<typename Function>
 LayoutUnit RenderBox::computeOrTrimInlineMargin(const RenderBlock& containingBlock, MarginTrimType marginSide, const Function& computeInlineMargin) const
 {
-    if (containingBlock.shouldTrimChildMargin(marginSide, *this)) {
-        // FIXME(255434): This should be set when the margin is being trimmed
-        // within the context of its layout system (block, flex, grid) and should not 
-        // be done at this level within RenderBox. We should be able to leave the 
-        // trimming responsibility to each of those contexts and not need to
-        // do any of it here (trimming the margin and setting the rare data bit)
-        if (isGridItem() && (marginSide == MarginTrimType::InlineStart || marginSide == MarginTrimType::InlineEnd))
-            const_cast<RenderBox&>(*this).markMarginAsTrimmed(marginSide);
+    if (containingBlock.shouldTrimChildMargin(marginSide, *this))
         return 0_lu;
-    }
     return computeInlineMargin();
 }
 
@@ -3810,16 +3781,8 @@ LayoutUnit RenderBox::constrainBlockMarginInAvailableSpaceOrTrim(const RenderBox
 {
     
     ASSERT(marginSide == MarginTrimType::BlockStart || marginSide == MarginTrimType::BlockEnd);
-    if (containingBlock.shouldTrimChildMargin(marginSide, *this)) {
-        // FIXME(255434): This should be set when the margin is being trimmed
-        // within the context of its layout system (block, flex, grid) and should not 
-        // be done at this level within RenderBox. We should be able to leave the 
-        // trimming responsibility to each of those contexts and not need to
-        // do any of it here (trimming the margin and setting the rare data bit)
-        if (isGridItem())
-            const_cast<RenderBox&>(*this).markMarginAsTrimmed(marginSide);
+    if (containingBlock.shouldTrimChildMargin(marginSide, *this))
         return 0_lu;
-    }
     
     return marginSide == MarginTrimType::BlockStart
         ? minimumValueForLength(style().marginBefore(containingBlock.writingMode()), availableSpace)

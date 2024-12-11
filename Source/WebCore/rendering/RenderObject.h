@@ -1309,7 +1309,6 @@ private:
 
         bool hasReflection { false };
         bool hasOutlineAutoAncestor { false };
-        OptionSet<MarginTrimType> trimmedMargins;
 
         // From RenderElement
         std::unique_ptr<ReferencedSVGResources> referencedSVGResources;
