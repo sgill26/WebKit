@@ -7444,9 +7444,7 @@ header: <WebCore/GraphicsContextState.h>
     ShouldSubpixelQuantizeFonts,
     ShadowsIgnoreTransforms,
     DrawLuminanceMask,
-#if HAVE(OS_DARK_MODE_SUPPORT)
     UseDarkAppearance,
-#endif
 };
 
 header: <WebCore/GraphicsContextState.h>
@@ -7474,10 +7472,7 @@ header: <WebCore/GraphicsContextState.h>
     bool m_shouldSubpixelQuantizeFonts;
     bool m_shadowsIgnoreTransforms;
     bool m_drawLuminanceMask;
-#if HAVE(OS_DARK_MODE_SUPPORT)
     bool m_useDarkAppearance;
-#endif
-
     WebCore::GraphicsContextState::Purpose m_purpose;
 };
 
@@ -8729,3 +8724,15 @@ enum class WebCore::FileSystemWriteCommandType : uint8_t {
 };
 
 [Nested] enum class WebCore::ResourceError::IsSanitized : bool
+
+#if ENABLE(DOM_AUDIO_SESSION)
+header: <WebCore/DOMAudioSession.h>
+enum class WebCore::DOMAudioSessionType : uint8_t {
+    Auto,
+    Playback,
+    Transient,
+    TransientSolo,
+    Ambient,
+    PlayAndRecord
+};
+#endif

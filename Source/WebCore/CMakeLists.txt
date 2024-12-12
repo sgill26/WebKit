@@ -2353,11 +2353,6 @@ if (USE_LIBWEBRTC)
     )
 endif ()
 
-# FIXME: This needs a more scalable solution. See webkit.org/b/267080 for some related discussion.
-if (HAVE_OS_DARK_MODE_SUPPORT)
-    set(FEATURE_DEFINES_WITH_SPACE_SEPARATOR "${FEATURE_DEFINES_WITH_SPACE_SEPARATOR} HAVE_OS_DARK_MODE_SUPPORT")
-endif ()
-
 set(WebCoreTestSupport_PRIVATE_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/mock"
     "${WEBCORE_DIR}/testing"
@@ -2543,11 +2538,13 @@ add_custom_command(
 
 # Generate process sync data files
 add_custom_command(
-    OUTPUT ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.cpp ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.h ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncData.h ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncData.serialization.in
+    OUTPUT ${WebCore_DERIVED_SOURCES_DIR}/DocumentSyncData.cpp ${WebCore_DERIVED_SOURCES_DIR}/DocumentSyncData.h ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.cpp ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.h ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncData.h ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncData.serialization.in
     MAIN_DEPENDENCY ${WEBCORE_DIR}/page/ProcessSyncData.in
     DEPENDS ${WEBCORE_DIR}/Scripts/generate-process-sync-data.py
     COMMAND ${PYTHON_EXECUTABLE} ${WEBCORE_DIR}/Scripts/generate-process-sync-data.py ${WEBCORE_DIR}/page/ProcessSyncData.in ${WebCore_DERIVED_SOURCES_DIR}
     VERBATIM)
+list(APPEND WebCore_SOURCES ${WebCore_DERIVED_SOURCES_DIR}/DocumentSyncData.cpp)
+list(APPEND WebCore_SOURCES ${WebCore_DERIVED_SOURCES_DIR}/DocumentSyncData.h)
 list(APPEND WebCore_SOURCES ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.cpp)
 list(APPEND WebCore_SOURCES ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncClient.h)
 list(APPEND WebCore_SOURCES ${WebCore_DERIVED_SOURCES_DIR}/ProcessSyncData.h)

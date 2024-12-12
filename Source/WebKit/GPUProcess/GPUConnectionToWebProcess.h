@@ -214,6 +214,7 @@ public:
     Ref<RemoteLegacyCDMFactoryProxy> protectedLegacyCdmFactoryProxy();
 #endif
     RemoteMediaEngineConfigurationFactoryProxy& mediaEngineConfigurationFactoryProxy();
+    Ref<RemoteMediaEngineConfigurationFactoryProxy> protectedMediaEngineConfigurationFactoryProxy();
 #if ENABLE(VIDEO)
     RemoteMediaPlayerManagerProxy& remoteMediaPlayerManagerProxy() { return m_remoteMediaPlayerManagerProxy.get(); }
     Ref<RemoteMediaPlayerManagerProxy> protectedRemoteMediaPlayerManagerProxy();
@@ -224,6 +225,7 @@ public:
 
 #if HAVE(AVASSETREADER)
     RemoteImageDecoderAVFProxy& imageDecoderAVFProxy();
+    Ref<RemoteImageDecoderAVFProxy> protectedImageDecoderAVFProxy();
 #endif
 
     void updateSupportedRemoteCommands();
@@ -283,6 +285,7 @@ private:
     UserMediaCaptureManagerProxy& userMediaCaptureManagerProxy();
     Ref<UserMediaCaptureManagerProxy> protectedUserMediaCaptureManagerProxy();
     RemoteAudioMediaStreamTrackRendererInternalUnitManager& audioMediaStreamTrackRendererInternalUnitManager();
+    Ref<RemoteAudioMediaStreamTrackRendererInternalUnitManager> protectedAudioMediaStreamTrackRendererInternalUnitManager();
 #endif
 
     void createRenderingBackend(RenderingBackendIdentifier, IPC::StreamServerConnection::Handle&&);
@@ -417,7 +420,7 @@ private:
     RefPtr<RemoteLegacyCDMFactoryProxy> m_legacyCdmFactoryProxy;
 #endif
 #if HAVE(AVASSETREADER)
-    std::unique_ptr<RemoteImageDecoderAVFProxy> m_imageDecoderAVFProxy;
+    const std::unique_ptr<RemoteImageDecoderAVFProxy> m_imageDecoderAVFProxy;
 #endif
 
     std::unique_ptr<RemoteMediaEngineConfigurationFactoryProxy> m_mediaEngineConfigurationFactoryProxy;

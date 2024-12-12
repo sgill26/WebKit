@@ -654,6 +654,11 @@ RemoteAudioMediaStreamTrackRendererInternalUnitManager& GPUConnectionToWebProces
 
     return *m_audioMediaStreamTrackRendererInternalUnitManager;
 }
+
+Ref<RemoteAudioMediaStreamTrackRendererInternalUnitManager> GPUConnectionToWebProcess::protectedAudioMediaStreamTrackRendererInternalUnitManager()
+{
+    return audioMediaStreamTrackRendererInternalUnitManager();
+}
 #endif
 
 #if ENABLE(ENCRYPTED_MEDIA)
@@ -693,9 +698,13 @@ Ref<RemoteAudioSessionProxy> GPUConnectionToWebProcess::protectedAudioSessionPro
 RemoteImageDecoderAVFProxy& GPUConnectionToWebProcess::imageDecoderAVFProxy()
 {
     if (!m_imageDecoderAVFProxy)
-        m_imageDecoderAVFProxy = makeUniqueWithoutRefCountedCheck<RemoteImageDecoderAVFProxy>(*this);
-
+        lazyInitialize(m_imageDecoderAVFProxy, makeUniqueWithoutRefCountedCheck<RemoteImageDecoderAVFProxy>(*this));
     return *m_imageDecoderAVFProxy;
+}
+
+Ref<RemoteImageDecoderAVFProxy> GPUConnectionToWebProcess::protectedImageDecoderAVFProxy()
+{
+    return imageDecoderAVFProxy();
 }
 #endif
 
@@ -901,6 +910,11 @@ RemoteMediaEngineConfigurationFactoryProxy& GPUConnectionToWebProcess::mediaEngi
         m_mediaEngineConfigurationFactoryProxy = makeUniqueWithoutRefCountedCheck<RemoteMediaEngineConfigurationFactoryProxy>(*this);
     return *m_mediaEngineConfigurationFactoryProxy;
 }
+
+Ref<RemoteMediaEngineConfigurationFactoryProxy> GPUConnectionToWebProcess::protectedMediaEngineConfigurationFactoryProxy()
+{
+    return mediaEngineConfigurationFactoryProxy();
+}
 #endif
 
 void GPUConnectionToWebProcess::createAudioHardwareListener(RemoteAudioHardwareListenerIdentifier identifier)
@@ -980,7 +994,7 @@ bool GPUConnectionToWebProcess::dispatchMessage(IPC::Connection& connection, IPC
         return true;
     }
     if (decoder.messageReceiverName() == Messages::RemoteAudioMediaStreamTrackRendererInternalUnitManager::messageReceiverName()) {
-        audioMediaStreamTrackRendererInternalUnitManager().didReceiveMessage(connection, decoder);
+        protectedAudioMediaStreamTrackRendererInternalUnitManager()->didReceiveMessage(connection, decoder);
         return true;
     }
 #endif
@@ -1034,12 +1048,12 @@ bool GPUConnectionToWebProcess::dispatchMessage(IPC::Connection& connection, IPC
     }
 #endif
     if (decoder.messageReceiverName() == Messages::RemoteMediaEngineConfigurationFactoryProxy::messageReceiverName()) {
-        mediaEngineConfigurationFactoryProxy().didReceiveMessageFromWebProcess(connection, decoder);
+        protectedMediaEngineConfigurationFactoryProxy()->didReceiveMessageFromWebProcess(connection, decoder);
         return true;
     }
 #if HAVE(AVASSETREADER)
     if (decoder.messageReceiverName() == Messages::RemoteImageDecoderAVFProxy::messageReceiverName()) {
-        imageDecoderAVFProxy().didReceiveMessage(connection, decoder);
+        protectedImageDecoderAVFProxy()->didReceiveMessage(connection, decoder);
         return true;
     }
 #endif
@@ -1121,7 +1135,7 @@ bool GPUConnectionToWebProcess::dispatchSyncMessage(IPC::Connection& connection,
 #endif
 #if HAVE(AVASSETREADER)
     if (decoder.messageReceiverName() == Messages::RemoteImageDecoderAVFProxy::messageReceiverName()) {
-        return imageDecoderAVFProxy().didReceiveSyncMessage(connection, decoder, replyEncoder);
+        return protectedImageDecoderAVFProxy()->didReceiveSyncMessage(connection, decoder, replyEncoder);
     }
 #endif
 #if ENABLE(WEBGL)
@@ -1214,8 +1228,8 @@ void GPUConnectionToWebProcess::startCapturingAudio()
 void GPUConnectionToWebProcess::processIsStartingToCaptureAudio(GPUConnectionToWebProcess& process)
 {
     m_isLastToCaptureAudio = this == &process;
-    if (m_audioMediaStreamTrackRendererInternalUnitManager)
-        m_audioMediaStreamTrackRendererInternalUnitManager->notifyLastToCaptureAudioChanged();
+    if (RefPtr manager = m_audioMediaStreamTrackRendererInternalUnitManager.get())
+        manager->notifyLastToCaptureAudioChanged();
 }
 #endif
 

@@ -1927,7 +1927,7 @@ imported/w3c/web-platform-tests/upgrade-insecure-requests/gen/worker-module-data
 # webkit.org/b/282477 [macOS wk2 Debug ] fast/events/drag-and-drop-autoscroll-inner-frame.html is flaky failure (failure in EWS)
 fast/events/drag-and-drop-autoscroll-inner-frame.html [ Pass Failure ]
 
-webkit.org/b/282565 [ Sequoia+ Debug ] imported/w3c/web-platform-tests/css/css-writing-modes/text-combine-upright-sideways-001.html [ Pass ImageOnlyFailure ]
+webkit.org/b/282565 [ Sequoia+ ] imported/w3c/web-platform-tests/css/css-writing-modes/text-combine-upright-sideways-001.html [ ImageOnlyFailure ]
 
 webkit.org/b/282726 http/tests/media/fairplay/legacy-fairplay-hls.html [ Failure ]
 
@@ -1954,16 +1954,14 @@ webkit.org/b/283210 http/wpt/mediarecorder/MediaRecorder-AV-audio-video-dataavai
 
 webkit.org/b/283596 [ Sequoia+ Debug ] ipc/cfnetwork-crashes-with-string-to-string-http-headers.html [ Skip ]
 
-# webkit.org/b/284113 REGRESSION(287390@main?): [macOS Release] 4x imported/w3c/web-platform-tests/fs tests are flaky (Failure in EWS)
-[ Release ] imported/w3c/web-platform-tests/fs/FileSystemBaseHandle-postMessage-Error.https.window.html [ Pass Failure ]
-[ Release ] imported/w3c/web-platform-tests/fs/FileSystemFileHandle-getFile.https.any.worker.html [ Pass Failure ]
-[ Release ] imported/w3c/web-platform-tests/fs/FileSystemWritableFileStream-piped.https.any.worker.html [ Pass Failure ]
-[ Release ] imported/w3c/web-platform-tests/fs/FileSystemDirectoryHandle-removeEntry.https.any.worker.html [ Pass Failure ]
+webkit.org/b/284511 [ Release ] imported/w3c/web-platform-tests/fs/FileSystemBaseHandle-postMessage-Error.https.window.html [ Pass Failure ]
 
 webkit.org/b/284190 [ Sequoia+ ] http/tests/privateClickMeasurement/send-attribution-conversion-request.https.html [ Failure ]
 
 # webkit.org/b/284186 [macOS Debug] media/media-vp8-hiddenframes.html is timing out (flaky in EWS)
 [ Debug ] media/media-vp8-hiddenframes.html [ Pass Timeout ]
 
-# webkit.org/b/284391 [macOS Debug]: ASSERTION FAILED: Unsafe to ref/deref from different threads m_isOwnedByMainThread == isMainThread() result of crash in (flaky in EWS)
-[ Sonoma+ Debug ] imported/w3c/web-platform-tests/dom/observable/tentative/observable-map.any.worker.html [ Pass Crash ]
+webkit.org/b/284492 [ Sequoia+ ] imported/w3c/web-platform-tests/fetch/api/cors/cors-cookies-redirect.any.html [ Failure ]
+webkit.org/b/284492 [ Sequoia+ ] imported/w3c/web-platform-tests/fetch/api/cors/cors-cookies-redirect.any.worker.html [ Failure ]
+
+webkit.org/b/284493 [ Debug ] imported/blink/fast/hidpi/border-background-align.html [ Crash ]

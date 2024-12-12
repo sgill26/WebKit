@@ -1294,7 +1294,6 @@ dom/InternalObserverTake.cpp
 dom/KeyboardEvent.cpp
 dom/LiveNodeList.cpp
 dom/LoadableClassicScript.cpp
-dom/LoadableImportMap.cpp
 dom/LoadableModuleScript.cpp
 dom/LoadableScript.cpp
 dom/MessageChannel.cpp
@@ -3421,6 +3420,7 @@ xml/parser/XMLDocumentParserScope.cpp
 CSSPropertyParsing.cpp
 CSSValueKeywords.cpp
 ColorData.cpp
+DocumentSyncData.cpp
 EventFactory.cpp
 EventNames.cpp
 EventTargetFactory.cpp
