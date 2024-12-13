@@ -1121,6 +1121,16 @@ void PluginView::setSelectionRange(FloatPoint pointInRootView, TextGranularity g
     protectedPlugin()->setSelectionRange(pointInRootView, granularity);
 }
 
+SelectionWasFlipped PluginView::moveSelectionEndpoint(WebCore::FloatPoint pointInRootView, SelectionEndpoint endpoint)
+{
+    return protectedPlugin()->moveSelectionEndpoint(pointInRootView, endpoint);
+}
+
+void PluginView::clearSelection()
+{
+    protectedPlugin()->clearSelection();
+}
+
 #endif // PLATFORM(IOS_FAMILY)
 
 bool PluginView::populateEditorStateIfNeeded(EditorState& state) const

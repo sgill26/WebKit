@@ -469,6 +469,10 @@
 #include "PDFPluginBase.h"
 #endif
 
+#if HAVE(AUDIT_TOKEN)
+#include "CoreIPCAuditToken.h"
+#endif
+
 #if PLATFORM(COCOA)
 #include <pal/cf/CoreTextSoftLink.h>
 #endif
@@ -860,6 +864,10 @@ WebPage::WebPage(PageIdentifier pageID, WebPageCreationParameters&& parameters)
 
 #if PLATFORM(VISION) && ENABLE(GAMEPAD)
     pageConfiguration.gamepadAccessRequiresExplicitConsent = parameters.gamepadAccessRequiresExplicitConsent;
+#endif
+
+#if HAVE(AUDIT_TOKEN)
+    pageConfiguration.presentingApplicationAuditToken = parameters.presentingApplicationAuditToken ? std::optional(parameters.presentingApplicationAuditToken->auditToken()) : std::nullopt;
 #endif
 
     m_page = Page::create(WTFMove(pageConfiguration));
@@ -2863,6 +2871,19 @@ void WebPage::viewportPropertiesDidChange(const ViewportArguments& viewportArgum
 #if PLATFORM(IOS_FAMILY)
     if (m_viewportConfiguration.setViewportArguments(viewportArguments))
         viewportConfigurationChanged();
+#elif PLATFORM(GTK) || PLATFORM(WPE)
+    // Adjust view dimensions when using fixed layout.
+    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr view = localMainFrame ? localMainFrame->view() : nullptr;
+    if (view && view->useFixedLayout() && !m_viewSize.isEmpty()) {
+        Settings& settings = m_page->settings();
+        int deviceWidth = (settings.deviceWidth() > 0) ? settings.deviceWidth() : m_viewSize.width();
+        int deviceHeight = (settings.deviceHeight() > 0) ? settings.deviceHeight() : m_viewSize.height();
+        int minimumLayoutFallbackWidth = std::max<int>(settings.layoutFallbackWidth(), m_viewSize.width());
+        ViewportAttributes attr = computeViewportAttributes(viewportArguments, minimumLayoutFallbackWidth, deviceWidth, deviceHeight, 1, m_viewSize);
+        setFixedLayoutSize(roundedIntSize(attr.layoutSize));
+        scaleView(deviceWidth / attr.layoutSize.width());
+    }
 #else
     UNUSED_PARAM(viewportArguments);
 #endif
@@ -10193,6 +10214,14 @@ void WebPage::callAfterPendingSyntheticClick(CompletionHandler<void(SyntheticCli
     completion(SyntheticClickResult::Failed);
 }
 
+#endif
+
+#if HAVE(AUDIT_TOKEN)
+void WebPage::setPresentingApplicationAuditToken(CoreIPCAuditToken&& presentingApplicationAuditToken)
+{
+    if (RefPtr page = protectedCorePage())
+        page->setPresentingApplicationAuditToken(presentingApplicationAuditToken.auditToken());
+}
 #endif
 
 } // namespace WebKit

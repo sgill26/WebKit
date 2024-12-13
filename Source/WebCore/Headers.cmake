@@ -383,6 +383,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     Modules/filesystemaccess/FileSystemSyncAccessHandleIdentifier.h
     Modules/filesystemaccess/FileSystemWritableFileStream.h
     Modules/filesystemaccess/FileSystemWritableFileStreamSink.h
+    Modules/filesystemaccess/FileSystemWriteCloseReason.h
     Modules/filesystemaccess/FileSystemWriteCommandType.h
     Modules/filesystemaccess/StorageManagerFileSystemAccess.h
     Modules/filesystemaccess/WorkerFileSystemStorageConnection.h
@@ -649,6 +650,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     Modules/webcodecs/WebCodecsAlphaOption.h
     Modules/webcodecs/WebCodecsAudioData.h
     Modules/webcodecs/WebCodecsAudioInternalData.h
+    Modules/webcodecs/WebCodecsBase.h
     Modules/webcodecs/WebCodecsEncodedAudioChunk.h
     Modules/webcodecs/WebCodecsEncodedAudioChunkData.h
     Modules/webcodecs/WebCodecsEncodedAudioChunkType.h

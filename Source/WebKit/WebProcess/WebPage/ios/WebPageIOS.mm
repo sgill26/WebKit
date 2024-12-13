@@ -188,8 +188,6 @@
 namespace WebKit {
 using namespace WebCore;
 
-enum class SelectionWasFlipped : bool { No, Yes };
-
 // FIXME: Unclear if callers in this file are correctly choosing which of these two functions to use.
 
 static String plainTextForContext(const SimpleRange& range)
@@ -983,6 +981,11 @@ void WebPage::completeSyntheticClick(Node& nodeRespondingToClick, const WebCore:
     if (m_isClosed)
         return;
 
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(newFocusedFrame.get()))
+        pluginView->clearSelection();
+#endif
+
     invokePendingSyntheticClickCallback(SyntheticClickResult::Click);
 
     if ((!handledPress && !handledRelease) || !nodeRespondingToClick.isElementNode())
@@ -1355,6 +1358,13 @@ void WebPage::clearSelectionAfterTapIfNeeded()
     RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
     if (!frame)
         return;
+
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(frame.get())) {
+        pluginView->clearSelection();
+        return;
+    }
+#endif
 
     if (frame->selection().selection().isContentEditable())
         return;
@@ -1900,6 +1910,10 @@ void WebPage::clearSelection()
     m_startingGestureRange = std::nullopt;
     RefPtr focusedOrMainFrame = m_page->checkedFocusController()->focusedOrMainFrame();
     focusedOrMainFrame->selection().clear();
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(focusedOrMainFrame.get()))
+        pluginView->clearSelection();
+#endif
 }
 
 void WebPage::dispatchSyntheticMouseEventsForSelectionGesture(SelectionTouch touch, const IntPoint& point)
@@ -2022,6 +2036,16 @@ void WebPage::updateSelectionWithTouches(const IntPoint& point, SelectionTouch s
     RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
     if (!frame)
         return;
+
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(frame.get())) {
+        OptionSet<SelectionFlags> resultFlags;
+        auto startOrEnd = baseIsStart ? SelectionEndpoint::End : SelectionEndpoint::Start;
+        if (pluginView->moveSelectionEndpoint(point, startOrEnd) == SelectionWasFlipped::Yes)
+            resultFlags.add(SelectionFlags::SelectionFlipped);
+        return completionHandler(point, selectionTouch, resultFlags);
+    }
+#endif
 
     if (selectionTouch == SelectionTouch::Started)
         addTextInteractionSources(TextInteractionSource::Touch);
