@@ -2003,7 +2003,7 @@ void RenderStyle::conservativelyCollectChangedAnimatableProperties(const RenderS
             changingProperties.m_properties.set(CSSPropertyFontVariantLigatures);
             changingProperties.m_properties.set(CSSPropertyFontVariantNumeric);
             changingProperties.m_properties.set(CSSPropertyFontSize);
-            changingProperties.m_properties.set(CSSPropertyFontStretch);
+            changingProperties.m_properties.set(CSSPropertyFontWidth);
             changingProperties.m_properties.set(CSSPropertyFontPalette);
             changingProperties.m_properties.set(CSSPropertyFontKerning);
             changingProperties.m_properties.set(CSSPropertyFontSynthesisWeight);
@@ -2945,10 +2945,11 @@ void RenderStyle::setFontWeight(FontSelectionValue value)
     setFontDescription(WTFMove(description));
 }
 
-void RenderStyle::setFontStretch(FontSelectionValue value)
+void RenderStyle::setFontWidth(FontSelectionValue value)
 {
     auto description = fontDescription();
-    description.setStretch(value);
+    description.setWidth(value);
+
     setFontDescription(WTFMove(description));
 }
 
@@ -3928,6 +3929,16 @@ UserSelect RenderStyle::usedUserSelect() const
         return value == UserSelect::None ? UserSelect::Text : value;
 
     return value;
+}
+
+const Vector<PositionTryFallback>& RenderStyle::positionTryFallbacks() const
+{
+    return m_nonInheritedData->rareData->positionTryFallbacks;
+}
+
+void RenderStyle::setPositionTryFallbacks(const Vector<PositionTryFallback>& fallbacks)
+{
+    SET_NESTED_VAR(m_nonInheritedData, rareData, positionTryFallbacks, fallbacks);
 }
 
 void RenderStyle::adjustScrollTimelines()

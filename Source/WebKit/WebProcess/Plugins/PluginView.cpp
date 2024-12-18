@@ -671,6 +671,14 @@ void PluginView::scrollToRevealTextMatch(const WebFoundTextRange::PDFData& match
     return protectedPlugin()->scrollToRevealTextMatch(match);
 }
 
+String PluginView::fullDocumentString() const
+{
+    if (!m_isInitialized)
+        return { };
+
+    return protectedPlugin()->fullDocumentString();
+}
+
 String PluginView::selectionString() const
 {
     if (!m_isInitialized)
@@ -1121,14 +1129,39 @@ void PluginView::setSelectionRange(FloatPoint pointInRootView, TextGranularity g
     protectedPlugin()->setSelectionRange(pointInRootView, granularity);
 }
 
-SelectionWasFlipped PluginView::moveSelectionEndpoint(WebCore::FloatPoint pointInRootView, SelectionEndpoint endpoint)
+SelectionWasFlipped PluginView::moveSelectionEndpoint(FloatPoint pointInRootView, SelectionEndpoint endpoint)
 {
     return protectedPlugin()->moveSelectionEndpoint(pointInRootView, endpoint);
+}
+
+SelectionEndpoint PluginView::extendInitialSelection(FloatPoint pointInRootView, TextGranularity granularity)
+{
+    return protectedPlugin()->extendInitialSelection(pointInRootView, granularity);
 }
 
 void PluginView::clearSelection()
 {
     protectedPlugin()->clearSelection();
+}
+
+std::pair<URL, FloatRect> PluginView::linkURLAndBoundsAtPoint(FloatPoint pointInRootView) const
+{
+    return protectedPlugin()->linkURLAndBoundsAtPoint(pointInRootView);
+}
+
+std::optional<FloatRect> PluginView::highlightRectForTapAtPoint(FloatPoint pointInRootView) const
+{
+    return protectedPlugin()->highlightRectForTapAtPoint(pointInRootView);
+}
+
+void PluginView::handleSyntheticClick(PlatformMouseEvent&& event)
+{
+    protectedPlugin()->handleSyntheticClick(WTFMove(event));
+}
+
+CursorContext PluginView::cursorContext(FloatPoint pointInRootView) const
+{
+    return protectedPlugin()->cursorContext(pointInRootView);
 }
 
 #endif // PLATFORM(IOS_FAMILY)

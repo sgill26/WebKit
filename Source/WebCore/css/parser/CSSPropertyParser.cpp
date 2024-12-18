@@ -52,6 +52,7 @@
 #include "CSSPropertyParserConsumer+Background.h"
 #include "CSSPropertyParserConsumer+Color.h"
 #include "CSSPropertyParserConsumer+Conditional.h"
+#include "CSSPropertyParserConsumer+Easing.h"
 #include "CSSPropertyParserConsumer+Font.h"
 #include "CSSPropertyParserConsumer+Grid.h"
 #include "CSSPropertyParserConsumer+Ident.h"
@@ -70,7 +71,6 @@
 #include "CSSPropertyParserConsumer+TextDecoration.h"
 #include "CSSPropertyParserConsumer+Time.h"
 #include "CSSPropertyParserConsumer+Timeline.h"
-#include "CSSPropertyParserConsumer+TimingFunction.h"
 #include "CSSPropertyParserConsumer+Transform.h"
 #include "CSSPropertyParserConsumer+Transitions.h"
 #include "CSSPropertyParserConsumer+URL.h"
@@ -735,12 +735,12 @@ bool CSSPropertyParser::consumeFont(bool important)
     auto& fontStyle = values[0];
     auto& fontVariantCaps = values[1];
     auto& fontWeight = values[2];
-    auto& fontStretch = values[3];
+    auto& fontWidth = values[3];
     auto& fontSize = values[4];
     auto& lineHeight = values[5];
     auto& fontFamily = values[6];
 
-    // Optional font-style, font-variant, font-stretch and font-weight, in any order.
+    // Optional font-style, font-variant, font-width and font-weight, in any order.
     for (unsigned i = 0; i < 4 && !range.atEnd(); ++i) {
         if (consumeIdent<CSSValueNormal>(range))
             continue;
@@ -750,7 +750,7 @@ bool CSSPropertyParser::consumeFont(bool important)
             continue;
         if (!fontWeight && (fontWeight = consumeFontWeight(range, m_context)))
             continue;
-        if (!fontStretch && (fontStretch = CSSPropertyParsing::consumeFontStretchAbsolute(range)))
+        if (!fontWidth && (fontWidth = CSSPropertyParsing::consumeFontWidthAbsolute(range)))
             continue;
         break;
     }
@@ -1069,7 +1069,7 @@ static constexpr InitialValue initialValueForLonghand(CSSPropertyID longhand)
     case CSSPropertyContent:
     case CSSPropertyFontFeatureSettings:
     case CSSPropertyFontPalette:
-    case CSSPropertyFontStretch:
+    case CSSPropertyFontWidth:
     case CSSPropertyFontStyle:
     case CSSPropertyFontVariantAlternates:
     case CSSPropertyFontVariantCaps:
@@ -1891,7 +1891,7 @@ static RefPtr<CSSValue> consumeAnimationValueForShorthand(CSSPropertyID property
         return consumeAnimationTimeline(range, context);
     case CSSPropertyAnimationTimingFunction:
     case CSSPropertyTransitionTimingFunction:
-        return consumeTimingFunction(range, context);
+        return consumeEasingFunction(range, context);
     case CSSPropertyTransitionBehavior:
         return CSSPropertyParsing::consumeTransitionBehaviorValue(range);
     default:

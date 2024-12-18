@@ -27,6 +27,7 @@
 
 #if ENABLE(PDF_PLUGIN)
 
+#include "CursorContext.h"
 #include "PDFPluginIdentifier.h"
 #include "WebFoundTextRange.h"
 #include <WebCore/FindOptions.h>
@@ -46,6 +47,7 @@ OBJC_CLASS PDFSelection;
 namespace WebCore {
 class HTMLPlugInElement;
 class LocalFrame;
+class PlatformMouseEvent;
 class RenderEmbeddedObject;
 class ShareableBitmap;
 class VoidCallback;
@@ -96,9 +98,14 @@ public:
     void pluginScaleFactorDidChange();
 #if PLATFORM(IOS_FAMILY)
     void pluginDidInstallPDFDocument(double initialScaleFactor);
+    std::pair<URL, WebCore::FloatRect> linkURLAndBoundsAtPoint(WebCore::FloatPoint pointInRootView) const;
+    std::optional<WebCore::FloatRect> highlightRectForTapAtPoint(WebCore::FloatPoint pointInRootView) const;
+    void handleSyntheticClick(WebCore::PlatformMouseEvent&&);
     void setSelectionRange(WebCore::FloatPoint pointInRootView, WebCore::TextGranularity);
     void clearSelection();
     SelectionWasFlipped moveSelectionEndpoint(WebCore::FloatPoint pointInRootView, SelectionEndpoint);
+    SelectionEndpoint extendInitialSelection(WebCore::FloatPoint pointInRootView, WebCore::TextGranularity);
+    CursorContext cursorContext(WebCore::FloatPoint pointInRootView) const;
 #endif
 
     bool populateEditorStateIfNeeded(EditorState&) const;
@@ -121,6 +128,7 @@ public:
     RefPtr<WebCore::TextIndicator> textIndicatorForTextMatch(const WebFoundTextRange::PDFData&, WebCore::TextIndicatorPresentationTransition);
     void scrollToRevealTextMatch(const WebFoundTextRange::PDFData&);
 
+    String fullDocumentString() const;
     String selectionString() const;
 
     RefPtr<WebCore::FragmentedSharedBuffer> liveResourceData() const;

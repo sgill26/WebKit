@@ -328,6 +328,7 @@ MESSAGE_RECEIVERS = \
 	GPUProcess/media/RemoteMediaEngineConfigurationFactoryProxy \
 	GPUProcess/media/RemoteMediaPlayerManagerProxy \
 	GPUProcess/media/RemoteMediaPlayerProxy \
+	GPUProcess/media/RemoteMediaRecorderPrivateWriterManager \
 	GPUProcess/media/RemoteMediaResourceManager \
 	GPUProcess/media/RemoteVideoFrameObjectHeap \
 	GPUProcess/media/RemoteMediaSourceProxy \
@@ -414,8 +415,8 @@ LOG_OUTPUT_FILES = \
     WebKitLogClientDeclarations.h \
     WebCoreLogClientDeclarations.h \
 
-$(LOG_OUTPUT_FILES) : Platform/LogMessages.in $(WebCorePrivateHeaders)/LogMessages.in
-	PYTHONPATH=$(WebCorePrivateHeaders) $(PYTHON) $(WebKit2)/Scripts/generate-derived-log-sources.py $^ $(LOG_OUTPUT_FILES)
+$(LOG_OUTPUT_FILES) : $(WebKit2)/Scripts/generate-derived-log-sources.py Platform/LogMessages.in $(WebCorePrivateHeaders)/LogMessages.in
+	PYTHONPATH=$(WebCorePrivateHeaders) $(PYTHON) $^ $(LOG_OUTPUT_FILES)
 
 all : $(GENERATED_MESSAGES_FILES)
 
@@ -546,6 +547,7 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	GPUProcess/media/InitializationSegmentInfo.serialization.in \
 	GPUProcess/media/MediaDescriptionInfo.serialization.in \
 	GPUProcess/media/RemoteMediaPlayerProxyConfiguration.serialization.in \
+	GPUProcess/media/RemoteTrackInfo.serialization.in \
 	GPUProcess/media/TextTrackPrivateRemoteConfiguration.serialization.in \
 	GPUProcess/media/TrackPrivateRemoteConfiguration.serialization.in \
 	GPUProcess/media/VideoTrackPrivateRemoteConfiguration.serialization.in \
@@ -672,6 +674,7 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	Shared/ImageOptions.serialization.in \
 	Shared/InspectorExtensionTypes.serialization.in \
 	Shared/PlatformFontInfo.serialization.in \
+	Shared/ios/CursorContext.serialization.in \
 	Shared/ios/DynamicViewportSizeUpdate.serialization.in \
 	Shared/ios/GestureTypes.serialization.in \
 	Shared/ios/HardwareKeyboardState.serialization.in \

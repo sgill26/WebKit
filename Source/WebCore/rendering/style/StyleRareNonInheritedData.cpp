@@ -100,6 +100,7 @@ StyleRareNonInheritedData::StyleRareNonInheritedData()
     , pseudoElementNameArgument(nullAtom())
     , anchorNames(RenderStyle::initialAnchorNames())
     , positionAnchor(RenderStyle::initialPositionAnchor())
+    , positionTryFallbacks(RenderStyle::initialPositionTryFallbacks())
     , blockStepSize(RenderStyle::initialBlockStepSize())
     , blockStepAlign(static_cast<unsigned>(RenderStyle::initialBlockStepAlign()))
     , blockStepInsert(static_cast<unsigned>(RenderStyle::initialBlockStepInsert()))
@@ -132,6 +133,9 @@ StyleRareNonInheritedData::StyleRareNonInheritedData()
     , hasClip(false)
     , positionTryOrder(static_cast<unsigned>(RenderStyle::initialPositionTryOrder()))
     , fieldSizing(RenderStyle::initialFieldSizing())
+#if HAVE(CORE_MATERIAL)
+    , appleVisualEffect(static_cast<unsigned>(RenderStyle::initialAppleVisualEffect()))
+#endif
     , nativeAppearanceDisabled(static_cast<unsigned>(RenderStyle::initialNativeAppearanceDisabled()))
 {
 }
@@ -200,6 +204,7 @@ inline StyleRareNonInheritedData::StyleRareNonInheritedData(const StyleRareNonIn
     , pseudoElementNameArgument(o.pseudoElementNameArgument)
     , anchorNames(o.anchorNames)
     , positionAnchor(o.positionAnchor)
+    , positionTryFallbacks(o.positionTryFallbacks)
     , blockStepSize(o.blockStepSize)
     , blockStepAlign(o.blockStepAlign)
     , blockStepInsert(o.blockStepInsert)
@@ -232,6 +237,9 @@ inline StyleRareNonInheritedData::StyleRareNonInheritedData(const StyleRareNonIn
     , hasClip(o.hasClip)
     , positionTryOrder(o.positionTryOrder)
     , fieldSizing(o.fieldSizing)
+#if HAVE(CORE_MATERIAL)
+    , appleVisualEffect(o.appleVisualEffect)
+#endif
     , nativeAppearanceDisabled(o.nativeAppearanceDisabled)
 {
 }
@@ -305,6 +313,7 @@ bool StyleRareNonInheritedData::operator==(const StyleRareNonInheritedData& o) c
         && pseudoElementNameArgument == o.pseudoElementNameArgument
         && anchorNames == o.anchorNames
         && positionAnchor == o.positionAnchor
+        && positionTryFallbacks == o.positionTryFallbacks
         && blockStepSize == o.blockStepSize
         && blockStepAlign == o.blockStepAlign
         && blockStepInsert == o.blockStepInsert
@@ -339,6 +348,9 @@ bool StyleRareNonInheritedData::operator==(const StyleRareNonInheritedData& o) c
         && hasClip == o.hasClip
         && positionTryOrder == o.positionTryOrder
         && fieldSizing == o.fieldSizing
+#if HAVE(CORE_MATERIAL)
+        && appleVisualEffect == o.appleVisualEffect
+#endif
         && nativeAppearanceDisabled == o.nativeAppearanceDisabled;
 }
 
@@ -502,6 +514,10 @@ void StyleRareNonInheritedData::dumpDifferences(TextStream& ts, const StyleRareN
     LOG_IF_DIFFERENT_WITH_CAST(bool, hasClip);
     LOG_IF_DIFFERENT_WITH_CAST(Style::PositionTryOrder, positionTryOrder);
     LOG_IF_DIFFERENT(fieldSizing);
+
+#if HAVE(CORE_MATERIAL)
+    LOG_IF_DIFFERENT(appleVisualEffect);
+#endif
 }
 #endif // !LOG_DISABLED
 

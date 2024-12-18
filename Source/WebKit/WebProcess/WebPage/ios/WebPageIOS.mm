@@ -962,7 +962,8 @@ void WebPage::completeSyntheticClick(Node& nodeRespondingToClick, const WebCore:
     else if (!handledPress)
         clearSelectionAfterTapIfNeeded();
 
-    bool handledRelease = localMainFrame->eventHandler().handleMouseReleaseEvent(PlatformMouseEvent(roundedAdjustedPoint, roundedAdjustedPoint, MouseButton::Left, PlatformEvent::Type::MouseReleased, 1, platformModifiers, WallTime::now(), WebCore::ForceAtClick, syntheticClickType, pointerId)).wasHandled();
+    auto releaseEvent = PlatformMouseEvent { roundedAdjustedPoint, roundedAdjustedPoint, MouseButton::Left, PlatformEvent::Type::MouseReleased, 1, platformModifiers, WallTime::now(), ForceAtClick, syntheticClickType, pointerId };
+    bool handledRelease = localMainFrame->eventHandler().handleMouseReleaseEvent(releaseEvent).wasHandled();
     if (m_isClosed)
         return;
 
@@ -983,7 +984,7 @@ void WebPage::completeSyntheticClick(Node& nodeRespondingToClick, const WebCore:
 
 #if ENABLE(PDF_PLUGIN)
     if (RefPtr pluginView = pluginViewForFrame(newFocusedFrame.get()))
-        pluginView->clearSelection();
+        pluginView->handleSyntheticClick(WTFMove(releaseEvent));
 #endif
 
     invokePendingSyntheticClickCallback(SyntheticClickResult::Click);
@@ -1182,13 +1183,13 @@ void WebPage::computeAndSendEditDragSnapshot()
 
 #endif
 
-void WebPage::sendTapHighlightForNodeIfNecessary(WebKit::TapIdentifier requestID, Node* node)
+void WebPage::sendTapHighlightForNodeIfNecessary(WebKit::TapIdentifier requestID, Node* node, FloatPoint point)
 {
 #if ENABLE(TOUCH_EVENTS)
     if (!node)
         return;
 
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
     if (!localMainFrame)
         return;
 
@@ -1205,6 +1206,17 @@ void WebPage::sendTapHighlightForNodeIfNecessary(WebKit::TapIdentifier requestID
         if (!node)
             return;
     }
+
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(node->document().frame())) {
+        if (auto rect = pluginView->highlightRectForTapAtPoint(point)) {
+            auto highlightColor = RenderThemeIOS::singleton().platformTapHighlightColor();
+            auto highlightQuads = Vector { FloatQuad { WTFMove(*rect) } };
+            send(Messages::WebPageProxy::DidGetTapHighlightGeometries(requestID, WTFMove(highlightColor), WTFMove(highlightQuads), { }, { }, { }, { }, true));
+            return;
+        }
+    }
+#endif // ENABLE(PDF_PLUGIN)
 
     Vector<FloatQuad> quads;
     if (RenderObject *renderer = node->renderer()) {
@@ -1240,7 +1252,7 @@ void WebPage::handleTwoFingerTapAtPoint(const WebCore::IntPoint& point, OptionSe
         send(Messages::WebPageProxy::DidNotHandleTapAsClick(roundedIntPoint(adjustedPoint)));
         return;
     }
-    sendTapHighlightForNodeIfNecessary(requestID, nodeRespondingToClick);
+    sendTapHighlightForNodeIfNecessary(requestID, nodeRespondingToClick, point);
     completeSyntheticClick(*nodeRespondingToClick, adjustedPoint, modifiers, WebCore::SyntheticClickType::TwoFingerTap);
 }
 
@@ -1296,7 +1308,7 @@ void WebPage::potentialTapAtPosition(WebKit::TapIdentifier requestID, const WebC
         send(Messages::WebPageProxy::HandleSmartMagnificationInformationForPotentialTap(requestID, absoluteBoundingRect, fitEntireRect, viewportMinimumScale, viewportMaximumScale, nodeIsRootLevel));
     }
 
-    sendTapHighlightForNodeIfNecessary(requestID, m_potentialTapNode.get());
+    sendTapHighlightForNodeIfNecessary(requestID, m_potentialTapNode.get(), position);
 #if ENABLE(TOUCH_EVENTS)
     if (m_potentialTapNode && !m_potentialTapNode->allowsDoubleTapGesture())
         send(Messages::WebPageProxy::DisableDoubleTapGesturesDuringTapIfNecessary(requestID));
@@ -1407,7 +1419,7 @@ void WebPage::tapHighlightAtPosition(WebKit::TapIdentifier requestID, const Floa
     if (!localMainFrame)
         return;
     FloatPoint adjustedPoint;
-    sendTapHighlightForNodeIfNecessary(requestID, localMainFrame->nodeRespondingToClickEvents(position, adjustedPoint));
+    sendTapHighlightForNodeIfNecessary(requestID, localMainFrame->nodeRespondingToClickEvents(position, adjustedPoint), position);
 }
 
 void WebPage::inspectorNodeSearchMovedToPosition(const FloatPoint& position)
@@ -2682,6 +2694,13 @@ void WebPage::updateSelectionWithExtentPointAndBoundary(const WebCore::IntPoint&
     if (!frame)
         return callback(false);
 
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(frame.get())) {
+        auto movedEndpoint = pluginView->extendInitialSelection(point, granularity);
+        return callback(movedEndpoint == SelectionEndpoint::End);
+    }
+#endif
+
     auto position = visiblePositionInFocusedNodeForPoint(*frame, point, isInteractingWithFocusedElement);
     auto newRange = rangeForGranularityAtPoint(*frame, point, granularity, isInteractingWithFocusedElement);
     
@@ -3573,29 +3592,36 @@ static bool canForceCaretForPosition(const VisiblePosition& position)
     return renderer->isRenderText() && node->canStartSelection();
 }
 
-static void populateCaretContext(const HitTestResult& hitTestResult, const InteractionInformationRequest& request, InteractionInformationAtPosition& info)
+static CursorContext cursorContext(const HitTestResult& hitTestResult, const InteractionInformationRequest& request)
 {
+    CursorContext context;
     RefPtr frame = hitTestResult.innerNodeFrame();
     if (!frame)
-        return;
+        return context;
+
+    // FIXME: Do we really need to set the cursor here if `includeCursorContext` is not set?
+    context.cursor = frame->eventHandler().selectCursor(hitTestResult, false);
+
+    if (!request.includeCursorContext)
+        return context;
 
     RefPtr view = frame->view();
     if (!view)
-        return;
+        return context;
 
     auto node = hitTestResult.innerNode();
     if (!node)
-        return;
+        return context;
 
     auto* renderer = node->renderer();
     if (!renderer)
-        return;
+        return context;
 
     while (renderer && !is<RenderBlockFlow>(*renderer))
         renderer = renderer->parent();
 
     if (!renderer)
-        return;
+        return context;
 
     // FIXME: We should be able to retrieve this geometry information without
     // forcing the text to fall out of Simple Line Layout.
@@ -3607,9 +3633,8 @@ static void populateCaretContext(const HitTestResult& hitTestResult, const Inter
     if (isEditable)
         lineRect.setWidth(blockFlow.contentWidth());
 
-    info.isVerticalWritingMode = !renderer->isHorizontalWritingMode();
-    info.lineCaretExtent = view->contentsToRootView(lineRect);
-    info.caretLength = info.isVerticalWritingMode ? info.lineCaretExtent.width() : info.lineCaretExtent.height();
+    context.isVerticalWritingMode = !renderer->isHorizontalWritingMode();
+    context.lineCaretExtent = view->contentsToRootView(lineRect);
 
     auto cursorTypeIs = [](const auto& maybeCursor, auto type) {
         return maybeCursor.transform([type](const auto& cursor) {
@@ -3617,18 +3642,17 @@ static void populateCaretContext(const HitTestResult& hitTestResult, const Inter
         }).value_or(false);
     };
 
-    bool lineContainsRequestPoint = info.lineCaretExtent.contains(request.point);
+    bool lineContainsRequestPoint = context.lineCaretExtent.contains(request.point);
     // Force an I-beam cursor if the page didn't request a hand, and we're inside the bounds of the line.
-    if (lineContainsRequestPoint && !cursorTypeIs(info.cursor, Cursor::Type::Hand) && canForceCaretForPosition(position))
-        info.cursor = Cursor::fromType(Cursor::Type::IBeam);
+    if (lineContainsRequestPoint && !cursorTypeIs(context.cursor, Cursor::Type::Hand) && canForceCaretForPosition(position))
+        context.cursor = Cursor::fromType(Cursor::Type::IBeam);
 
-    if (!lineContainsRequestPoint && cursorTypeIs(info.cursor, Cursor::Type::IBeam)) {
+    if (!lineContainsRequestPoint && cursorTypeIs(context.cursor, Cursor::Type::IBeam)) {
         auto approximateLineRectInContentCoordinates = renderer->absoluteBoundingBoxRect();
         approximateLineRectInContentCoordinates.setHeight(renderer->style().computedLineHeight());
-        info.lineCaretExtent = view->contentsToRootView(approximateLineRectInContentCoordinates);
-        if (!info.lineCaretExtent.contains(request.point) || !isEditable)
-            info.lineCaretExtent.setY(request.point.y() - info.lineCaretExtent.height() / 2);
-        info.caretLength = info.isVerticalWritingMode ? info.lineCaretExtent.width() : info.lineCaretExtent.height();
+        context.lineCaretExtent = view->contentsToRootView(approximateLineRectInContentCoordinates);
+        if (!context.lineCaretExtent.contains(request.point) || !isEditable)
+            context.lineCaretExtent.setY(request.point.y() - context.lineCaretExtent.height() / 2);
     }
 
     auto nodeShouldNotUseIBeam = ^(Node* node) {
@@ -3641,7 +3665,8 @@ static void populateCaretContext(const HitTestResult& hitTestResult, const Inter
     };
 
     const auto& deepPosition = position.deepEquivalent();
-    info.shouldNotUseIBeamInEditableContent = nodeShouldNotUseIBeam(node) || nodeShouldNotUseIBeam(deepPosition.computeNodeBeforePosition()) || nodeShouldNotUseIBeam(deepPosition.computeNodeAfterPosition());
+    context.shouldNotUseIBeamInEditableContent = nodeShouldNotUseIBeam(node) || nodeShouldNotUseIBeam(deepPosition.computeNodeBeforePosition()) || nodeShouldNotUseIBeam(deepPosition.computeNodeAfterPosition());
+    return context;
 }
 
 static void animationPositionInformation(WebPage& page, const InteractionInformationRequest& request, const HitTestResult& hitTestResult, InteractionInformationAtPosition& info)
@@ -3703,11 +3728,20 @@ InteractionInformationAtPosition WebPage::positionInformation(const InteractionI
 
     auto& eventHandler = localMainFrame->eventHandler();
     auto hitTestResult = eventHandler.hitTestResultAtPoint(request.point, hitTestRequestTypes);
-    if (auto* hitFrame = hitTestResult.innerNodeFrame()) {
-        info.cursor = hitFrame->eventHandler().selectCursor(hitTestResult, false);
-        if (request.includeCaretContext)
-            populateCaretContext(hitTestResult, request, info);
-    }
+
+#if ENABLE(PDF_PLUGIN)
+    RefPtr pluginView = pluginViewForFrame(hitTestResult.innerNodeFrame());
+#endif
+
+    info.cursorContext = [&] {
+        if (request.includeCursorContext) {
+#if ENABLE(PDF_PLUGIN)
+            if (pluginView)
+                return pluginView->cursorContext(request.point);
+#endif
+        }
+        return cursorContext(hitTestResult, request);
+    }();
 
     if (m_focusedElement)
         focusedElementPositionInformation(*this, *m_focusedElement, request, info);
@@ -3750,6 +3784,17 @@ InteractionInformationAtPosition WebPage::positionInformation(const InteractionI
 #if ENABLE(DATALIST_ELEMENT)
     if (RefPtr input = dynamicDowncast<HTMLInputElement>(nodeRespondingToClickEvents))
         textInteractionPositionInformation(*this, *input, request, info);
+#endif
+
+#if ENABLE(PDF_PLUGIN)
+    if (pluginView) {
+        if (auto [url, bounds] = pluginView->linkURLAndBoundsAtPoint(request.point); !url.isEmpty()) {
+            info.isLink = true;
+            info.url = WTFMove(url);
+            info.bounds = enclosingIntRect(bounds);
+        }
+        info.isInPlugin = true;
+    }
 #endif
 
     return info;
@@ -3945,7 +3990,7 @@ std::optional<FocusedElementInformation> WebPage::focusedElementInformation()
         information.previousNodeRect = rootViewBounds(*previousElement);
         information.hasPreviousNode = true;
     }
-    information.identifier = m_lastFocusedElementInformationIdentifier.increment();
+    information.identifier = m_internals->lastFocusedElementInformationIdentifier.increment();
 
     if (htmlElement) {
         if (auto labels = htmlElement->labels()) {
@@ -4746,7 +4791,7 @@ static inline void adjustVelocityDataForBoundedScale(VelocityData& velocityData,
 std::optional<float> WebPage::scaleFromUIProcess(const VisibleContentRectUpdateInfo& visibleContentRectUpdateInfo) const
 {
     auto transactionIDForLastScaleFromUIProcess = visibleContentRectUpdateInfo.lastLayerTreeTransactionID();
-    if (m_lastTransactionIDWithScaleChange > transactionIDForLastScaleFromUIProcess)
+    if (m_internals->lastTransactionIDWithScaleChange > transactionIDForLastScaleFromUIProcess)
         return std::nullopt;
 
     float scaleFromUIProcess = visibleContentRectUpdateInfo.scale();
@@ -4832,13 +4877,13 @@ void WebPage::updateVisibleContentRects(const VisibleContentRectUpdateInfo& visi
     IntPoint scrollPosition = roundedIntPoint(visibleContentRectUpdateInfo.unobscuredContentRect().location());
 
     bool pageHasBeenScaledSinceLastLayerTreeCommitThatChangedPageScale = ([&] {
-        if (!m_lastLayerTreeTransactionIdAndPageScaleBeforeScalingPage)
+        if (!m_internals->lastLayerTreeTransactionIdAndPageScaleBeforeScalingPage)
             return false;
 
         if (scalesAreEssentiallyEqual(scaleToUse, m_page->pageScaleFactor()))
             return false;
 
-        auto [transactionIdBeforeScalingPage, scaleBeforeScalingPage] = *m_lastLayerTreeTransactionIdAndPageScaleBeforeScalingPage;
+        auto [transactionIdBeforeScalingPage, scaleBeforeScalingPage] = *m_internals->lastLayerTreeTransactionIdAndPageScaleBeforeScalingPage;
         if (!scalesAreEssentiallyEqual(scaleBeforeScalingPage, scaleToUse))
             return false;
 
@@ -5655,7 +5700,7 @@ void WebPage::focusTextInputContextAndPlaceCaret(const ElementContext& elementCo
 void WebPage::platformDidScalePage()
 {
     auto transactionID = downcast<RemoteLayerTreeDrawingArea>(*m_drawingArea).lastCommittedTransactionID();
-    m_lastLayerTreeTransactionIdAndPageScaleBeforeScalingPage = {{ transactionID, m_lastTransactionPageScaleFactor }};
+    m_internals->lastLayerTreeTransactionIdAndPageScaleBeforeScalingPage = { { transactionID, m_lastTransactionPageScaleFactor } };
 }
 
 #if USE(QUICK_LOOK)

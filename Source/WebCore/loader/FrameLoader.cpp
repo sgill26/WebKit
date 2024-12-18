@@ -592,7 +592,7 @@ void FrameLoader::stopLoading(UnloadEventPolicy unloadEventPolicy)
         // FIXME: Should the DatabaseManager watch for something like ActiveDOMObject::stop() rather than being special-cased here?
         DatabaseManager::singleton().stopDatabases(*document, nullptr);
 
-        if (document->settings().navigationAPIEnabled() && !m_doNotAbortNavigationAPI && unloadEventPolicy != UnloadEventPolicy::UnloadAndPageHide) {
+        if (document->settings().navigationAPIEnabled() && unloadEventPolicy != UnloadEventPolicy::UnloadAndPageHide) {
             RefPtr window = m_frame->document()->domWindow();
             window->protectedNavigation()->abortOngoingNavigationIfNeeded();
         }
@@ -1575,7 +1575,6 @@ void FrameLoader::loadURL(FrameLoadRequest&& frameLoadRequest, const String& ref
     action.setShouldReplaceDocumentIfJavaScriptURL(frameLoadRequest.shouldReplaceDocumentIfJavaScriptURL());
     action.setIsInitialFrameSrcLoad(frameLoadRequest.isInitialFrameSrcLoad());
     action.setNewFrameOpenerPolicy(frameLoadRequest.newFrameOpenerPolicy());
-    action.setIsFromNavigationAPI(frameLoadRequest.isFromNavigationAPI());
     auto historyHandling = frameLoadRequest.navigationHistoryBehavior();
     RefPtr document = m_frame->document();
     bool isSameOrigin = frameLoadRequest.requesterSecurityOrigin().isSameOriginDomain(document->securityOrigin());
@@ -1735,8 +1734,13 @@ void FrameLoader::loadWithNavigationAction(const ResourceRequest& request, Navig
     FRAMELOADER_RELEASE_LOG_FORWARDABLE(FRAMELOADER_LOADWITHNAVIGATIONACTION);
 
     m_errorOccurredInLoading = false;
-
     if (request.url().protocolIsJavaScript() && !action.isInitialFrameSrcLoad()) {
+        if (auto requester = action.requester(); requester && requester->documentIdentifier) {
+            if (RefPtr requestingDocument = Document::allDocumentsMap().get(requester->documentIdentifier); requestingDocument && requestingDocument->contentSecurityPolicy()) {
+                if (!requestingDocument->contentSecurityPolicy()->allowJavaScriptURLs(protectedFrame()->document()->url().string(), { }, request.url().string(), nullptr))
+                    return completionHandler();
+            }
+        }
         executeJavaScriptURL(request.url(), action);
         return completionHandler();
     }
@@ -1883,11 +1887,10 @@ void FrameLoader::loadWithDocumentLoader(DocumentLoader* loader, FrameLoadType t
     }
 
     RELEASE_ASSERT(!isBackForwardLoadType(policyChecker().loadType()) || frame->history().provisionalItem());
-    auto policyDecisionMode = loader->triggeringAction().isFromNavigationAPI() ? PolicyDecisionMode::Synchronous : PolicyDecisionMode::Asynchronous;
     policyChecker().checkNavigationPolicy(ResourceRequest(loader->request()), ResourceResponse { } /* redirectResponse */, loader, WTFMove(formState), [this, frame, allowNavigationToInvalidURL, completionHandler = completionHandlerCaller.release()] (const ResourceRequest& request, WeakPtr<FormState>&& weakFormState, NavigationPolicyDecision navigationPolicyDecision) mutable {
         continueLoadAfterNavigationPolicy(request, RefPtr { weakFormState.get() }.get(), navigationPolicyDecision, allowNavigationToInvalidURL);
         completionHandler();
-    }, policyDecisionMode);
+    }, PolicyDecisionMode::Asynchronous);
 }
 
 void FrameLoader::clearProvisionalLoadForPolicyCheck()
@@ -3833,7 +3836,9 @@ static bool shouldAskForNavigationConfirmation(Document& document, const BeforeU
     if (document.isSandboxed(SandboxFlag::Modals))
         return false;
 
-    bool userDidInteractWithPage = document.topDocument().userDidInteractWithPage();
+    RefPtr page = document.protectedPage();
+    bool userDidInteractWithPage = page ? page->userDidInteractWithPage() : false;
+
     // Web pages can request we ask for confirmation before navigating by:
     // - Cancelling the BeforeUnloadEvent (modern way)
     // - Setting the returnValue attribute on the BeforeUnloadEvent to a non-empty string.
@@ -3995,13 +4000,8 @@ void FrameLoader::continueLoadAfterNavigationPolicy(const ResourceRequest& reque
     }
 
     FrameLoadType type = policyChecker().loadType();
-
-    {
-        SetForScope<bool> doNotAbortNavigationAPI { m_doNotAbortNavigationAPI, m_policyDocumentLoader->triggeringAction().isFromNavigationAPI() };
-
-        // A new navigation is in progress, so don't clear the history's provisional item.
-        stopAllLoaders(ClearProvisionalItem::No);
-    }
+    // A new navigation is in progress, so don't clear the history's provisional item.
+    stopAllLoaders(ClearProvisionalItem::No);
 
     // <rdar://problem/6250856> - In certain circumstances on pages with multiple frames, stopAllLoaders()
     // might detach the current FrameLoader, in which case we should bail on this newly defunct load. 

@@ -87,6 +87,7 @@ class PageConfiguration;
 namespace WebCore {
 class DeferrableOneShotTimer;
 class ResourceRequest;
+struct CryptoKeyData;
 struct NotificationData;
 struct PluginInfo;
 struct PrewarmInformation;
@@ -116,6 +117,7 @@ class SuspendedPageProxy;
 class UserMediaCaptureManagerProxy;
 class VisitedLinkStore;
 class WebBackForwardListItem;
+class WebCompiledContentRuleList;
 class WebCompiledContentRuleListData;
 class WebFrameProxy;
 class WebLockRegistryProxy;
@@ -486,6 +488,7 @@ public:
 #endif
     void getNotifications(const URL&, const String&, CompletionHandler<void(Vector<WebCore::NotificationData>&&)>&&);
     void wrapCryptoKey(Vector<uint8_t>&&, CompletionHandler<void(std::optional<Vector<uint8_t>>&&)>&&);
+    void serializeAndWrapCryptoKey(WebCore::CryptoKeyData&&, CompletionHandler<void(std::optional<Vector<uint8_t>>&&)>&&);
     void unwrapCryptoKey(WebCore::WrappedCryptoKey&&, CompletionHandler<void(std::optional<Vector<uint8_t>>&&)>&&);
 
     void setAppBadge(std::optional<WebPageProxyIdentifier>, const WebCore::SecurityOriginData&, std::optional<uint64_t> badge);
@@ -532,6 +535,11 @@ public:
 
 #if HAVE(AUDIT_TOKEN)
     HashMap<WebCore::PageIdentifier, CoreIPCAuditToken> presentingApplicationAuditTokens() const;
+#endif
+
+#if ENABLE(CONTENT_EXTENSIONS)
+    void requestResourceMonitorRuleLists();
+    void setResourceMonitorRuleListsIfRequired(WebCompiledContentRuleList*);
 #endif
 
 private:
@@ -829,6 +837,12 @@ private:
 #if ENABLE(LOGD_BLOCKING_IN_WEBCONTENT)
     IPC::ScopedActiveMessageReceiveQueue<LogStream> m_logStream;
 #endif
+
+#if ENABLE(CONTENT_EXTENSIONS)
+    bool m_resourceMonitorRuleListRequestedBySomePage { false };
+    RefPtr<WebCompiledContentRuleList> m_resourceMonitorRuleList;
+#endif
+
 };
 
 WTF::TextStream& operator<<(WTF::TextStream&, const WebProcessProxy&);

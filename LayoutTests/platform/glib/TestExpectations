@@ -1301,11 +1301,11 @@ imported/w3c/web-platform-tests/webcodecs/audioDecoder-codec-specific.https.any.
 # A bit flaky on Debug bot.
 imported/w3c/web-platform-tests/webcodecs/audioDecoder-codec-specific.https.any.html?mp4_aac [ Pass Failure ]
 
-webkit.org/b/284426 imported/w3c/web-platform-tests/webcodecs/audio-encoder-codec-specific.https.any.html [ Failure ]
-webkit.org/b/284428 imported/w3c/web-platform-tests/webcodecs/audio-encoder-config.https.any.html [ Failure ]
-webkit.org/b/284428 imported/w3c/web-platform-tests/webcodecs/audio-encoder-config.https.any.worker.html [ Failure ]
+webkit.org/b/284626 imported/w3c/web-platform-tests/webcodecs/audio-data.any.html [ Failure ]
+webkit.org/b/284626 imported/w3c/web-platform-tests/webcodecs/audio-data.any.worker.html [ Failure ]
+
+# Input/output waveforms don't match...
 webkit.org/b/284429 imported/w3c/web-platform-tests/webcodecs/audio-encoder.https.any.html [ Failure ]
-http/wpt/webcodecs/encoder-task-failing.html [ Pass ]
 
 # H.264 high-4:2:2 encoding is supported in the GStreamer ports, so this test (checking that profile
 # is not supported) is expected to fail.
@@ -2731,6 +2731,9 @@ imported/w3c/web-platform-tests/navigation-api/navigate-event/cross-window/ [ Pa
 imported/w3c/web-platform-tests/fetch/metadata/preload.https.sub.html [ Skip ]
 imported/w3c/web-platform-tests/fetch/metadata/window-open.https.sub.html [ Skip ]
 
+# This test times out only in mac-wk1, WPE and GTK.
+imported/w3c/web-platform-tests/html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-order.html [ Skip ]
+
 #////////////////////////////////////////////////////////////////////////////////////////
 # End of WPT-related bugs
 #////////////////////////////////////////////////////////////////////////////////////////
@@ -3341,6 +3344,7 @@ media/modern-media-controls/playback-support/playback-support-button-click.html 
 media/modern-media-controls/scrubber-support/scrubber-support-click.html [ Skip ]
 media/modern-media-controls/seek-backward-support/seek-backward-support.html [ Skip ]
 media/modern-media-controls/seek-forward-support/seek-forward-support.html [ Skip ]
+media/modern-media-controls/start-support/start-support-aggressiveThermalMitigation.html [ Skip ]
 media/modern-media-controls/start-support/start-support-click-to-start.html [ Skip ]
 media/modern-media-controls/start-support/start-support-disable-controls-and-re-enable-post-play.html [ Skip ]
 media/modern-media-controls/start-support/start-support-fullscreen.html [ Skip ]

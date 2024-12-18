@@ -70,7 +70,7 @@
 #import "WKErrorInternal.h"
 #import "WKFindConfiguration.h"
 #import "WKFindResultInternal.h"
-#import "WKFrameInfoPrivate.h"
+#import "WKFrameInfoInternal.h"
 #import "WKHistoryDelegatePrivate.h"
 #import "WKLayoutMode.h"
 #import "WKNSData.h"
@@ -355,14 +355,13 @@ static uint32_t convertSystemLayoutDirection(NSUserInterfaceLayoutDirection dire
     if (!PAL::isScreenTimeFrameworkAvailable())
         return;
 
-    if (!_page->preferences().screenTimeEnabled())
+    if (_page && !_page->preferences().screenTimeEnabled())
         return;
 
     if (!_screenTimeWebpageController) {
         _screenTimeWebpageController = adoptNS([PAL::allocSTWebpageControllerInstance() init]);
-        [_screenTimeWebpageController addObserver:self forKeyPath:@"URLIsBlocked" options:(NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew) context:screenTimeWebpageControllerBlockedKVOContext];
+        [_screenTimeWebpageController addObserver:self forKeyPath:@"URLIsBlocked" options:(NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew) context:&screenTimeWebpageControllerBlockedKVOContext];
 
-#if PLATFORM(MAC)
         RetainPtr screenTimeView = [_screenTimeWebpageController view];
         [screenTimeView setTranslatesAutoresizingMaskIntoConstraints:NO];
         [self addSubview:screenTimeView.get()];
@@ -372,7 +371,6 @@ static uint32_t convertSystemLayoutDirection(NSUserInterfaceLayoutDirection dire
             [[screenTimeView leadingAnchor] constraintEqualToAnchor:self.leadingAnchor],
             [[screenTimeView topAnchor] constraintEqualToAnchor:self.topAnchor]
         ]];
-#endif // PLATFORM(MAC)
     }
 }
 
@@ -385,7 +383,7 @@ static uint32_t convertSystemLayoutDirection(NSUserInterfaceLayoutDirection dire
         return;
 
     [[_screenTimeWebpageController view] removeFromSuperview];
-    [_screenTimeWebpageController removeObserver:self forKeyPath:@"URLIsBlocked" context:screenTimeWebpageControllerBlockedKVOContext];
+    [_screenTimeWebpageController removeObserver:self forKeyPath:@"URLIsBlocked" context:&screenTimeWebpageControllerBlockedKVOContext];
     _screenTimeWebpageController = nil;
 }
 #endif // ENABLE(SCREEN_TIME)
@@ -2826,6 +2824,16 @@ FOR_EACH_PRIVATE_WKCONTENTVIEW_ACTION(FORWARD_ACTION_TO_WKCONTENTVIEW)
         for (auto& data : vector)
             [set addObject:wrapper(API::FrameTreeNode::create(WTFMove(data), page.get())).get()];
         completionHandler(set.get());
+    });
+}
+
+- (void)_frameInfoFromHandle:(_WKFrameHandle *)handle completionHandler:(void (^)(WKFrameInfo *))completionHandler
+{
+    auto frameID = handle->_frameHandle->frameID();
+    if (!frameID)
+        completionHandler(nil);
+    _page->getFrameInfo(*frameID, [completionHandler = makeBlockPtr(completionHandler)] (auto* frameInfo) {
+        completionHandler(wrapper(frameInfo));
     });
 }
 

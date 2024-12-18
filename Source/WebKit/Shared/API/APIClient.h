@@ -67,12 +67,12 @@ public:
             return;
         }
 
-        memsetSpan(asMutableByteSpan(m_client), 0);
+        zeroBytes(m_client);
 
         if (client && client->version < latestClientVersion) {
             auto interfaceSizes = InterfaceSizes<ClientVersions>::sizes();
 
-            memcpy(&m_client, client, interfaceSizes[client->version]);
+            memcpySpan(asMutableByteSpan(m_client), unsafeMakeSpan(reinterpret_cast<const uint8_t*>(client), interfaceSizes[client->version]));
         }
     }
 

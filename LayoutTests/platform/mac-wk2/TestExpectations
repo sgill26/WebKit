@@ -2,6 +2,7 @@
 # Platform-specific directories. Skipped globally, then re-enabled here.
 #//////////////////////////////////////////////////////////////////////////////////////////
 
+apple-visual-effects [ Pass ]
 compositing/shared-backing/overflow-scroll [ Pass ]
 compositing/scrolling/async-overflow-scrolling [ Pass ]
 compositing/layer-creation/clipping-scope [ Pass ]
@@ -1608,9 +1609,13 @@ webkit.org/b/263396 css3/color/text.html [ Skip ]
 [ x86_64 ] fast/webgpu/nocrash/fuzz-281271.html [ Skip ]
 [ x86_64 ] fast/webgpu/nocrash/fuzz-281555.html [ Skip ]
 [ x86_64 ] fast/webgpu/nocrash/fuzz-282499.html [ Skip ]
+[ x86_64 ] fast/webgpu/nocrash/fuzz-283196.html [ Skip ]
 
 # skipped on Intel due to intermittently timing out due to the workload
 [ x86_64 ] fast/webgpu/nocrash/fuzz-282052.html [ Skip ]
+
+# currently fails with a validation error on Intel (rdar://141529109)
+[ x86_64 ] fast/webgpu/nocrash/fuzz-282710.html [ Skip ]
 
 # skipped due to failing when run in stress test mode
 [ Ventura Sonoma ] fast/webgpu/nocrash/RenderBundle_WRITE.html [ Skip ]
@@ -1713,12 +1718,8 @@ webkit.org/b/264001 [ Debug ] imported/w3c/web-platform-tests/requestidlecallbac
 webkit.org/b/268398 [ Sonoma+ ] pdf/pdf-in-iframe-scrolling-tree-after-back.html [ Pass Failure ]
 
 # webkit.org/b/270092  (REGRESSION (275274@main): [ Sonoma+ wk2 ] Multiple compositing/plugins/pdf/pdf are constant failures)
-[ Sonoma+ ] pdf/pdf-in-embed.html [ Failure ]
-[ Sonoma+ ] pdf/pdf-in-styled-embed.html [ Failure ]
 [ Sonoma+ ] pdf/pdf-scrolling-tree-dynamic.html [ Failure Timeout ]
 [ Sonoma+ ] pdf/pdf-scrolling-tree.html [ Failure ]
-
-[ Sonoma+ ] pdf/pdf-in-embed-with-root-page-zoom.html [ Failure ]
 
 webkit.org/b/270235 [ Ventura+ Debug x86_64 ] webgl/pending/conformance/glsl/misc/shader-with-reserved-words-2.html [ Timeout ]
 
@@ -1945,9 +1946,6 @@ webkit.org/b/283144 [ Sequoia ] http/tests/storageAccess/request-and-grant-acces
 
 webkit.org/b/283210 http/wpt/mediarecorder/MediaRecorder-AV-audio-video-dataavailable.html [ Pass Failure ]
 
-# webkit.org/b/283368 [macOS Debug ] fast/css/view-transitions-hide-under-page-background-color.html is a flaky crash (flaky in EWS)
-[ Sonoma+ Debug ] fast/css/view-transitions-hide-under-page-background-color.html [ Pass Crash ]
-
 webkit.org/b/283596 [ Sequoia+ Debug ] ipc/cfnetwork-crashes-with-string-to-string-http-headers.html [ Skip ]
 
 webkit.org/b/284511 [ Release ] imported/w3c/web-platform-tests/fs/FileSystemBaseHandle-postMessage-Error.https.window.html [ Pass Failure ]
@@ -1962,6 +1960,8 @@ webkit.org/b/284190 [ Sequoia+ ] imported/w3c/web-platform-tests/html/cross-orig
 webkit.org/b/284492 [ Sequoia+ ] imported/w3c/web-platform-tests/fetch/api/cors/cors-cookies-redirect.any.html [ Failure ]
 webkit.org/b/284492 [ Sequoia+ ] imported/w3c/web-platform-tests/fetch/api/cors/cors-cookies-redirect.any.worker.html [ Failure ]
 
-webkit.org/b/284493 [ Debug ] imported/blink/fast/hidpi/border-background-align.html [ Crash ]
-
 webkit.org/b/232282 [ Ventura+ ] fast/scrolling/mac/scrollbars/overlay-scrollbar-hovered.html [ Pass Failure ]
+
+# webkit.org/b/284853 REGRESSION(287869@main?): [macOS Debug wk2] ASSERTION FAILED: WebCore::MediaRecorderPrivateEncoder::interleaveAndEnqueueNextFrame() in http/wpt/mediarecorder tests (flaky in EWS)
+[ Debug ] http/wpt/mediarecorder/MediaRecorder-video-bitrate.html [ Skip ]
+[ Debug ] http/wpt/mediarecorder/pause-recording.html [ Skip ]

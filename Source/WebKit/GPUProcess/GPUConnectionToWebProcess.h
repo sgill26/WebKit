@@ -120,6 +120,9 @@ class RemoteMediaPlayerManagerProxy;
 class RemoteMediaResourceManager;
 class RemoteVideoFrameObjectHeap;
 #endif
+#if PLATFORM(COCOA) && ENABLE(MEDIA_RECORDER)
+class RemoteMediaRecorderPrivateWriterManager;
+#endif
 
 #if ENABLE(WEBGL)
 class RemoteGraphicsContextGL;
@@ -165,6 +168,10 @@ public:
 #if ENABLE(VIDEO)
     RemoteMediaResourceManager& remoteMediaResourceManager();
     Ref<RemoteMediaResourceManager> protectedRemoteMediaResourceManager();
+#endif
+#if PLATFORM(COCOA) && ENABLE(MEDIA_RECORDER)
+    RemoteMediaRecorderPrivateWriterManager& remoteMediaRecorderPrivateWriterManager();
+        Ref<RemoteMediaRecorderPrivateWriterManager> protectedRemoteMediaRecorderPrivateWriterManager();
 #endif
 
     PAL::SessionID sessionID() const { return m_sessionID; }
@@ -272,6 +279,10 @@ public:
 
     bool isAlwaysOnLoggingAllowed() const;
 
+#if USE(AUDIO_SESSION)
+    RemoteAudioSessionProxy& audioSessionProxy();
+#endif
+
 private:
     GPUConnectionToWebProcess(GPUProcess&, WebCore::ProcessIdentifier, PAL::SessionID, IPC::Connection::Handle&&, GPUProcessConnectionParameters&&);
 
@@ -318,7 +329,6 @@ private:
 #endif
 
 #if USE(AUDIO_SESSION)
-    RemoteAudioSessionProxy& audioSessionProxy();
     Ref<RemoteAudioSessionProxy> protectedAudioSessionProxy();
     using EnsureAudioSessionCompletion = CompletionHandler<void(const RemoteAudioSessionConfiguration&)>;
     void ensureAudioSession(EnsureAudioSessionCompletion&&);
@@ -374,6 +384,9 @@ private:
 #if ENABLE(VIDEO)
     RefPtr<RemoteMediaResourceManager> m_remoteMediaResourceManager WTF_GUARDED_BY_CAPABILITY(mainThread);
     Ref<RemoteMediaPlayerManagerProxy> m_remoteMediaPlayerManagerProxy;
+#endif
+#if PLATFORM(COCOA) && ENABLE(MEDIA_RECORDER)
+    const std::unique_ptr<RemoteMediaRecorderPrivateWriterManager> m_remoteMediaRecorderPrivateWriterManager;
 #endif
     PAL::SessionID m_sessionID;
 #if PLATFORM(COCOA) && ENABLE(MEDIA_STREAM)

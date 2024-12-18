@@ -555,9 +555,20 @@ static void logResourceResponseSource(LocalFrame* frame, ResourceResponse::Sourc
 
 bool ResourceLoader::shouldAllowResourceToAskForCredentials() const
 {
+    if (m_canCrossOriginRequestsAskUserForCredentials)
+        return true;
+    if (!m_frame)
+        return false;
     RefPtr topFrame = dynamicDowncast<LocalFrame>(m_frame->tree().top());
-    return m_canCrossOriginRequestsAskUserForCredentials
-        || (topFrame && topFrame->document()->protectedSecurityOrigin()->canRequest(m_request.url(), OriginAccessPatternsForWebProcess::singleton()));
+    if (!topFrame)
+        return false;
+    RefPtr topDocument = topFrame->document();
+    if (!topDocument)
+        return false;
+    RefPtr securityOrigin = static_cast<SecurityContext*>(topDocument.get())->securityOrigin();
+    if (!securityOrigin)
+        return false;
+    return securityOrigin->canRequest(m_request.url(), OriginAccessPatternsForWebProcess::singleton());
 }
 
 void ResourceLoader::didBlockAuthenticationChallenge()
@@ -605,7 +616,7 @@ void ResourceLoader::didReceiveResponse(const ResourceResponse& r, CompletionHan
         protectedFrameLoader()->notifier().didReceiveResponse(this, m_response);
 
 #if ENABLE(CONTENT_EXTENSIONS)
-    if (RefPtr monitor = resourceMonitor())
+    if (RefPtr monitor = resourceMonitorIfExists())
         monitor->didReceiveResponse(m_response.url(), m_resourceType);
 #endif
 }
@@ -636,7 +647,7 @@ void ResourceLoader::didReceiveBuffer(const FragmentedSharedBuffer& buffer, long
         protectedFrameLoader()->notifier().didReceiveData(this, buffer.makeContiguous(), static_cast<int>(encodedDataLength));
 
 #if ENABLE(CONTENT_EXTENSIONS)
-    if (RefPtr monitor = resourceMonitor())
+    if (RefPtr monitor = resourceMonitorIfExists())
         monitor->addNetworkUsage(encodedDataLength > 0 ? static_cast<size_t>(encodedDataLength) : buffer.size());
 #endif
 }
@@ -959,10 +970,10 @@ RefPtr<LocalFrame> ResourceLoader::protectedFrame() const
 }
 
 #if ENABLE(CONTENT_EXTENSIONS)
-ResourceMonitor* ResourceLoader::resourceMonitor()
+ResourceMonitor* ResourceLoader::resourceMonitorIfExists()
 {
     if (RefPtr document = m_frame ? m_frame->document() : nullptr)
-        return document->resourceMonitor();
+        return document->resourceMonitorIfExists();
     return nullptr;
 }
 #endif

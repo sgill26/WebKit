@@ -119,6 +119,7 @@ class DOMRectList;
 class DatabaseProvider;
 class DeviceOrientationUpdateProvider;
 class DiagnosticLoggingClient;
+class DocumentSyncData;
 class CredentialRequestCoordinator;
 class DragCaretController;
 class DragController;
@@ -215,7 +216,6 @@ struct CharacterRange;
 struct ProcessSyncData;
 struct SimpleRange;
 struct TextRecognitionResult;
-struct DocumentSyncData;
 struct WindowFeatures;
 
 using PlatformDisplayID = uint32_t;
@@ -386,8 +386,14 @@ public:
     void setAudioSessionType(DOMAudioSessionType);
     DOMAudioSessionType audioSessionType() const;
 #endif
+    void setUserDidInteractWithPage(bool);
+    bool userDidInteractWithPage() const;
+    void setAutofocusProcessed();
+    bool autofocusProcessed() const;
 
     WEBCORE_EXPORT void updateProcessSyncData(const ProcessSyncData&);
+    WEBCORE_EXPORT void updateTopDocumentSyncData(Ref<DocumentSyncData>&&);
+
     WEBCORE_EXPORT void setMainFrameURLFragment(String&&);
     String mainFrameURLFragment() const { return m_mainFrameURLFragment; }
 
@@ -1050,8 +1056,10 @@ public:
 
     bool isLowPowerModeEnabled() const { return m_throttlingReasons.contains(ThrottlingReason::LowPowerMode); }
     bool isThermalMitigationEnabled() const { return m_throttlingReasons.contains(ThrottlingReason::ThermalMitigation); }
+    bool isAggressiveThermalMitigationEnabled() const { return m_throttlingReasons.contains(ThrottlingReason::AggressiveThermalMitigation); }
     bool canUpdateThrottlingReason(ThrottlingReason reason) const { return !m_throttlingReasonsOverridenForTesting.contains(reason); }
     WEBCORE_EXPORT void setLowPowerModeEnabledOverrideForTesting(std::optional<bool>);
+    WEBCORE_EXPORT void setAggressiveThermalMitigationEnabledForTesting(std::optional<bool>);
     WEBCORE_EXPORT void setOutsideViewportThrottlingEnabledForTesting(bool);
 
     OptionSet<ThrottlingReason> throttlingReasons() const { return m_throttlingReasons; }
@@ -1108,7 +1116,7 @@ public:
 
     bool httpsUpgradeEnabled() const { return m_httpsUpgradeEnabled; }
 
-    URL applyLinkDecorationFiltering(const URL&, LinkDecorationFilteringTrigger) const;
+    WEBCORE_EXPORT URL applyLinkDecorationFiltering(const URL&, LinkDecorationFilteringTrigger) const;
     String applyLinkDecorationFiltering(const String&, LinkDecorationFilteringTrigger) const;
     URL allowedQueryParametersForAdvancedPrivacyProtections(const URL&) const;
 
@@ -1333,6 +1341,8 @@ private:
 
     void computeSampledPageTopColorIfNecessary();
     void clearSampledPageTopColor();
+
+    bool hasLocalMainFrame();
 
     std::optional<PageIdentifier> m_identifier;
     UniqueRef<Chrome> m_chrome;
@@ -1697,7 +1707,7 @@ private:
     bool m_shouldDeferResizeEvents { false };
     bool m_shouldDeferScrollEvents { false };
 
-    UniqueRef<DocumentSyncData> m_documentSyncData;
+    Ref<DocumentSyncData> m_topDocumentSyncData;
 
 #if HAVE(AUDIT_TOKEN)
     std::optional<audit_token_t> m_presentingApplicationAuditToken;

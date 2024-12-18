@@ -11,6 +11,7 @@
 # --- ios ---
 
 accessibility/ios-simulator [ Pass ]
+apple-visual-effects [ Pass ]
 displaylists [ Pass ]
 editing/editable-region [ Pass ]
 editing/execCommand/ios [ Pass ]
@@ -1273,6 +1274,8 @@ fast/css/resize-below-min-intrinsic-size.html [ Skip ]
 fast/css/resize-below-min-size-zoomed.html [ Skip ]
 fast/css/resize-below-min-size.html [ Skip ]
 fast/css/resize-corner-tracking.html [ Skip ]
+fast/css/resize-crash.html [ Skip ]
+fast/css/resize-mutation-observer.html [ Skip ]
 fast/css/resize-orthogonal-containing-block.html [ Skip ]
 fast/css/resize-rtl.html [ Skip ]
 fast/css/resize-single-axis.html [ Skip ]
@@ -2950,6 +2953,7 @@ media/modern-media-controls/placard-support/ipad [ Skip ]
 media/modern-media-controls/scrubber-support/ipad/scrubber-support-drag.html [ Skip ]
 media/modern-media-controls/seek-backward-support [ Skip ]
 media/modern-media-controls/seek-forward-support [ Skip ]
+media/modern-media-controls/start-support/start-support-aggressiveThermalMitigation.html [ Skip ]
 media/modern-media-controls/start-support/start-support-click-to-start.html [ Skip ]
 media/modern-media-controls/start-support/start-support-disable-controls-and-re-enable-post-play.html [ Skip ]
 media/modern-media-controls/start-support/start-support-lowPowerMode.html [ Skip ]
@@ -7662,3 +7666,19 @@ fast/events/ios/keydown-keyup-special-keys-in-non-editable-element.html [ Skip ]
 fast/events/ios/tab-cycle.html [ Skip ]
 
 webkit.org/b/284419 imported/w3c/web-platform-tests/html/rendering/the-details-element/details-pseudo-elements-006.html [ Failure ]
+
+webkit.org/b/284653 http/tests/site-isolation/compositing/iframes/resize-from-zero-size.html [ Pass Failure ]
+
+webkit.org/b/284761 imported/w3c/web-platform-tests/screen-orientation/orientation-reading.html [ Skip ]
+
+# Following test fails due to lack of `tabbing` to move focus
+imported/w3c/web-platform-tests/html/interaction/focus/focus-01.html [ Skip ]
+imported/w3c/web-platform-tests/html/interaction/focus/focus-02.html [ Skip ]
+imported/w3c/web-platform-tests/html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-negative.html [ Skip ]
+imported/w3c/web-platform-tests/html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-order.html [ Skip ]
+imported/w3c/web-platform-tests/html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-positive.html [ Skip ]
+imported/w3c/web-platform-tests/html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-zero.html [ Skip ]
+
+# webkit.org/b/284886 [iOS] 2 tests in fast/writing-mode are constantly failing (flaky in EWS)
+fast/writing-mode/inline-block-baseline.html [ ImageOnlyFailure ]
+fast/writing-mode/vertical-subst-font-vert-no-dflt.html [ ImageOnlyFailure ]

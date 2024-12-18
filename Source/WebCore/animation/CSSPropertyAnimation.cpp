@@ -3945,7 +3945,7 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
 #endif
         new PropertyWrapperFontSizeAdjust,
         new PropertyWrapperFontWeight,
-        new PropertyWrapper<FontSelectionValue>(CSSPropertyFontStretch, &RenderStyle::fontStretch, &RenderStyle::setFontStretch),
+        new PropertyWrapper<FontSelectionValue>(CSSPropertyFontWidth, &RenderStyle::fontWidth, &RenderStyle::setFontWidth),
         new PropertyWrapperFontStyle,
         new PropertyWrapperTextDecorationThickness,
         new PropertyWrapperTextUnderlineOffset,
@@ -4063,6 +4063,9 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
 #if ENABLE(DARK_MODE_CSS)
         new DiscretePropertyWrapper<Style::ColorScheme>(CSSPropertyColorScheme, &RenderStyle::colorScheme, &RenderStyle::setColorScheme),
 #endif
+#if HAVE(CORE_MATERIAL)
+        new DiscretePropertyWrapper<AppleVisualEffect>(CSSPropertyAppleVisualEffect, &RenderStyle::appleVisualEffect, &RenderStyle::setAppleVisualEffect),
+#endif
         new PropertyWrapperAspectRatio,
         new DiscretePropertyWrapper<const FontPalette&>(CSSPropertyFontPalette, &RenderStyle::fontPalette, &RenderStyle::setFontPalette),
 
@@ -4121,6 +4124,7 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
         new DiscretePropertyWrapper<const Vector<Style::ScopedName>&>(CSSPropertyAnchorName, &RenderStyle::anchorNames, &RenderStyle::setAnchorNames),
         new DiscretePropertyWrapper<const std::optional<Style::ScopedName>&>(CSSPropertyPositionAnchor, &RenderStyle::positionAnchor, &RenderStyle::setPositionAnchor),
         new DiscretePropertyWrapper<Style::PositionTryOrder>(CSSPropertyPositionTryOrder, &RenderStyle::positionTryOrder, &RenderStyle::setPositionTryOrder),
+        new DiscretePropertyWrapper<const Vector<PositionTryFallback>&>(CSSPropertyPositionTryFallbacks, &RenderStyle::positionTryFallbacks, &RenderStyle::setPositionTryFallbacks),
         new DiscretePropertyWrapper<const BlockEllipsis&>(CSSPropertyBlockEllipsis, &RenderStyle::blockEllipsis, &RenderStyle::setBlockEllipsis),
         new DiscretePropertyWrapper<size_t>(CSSPropertyMaxLines, &RenderStyle::maxLines, &RenderStyle::setMaxLines),
         new DiscretePropertyWrapper<OverflowContinue>(CSSPropertyContinue, &RenderStyle::overflowContinue, &RenderStyle::setOverflowContinue)

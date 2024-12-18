@@ -58,6 +58,7 @@
 #include <WebCore/SWServer.h>
 #include <numeric>
 #include <wtf/RuntimeApplicationChecks.h>
+#include <wtf/StdLibExtras.h>
 #include <wtf/TZoneMallocInlines.h>
 
 #if PLATFORM(COCOA)
@@ -135,7 +136,7 @@ static WebPushD::WebPushDaemonConnectionConfiguration configurationWithHostAudit
     auto token = networkProcess.parentProcessConnection()->getAuditToken();
     if (token) {
         Vector<uint8_t> auditTokenData(sizeof(*token));
-        memcpy(auditTokenData.data(), &(*token), sizeof(*token));
+        memcpySpan(auditTokenData.mutableSpan(), asByteSpan(*token));
         configuration.hostAppAuditTokenData = WTFMove(auditTokenData);
     }
 #endif
@@ -166,7 +167,7 @@ NetworkSession::NetworkSession(NetworkProcess& networkProcess, const NetworkSess
     , m_inspectionForServiceWorkersAllowed(parameters.inspectionForServiceWorkersAllowed)
     , m_storageManager(createNetworkStorageManager(networkProcess, parameters))
 #if ENABLE(WEB_PUSH_NOTIFICATIONS)
-    , m_notificationManager(NetworkNotificationManager::create(parameters.sessionID.isEphemeral() ? String { } : parameters.webPushMachServiceName, configurationWithHostAuditToken(networkProcess, parameters.webPushDaemonConnectionConfiguration)))
+    , m_notificationManager(NetworkNotificationManager::create(parameters.sessionID.isEphemeral() ? String { } : parameters.webPushMachServiceName, configurationWithHostAuditToken(networkProcess, parameters.webPushDaemonConnectionConfiguration), networkProcess))
 #endif
 {
     if (!m_sessionID.isEphemeral()) {

@@ -101,11 +101,13 @@ $(PROJECT_DIR)/GPUProcess/media/RemoteMediaEngineConfigurationFactoryProxy.messa
 $(PROJECT_DIR)/GPUProcess/media/RemoteMediaPlayerManagerProxy.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteMediaPlayerProxy.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteMediaPlayerProxyConfiguration.serialization.in
+$(PROJECT_DIR)/GPUProcess/media/RemoteMediaRecorderPrivateWriterManager.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteMediaResourceManager.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteMediaSourceProxy.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteRemoteCommandListenerProxy.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteSourceBufferProxy.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteTextTrackProxy.messages.in
+$(PROJECT_DIR)/GPUProcess/media/RemoteTrackInfo.serialization.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteVideoFrameObjectHeap.messages.in
 $(PROJECT_DIR)/GPUProcess/media/RemoteVideoTrackProxy.messages.in
 $(PROJECT_DIR)/GPUProcess/media/TextTrackPrivateRemoteConfiguration.serialization.in
@@ -195,6 +197,7 @@ $(PROJECT_DIR)/Scripts/PreferencesTemplates/WebPreferencesKeys.cpp.erb
 $(PROJECT_DIR)/Scripts/PreferencesTemplates/WebPreferencesKeys.h.erb
 $(PROJECT_DIR)/Scripts/PreferencesTemplates/WebPreferencesStoreDefaultsMap.cpp.erb
 $(PROJECT_DIR)/Scripts/create-http-header-serialization-interface.py
+$(PROJECT_DIR)/Scripts/generate-derived-log-sources.py
 $(PROJECT_DIR)/Scripts/generate-https-upgrade-database.sh
 $(PROJECT_DIR)/Scripts/generate-message-receiver.py
 $(PROJECT_DIR)/Scripts/generate-serializers.py
@@ -485,6 +488,7 @@ $(PROJECT_DIR)/Shared/cf/CoreIPCSecAccessControl.serialization.in
 $(PROJECT_DIR)/Shared/cf/CoreIPCSecCertificate.serialization.in
 $(PROJECT_DIR)/Shared/cf/CoreIPCSecKeychainItem.serialization.in
 $(PROJECT_DIR)/Shared/cf/CoreIPCSecTrust.serialization.in
+$(PROJECT_DIR)/Shared/ios/CursorContext.serialization.in
 $(PROJECT_DIR)/Shared/ios/DynamicViewportSizeUpdate.serialization.in
 $(PROJECT_DIR)/Shared/ios/GestureTypes.serialization.in
 $(PROJECT_DIR)/Shared/ios/HardwareKeyboardState.serialization.in

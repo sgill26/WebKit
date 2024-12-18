@@ -99,7 +99,6 @@ center {
 hr {
     display: block;
     overflow: hidden;
-    unicode-bidi: isolate;
     color: gray;
     margin-block-start: 0.5em;
     margin-block-end: 0.5em;
@@ -276,7 +275,6 @@ table {
     display: table;
     border-collapse: separate;
     border-spacing: 2px;
-    border-color: gray;
     text-indent: initial;
     box-sizing: border-box;
 }
@@ -1406,8 +1404,12 @@ iframe {
     border: 2px inset;
 }
 
-bdi, output {
-    unicode-bidi: isolate;
+address, blockquote, center, div, figure, figcaption, footer, form, header, hr,
+legend, listing, main, p, plaintext, pre, summary, xmp, article, aside, h1, h2,
+h3, h4, h5, h6, hgroup, nav, section, search, table, caption, colgroup, col,
+thead, tbody, tfoot, tr, td, th, dir, dd, dl, dt, menu, ol, ul, li, bdi, output,
+[dir=ltr i], [dir=rtl i], [dir=auto i] {
+    unicode-bidi: isolate; 
 }
 
 input[type=tel i]:dir(ltr) { direction: ltr; }
