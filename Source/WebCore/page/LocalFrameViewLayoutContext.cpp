@@ -708,7 +708,8 @@ bool LocalFrameViewLayoutContext::pushLayoutState(RenderBox& renderer, const Lay
             , pageHeightChanged
             , layoutState ? layoutState->lineClamp() : std::nullopt
             , layoutState ? layoutState->legacyLineClamp() : std::nullopt
-            , layoutState ? layoutState->textBoxTrim() : RenderLayoutState::TextBoxTrim()));
+            , layoutState ? layoutState->textBoxTrim() : RenderLayoutState::TextBoxTrim()
+            , layoutState ? layoutState->blockStartTrimming() : false));
         return true;
     }
     return false;
