@@ -1,7 +1,6 @@
 AutomationProtocolObjects.h
 NetworkProcess/Downloads/cocoa/DownloadCocoa.mm
 NetworkProcess/ServiceWorker/WebSWServerConnection.cpp
-NetworkProcess/cocoa/NetworkProcessCocoa.mm
 NetworkProcess/cocoa/NetworkSessionCocoa.mm
 NetworkProcess/cocoa/WebSocketTaskCocoa.mm
 NetworkProcess/webrtc/NetworkRTCMonitor.cpp
@@ -39,7 +38,6 @@ UIProcess/RemoteLayerTree/mac/RemoteLayerTreeDrawingAreaProxyMac.mm
 UIProcess/RemoteLayerTree/mac/RemoteScrollingTreeMac.mm
 UIProcess/WebAuthentication/Cocoa/WebAuthenticationPanelClient.mm
 UIProcess/WebAuthentication/Virtual/VirtualService.mm
-UIProcess/WebProcessProxy.cpp
 UIProcess/mac/WebViewImpl.mm
 WebProcess/GPU/graphics/WebGPU/RemoteCompositorIntegrationProxy.cpp
 WebProcess/GPU/graphics/WebGPU/RemoteXRBindingProxy.cpp

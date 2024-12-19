@@ -421,6 +421,8 @@ imported/w3c/web-platform-tests/referrer-policy/generic/unsupported-csp-referrer
 imported/w3c/web-platform-tests/selection/collapse-30.html [ Skip ]
 imported/w3c/web-platform-tests/selection/dir-manual.html [ Skip ]
 imported/w3c/web-platform-tests/editing/crashtests/inserthorizontalrule-in-textarea-in-editor-and-undo-on-error-events.html [ Skip ]
+imported/w3c/web-platform-tests/editing/crashtests/designMode-caret-change.html [ Skip ]
+imported/w3c/web-platform-tests/editing/crashtests/insertparagraph-in-listitem-in-svg-followed-by-collapsible-spaces.html [ Skip ]
 imported/w3c/web-platform-tests/selection/anonymous/details-ancestor.html [ Pass Failure ]
 imported/w3c/web-platform-tests/selection/caret/move-around-contenteditable-false.html [ Pass Failure ]
 
@@ -545,6 +547,7 @@ imported/w3c/web-platform-tests/html/cross-origin-opener-policy/navigate-to-abou
 imported/w3c/web-platform-tests/html/cross-origin-opener-policy/navigate-top-to-aboutblank.https.html [ DumpJSConsoleLogInStdErr ]
 imported/w3c/web-platform-tests/html/cross-origin-opener-policy/popup-coop-by-sw.https.html [ DumpJSConsoleLogInStdErr ]
 imported/w3c/web-platform-tests/html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-coop-navigated-popup.https.html [ DumpJSConsoleLogInStdErr ]
+imported/w3c/web-platform-tests/html/cross-origin-opener-policy/tentative/noopener/coop-noopener-allow-popups.https.html [ DumpJSConsoleLogInStdErr ]
 imported/w3c/web-platform-tests/html/cross-origin-opener-policy/tentative/restrict-properties/named_targeting.https.html [ DumpJSConsoleLogInStdErr ]
 imported/w3c/web-platform-tests/html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=css [ DumpJSConsoleLogInStdErr ]
 imported/w3c/web-platform-tests/html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=css [ DumpJSConsoleLogInStdErr ]
@@ -1759,10 +1762,6 @@ imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/fragmentation/mas
 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/fragmentation/masonry-fragmentation-002.html [ ImageOnlyFailure ]
 
 webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/grid-placement/masonry-grid-placement-named-lines-002.html [ ImageOnlyFailure ]
-
-imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/item-placement/masonry-columns-item-placement-auto-flow-next-001.html [ Skip ]
-webkit.org/b/266091 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/item-placement/masonry-item-placement-004.html [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/item-placement/masonry-item-placement-005.html [ ImageOnlyFailure ]
 
 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/subgrid/masonry-subgrid-001.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-grid/masonry/tentative/subgrid/masonry-subgrid-002.html [ ImageOnlyFailure ]
@@ -6985,17 +6984,6 @@ imported/w3c/web-platform-tests/navigation-api/ordering-and-transition/navigate-
 # General flakes, almost exclusively on mac-wk2-stress.
 imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/back-204-205-download.html [ Failure Pass ]
 imported/w3c/web-platform-tests/navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html [ Failure Pass ]
-
-# beforeunload event listeners are not allowed on subframes.
-imported/w3c/web-platform-tests/navigation-api/navigate-event/navigate-navigation-back-cross-document.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/back-beforeunload.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/forward-beforeunload.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/navigate-beforeunload.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/navigate-rejection-order-beforeunload-unserializablestate.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/navigate-rejection-order-invalidurl-beforeunload.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/reload-beforeunload.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/reload-rejection-order-beforeunload-unserializablestate.html [ Skip ]
-imported/w3c/web-platform-tests/navigation-api/navigation-methods/return-value/traverseTo-beforeunload.html [ Skip ]
 
 webkit.org/b/282758 [ Debug ] imported/w3c/web-platform-tests/navigation-api/navigate-event/navigate-navigation-back-same-document-in-iframe.html [ Crash ]
 webkit.org/b/282758 [ Debug ] imported/w3c/web-platform-tests/navigation-api/navigate-event/navigate-navigation-back-same-document.html [ Crash ]

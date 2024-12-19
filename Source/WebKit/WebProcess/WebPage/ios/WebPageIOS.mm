@@ -28,7 +28,6 @@
 
 #if PLATFORM(IOS_FAMILY)
 
-#import "AccessibilityIOS.h"
 #import "DocumentEditingContext.h"
 #import "DrawingArea.h"
 #import "EditingRange.h"
@@ -175,6 +174,7 @@
 #import <wtf/text/StringToIntegerConversion.h>
 #import <wtf/text/TextBreakIterator.h>
 #import <wtf/text/TextStream.h>
+#import <wtf/text/WTFString.h>
 
 #if ENABLE(ATTACHMENT_ELEMENT)
 #import <WebCore/PromisedAttachmentInfo.h>
@@ -267,7 +267,7 @@ void WebPage::platformReinitialize()
 
 RetainPtr<NSData> WebPage::accessibilityRemoteTokenData() const
 {
-    return newAccessibilityRemoteToken([NSUUID UUID]);
+    return WebCore::Accessibility::newAccessibilityRemoteToken([[NSUUID UUID] UUIDString]);
 }
 
 void WebPage::relayAccessibilityNotification(const String& notificationName, const RetainPtr<NSData>& notificationData)
@@ -669,14 +669,23 @@ NSObject *WebPage::accessibilityObjectForMainFramePlugin()
     return nil;
 }
     
-void WebPage::updateRemotePageAccessibilityOffset(WebCore::FrameIdentifier, WebCore::IntPoint)
+void WebPage::updateRemotePageAccessibilityOffset(WebCore::FrameIdentifier, WebCore::IntPoint offset)
 {
-    // FIXME: Implement
+    [accessibilityRemoteObject() setRemoteFrameOffset:offset];
 }
 
-void WebPage::registerRemoteFrameAccessibilityTokens(pid_t, std::span<const uint8_t>)
+void WebPage::registerRemoteFrameAccessibilityTokens(pid_t pid, std::span<const uint8_t> elementToken)
 {
-    // FIXME: Implement
+    createMockAccessibilityElement(pid);
+    [m_mockAccessibilityElement setRemoteTokenData:toNSData(elementToken).get()];
+}
+
+void WebPage::createMockAccessibilityElement(pid_t pid)
+{
+    auto mockAccessibilityElement = adoptNS([[WKAccessibilityWebPageObject alloc] init]);
+
+    [mockAccessibilityElement setWebPage:this];
+    m_mockAccessibilityElement = WTFMove(mockAccessibilityElement);
 }
 
 void WebPage::registerUIProcessAccessibilityTokens(std::span<const uint8_t> elementToken, std::span<const uint8_t>)
@@ -698,14 +707,12 @@ void WebPage::getDataSelectionForPasteboard(const String, CompletionHandler<void
 
 WebCore::IntPoint WebPage::accessibilityRemoteFrameOffset()
 {
-    notImplemented();
-    return { };
+    return [m_mockAccessibilityElement accessibilityRemoteFrameOffset];
 }
 
 WKAccessibilityWebPageObject* WebPage::accessibilityRemoteObject()
 {
-    notImplemented();
-    return 0;
+    return m_mockAccessibilityElement.get();
 }
 
 bool WebPage::platformCanHandleRequest(const WebCore::ResourceRequest& request)
@@ -5196,22 +5203,27 @@ void WebPage::drawToImage(WebCore::FrameIdentifier frameID, const PrintInfo& pri
     endPrinting();
 }
 
-void WebPage::drawToPDFiOS(WebCore::FrameIdentifier frameID, const PrintInfo& printInfo, size_t pageCount, CompletionHandler<void(RefPtr<SharedBuffer>&&)>&& reply)
+void WebPage::drawToPDFiOS(FrameIdentifier frameID, const PrintInfo& printInfo, size_t pageCount, CompletionHandler<void(RefPtr<SharedBuffer>&&)>&& reply)
 {
     if (printInfo.snapshotFirstPage) {
-        IntSize snapshotSize { FloatSize { printInfo.availablePaperWidth, printInfo.availablePaperHeight } };
-        IntRect snapshotRect { {0, 0}, snapshotSize };
-        auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+        RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
         if (!localMainFrame)
             return;
-        auto& frameView = *localMainFrame->view();
-        auto originalLayoutViewportOverrideRect = frameView.layoutViewportOverrideRect();
-        frameView.setLayoutViewportOverrideRect(LayoutRect(snapshotRect));
 
-        auto buffer = pdfSnapshotAtSize(snapshotRect, snapshotSize, { });
+        auto snapshotRect = IntRect { FloatRect { { }, FloatSize { printInfo.availablePaperWidth, printInfo.availablePaperHeight } } };
 
-        frameView.setLayoutViewportOverrideRect(originalLayoutViewportOverrideRect);
-        reply(WTFMove(buffer));
+        RefPtr buffer = ImageBuffer::create(snapshotRect.size(), RenderingMode::PDFDocument, RenderingPurpose::Snapshot, 1, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8);
+        if (!buffer)
+            return;
+
+        Ref frameView = *localMainFrame->view();
+        auto originalLayoutViewportOverrideRect = frameView->layoutViewportOverrideRect();
+        frameView->setLayoutViewportOverrideRect(LayoutRect(snapshotRect));
+
+        pdfSnapshotAtSize(*localMainFrame, buffer->context(), snapshotRect, { });
+
+        frameView->setLayoutViewportOverrideRect(originalLayoutViewportOverrideRect);
+        reply(buffer->sinkIntoPDFDocument());
         return;
     }
 

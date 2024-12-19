@@ -2216,22 +2216,21 @@ void UnifiedPDFPlugin::revealFragmentIfNeeded()
     if (!m_frame)
         return;
 
-    auto fragment = m_frame->url().fragmentIdentifier();
-    if (!fragment)
+    auto frameURL = m_frame->url();
+    auto fragmentView = frameURL.fragmentIdentifier();
+    if (!fragmentView)
         return;
-
-    auto fragmentView = StringView(fragment);
 
     // Only respect the first fragment component.
     if (auto endOfFirstComponentLocation = fragmentView.find('&'); endOfFirstComponentLocation != notFound)
-        fragmentView = fragment.left(endOfFirstComponentLocation);
+        fragmentView = fragmentView.left(endOfFirstComponentLocation);
 
     // Ignore leading hashes.
     auto isNotHash = [](UChar character) {
         return character != '#';
     };
     if (auto firstNonHashLocation = fragmentView.find(isNotHash); firstNonHashLocation != notFound)
-        fragmentView = fragment.substring(firstNonHashLocation);
+        fragmentView = fragmentView.substring(firstNonHashLocation);
     else
         return;
 
@@ -2594,18 +2593,18 @@ void UnifiedPDFPlugin::performCopyLinkOperation(const IntPoint& contextMenuEvent
 
 bool UnifiedPDFPlugin::handleEditingCommand(const String& commandName, const String& argument)
 {
-    if (commandName == "ScrollPageBackward"_s || commandName == "ScrollPageForward"_s)
+    if (equalLettersIgnoringASCIICase(commandName, "scrollpagebackward"_s) || equalLettersIgnoringASCIICase(commandName, "scrollpageforward"_s))
         return forwardEditingCommandToEditor(commandName, argument);
 
-    if (commandName == "copy"_s)
+    if (equalLettersIgnoringASCIICase(commandName, "copy"_s))
         return performCopyEditingOperation();
 
-    if (commandName == "selectAll"_s) {
+    if (equalLettersIgnoringASCIICase(commandName, "selectall"_s)) {
         selectAll();
         return true;
     }
 
-    if (commandName == "takeFindStringFromSelection"_s)
+    if (equalLettersIgnoringASCIICase(commandName, "takefindstringfromselection"_s))
         return takeFindStringFromSelection();
 
     return false;
@@ -2613,13 +2612,13 @@ bool UnifiedPDFPlugin::handleEditingCommand(const String& commandName, const Str
 
 bool UnifiedPDFPlugin::isEditingCommandEnabled(const String& commandName)
 {
-    if (commandName == "ScrollPageBackward"_s || commandName == "ScrollPageForward"_s)
+    if (equalLettersIgnoringASCIICase(commandName, "scrollpagebackward"_s) || equalLettersIgnoringASCIICase(commandName, "scrollpageforward"_s))
         return true;
 
-    if (commandName == "selectAll"_s)
+    if (equalLettersIgnoringASCIICase(commandName, "selectall"_s))
         return true;
 
-    if (commandName == "copy"_s || commandName == "takeFindStringFromSelection"_s)
+    if (equalLettersIgnoringASCIICase(commandName, "copy"_s) || equalLettersIgnoringASCIICase(commandName, "takefindstringfromselection"_s))
         return m_currentSelection;
 
     return false;
@@ -4179,6 +4178,7 @@ bool UnifiedPDFPlugin::platformPopulateEditorStateIfNeeded(EditorState& state) c
         selectionGeometries.last().setContainsEnd(true);
     }
 
+    state.isInPlugin = true;
     state.selectionIsNone = false;
     state.selectionIsRange = selectionGeometries.size();
 

@@ -33,6 +33,7 @@
 #include <WebCore/NavigationIdentifier.h>
 #include <WebCore/NowPlayingMetadataObserver.h>
 #include <WebCore/ProcessSyncData.h>
+#include <WebCore/SnapshotIdentifier.h>
 #include <pal/HysteresisActivity.h>
 #include <wtf/ApproximateTime.h>
 #include <wtf/CheckedRef.h>
@@ -617,7 +618,7 @@ public:
 
     static void forMostVisibleWebPageIfAny(PAL::SessionID, const WebCore::SecurityOriginData&, CompletionHandler<void(WebPageProxy*)>&&);
 
-    const API::PageConfiguration& configuration() const;
+    const API::PageConfiguration& configuration() const { return m_configuration.get(); }
     Ref<API::PageConfiguration> protectedConfiguration() const;
 
     using Identifier = WebPageProxyIdentifier;
@@ -651,7 +652,7 @@ public:
     bool shouldEnableLockdownMode() const;
 
     bool hasSameGPUAndNetworkProcessPreferencesAs(const API::PageConfiguration&) const;
-    bool hasSameGPUAndNetworkProcessPreferencesAs(const WebPageProxy& page) const { return hasSameGPUAndNetworkProcessPreferencesAs(Ref { page }->configuration()); }
+    bool hasSameGPUAndNetworkProcessPreferencesAs(const WebPageProxy&) const;
 
     void processIsNoLongerAssociatedWithPage(WebProcessProxy&);
 
@@ -1629,8 +1630,8 @@ public:
 
     WebProcessProxy& ensureRunningProcess();
     Ref<WebProcessProxy> ensureProtectedRunningProcess();
-    WebProcessProxy& legacyMainFrameProcess() const { return m_legacyMainFrameProcess; }
     WebProcessProxy& siteIsolatedProcess() const { return m_legacyMainFrameProcess; }
+    WebProcessProxy& legacyMainFrameProcess() const { return m_legacyMainFrameProcess; }
     Ref<WebProcessProxy> protectedLegacyMainFrameProcess() const;
     ProcessID legacyMainFrameProcessID() const;
 
@@ -1638,6 +1639,7 @@ public:
     ProcessID modelProcessID() const;
 
     WebBackForwardCache& backForwardCache() const;
+    Ref<WebBackForwardCache> protectedBackForwardCache() const;
 
     const WebPreferences& preferences() const { return m_preferences; }
     WebPreferences& preferences() { return m_preferences; }
@@ -1713,7 +1715,9 @@ public:
 #if PLATFORM(COCOA)
     std::optional<IPC::AsyncReplyID> drawRectToImage(WebFrameProxy&, const PrintInfo&, const WebCore::IntRect&, const WebCore::IntSize&, CompletionHandler<void(std::optional<WebCore::ShareableBitmapHandle>&&)>&&);
     std::optional<IPC::AsyncReplyID> drawPagesToPDF(WebFrameProxy&, const PrintInfo&, uint32_t first, uint32_t count, CompletionHandler<void(API::Data*)>&&);
-    void drawToPDF(WebCore::FrameIdentifier, const std::optional<WebCore::FloatRect>&, bool allowTransparentBackground,  CompletionHandler<void(RefPtr<WebCore::SharedBuffer>&&)>&&);
+    void drawToPDF(WebCore::FrameIdentifier, const std::optional<WebCore::FloatRect>&, bool allowTransparentBackground, CompletionHandler<void(RefPtr<WebCore::SharedBuffer>&&)>&&);
+    void drawCompositedToPDF(WebCore::FrameIdentifier, const std::optional<WebCore::FloatRect>&, bool allowTransparentBackground, CompletionHandler<void(RefPtr<WebCore::SharedBuffer>&&)>&&);
+    void didDrawCompositedToPDF(RefPtr<WebCore::SharedBuffer>&&, WebCore::SnapshotIdentifier);
 #if PLATFORM(IOS_FAMILY)
     size_t computePagesForPrintingiOS(WebCore::FrameIdentifier, const PrintInfo&);
     std::optional<IPC::AsyncReplyID> drawToImage(WebCore::FrameIdentifier, const PrintInfo&, CompletionHandler<void(std::optional<WebCore::ShareableBitmapHandle>&&)>&&);
@@ -3604,6 +3608,8 @@ private:
     std::unique_ptr<ViewWindowCoordinates> m_viewWindowCoordinates;
 #endif
 
+    HashMap<WebCore::SnapshotIdentifier, CompletionHandler<void(RefPtr<WebCore::SharedBuffer>&&)>> m_pdfSnapshots;
+
     std::optional<WebCore::ScrollbarOverlayStyle> m_scrollbarOverlayStyle;
 
     ActivityStateChangeID m_currentActivityStateChangeID { };
@@ -3798,3 +3804,7 @@ private:
 };
 
 } // namespace WebKit
+
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebKit::WebPageProxy)
+    static bool isType(const API::Object& object) { return object.type() == API::Object::Type::Page; }
+SPECIALIZE_TYPE_TRAITS_END()

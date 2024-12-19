@@ -7468,9 +7468,6 @@ webanimations/frame-rate/animation-frame-rate-alignment-started-with-one-frame-s
 # webkit.org/b/277905 [ iOS ] fast/scrolling/ios/scroll-anchoring-momentum-scroll.html is a flaky text failure
 fast/scrolling/ios/scroll-anchoring-momentum-scroll.html [ Pass Failure ]
 
-# webkit.org/b/277907 [ iOS ] fast/scrolling/ios/overscroll-behavior-on-body.html is a flaky text failure
-fast/scrolling/ios/overscroll-behavior-on-body.html [ Pass Failure ]
-
 # rdar://124971386 (css-box/margin-trim/computed-margin-values layout tests failing in recursive cases)
 imported/w3c/web-platform-tests/css/css-box/margin-trim/computed-margin-values/block-container-block-start-child-with-border.html [ Pass Failure ]
 imported/w3c/web-platform-tests/css/css-box/margin-trim/computed-margin-values/block-container-block-start-self-collapsing-nested.html [ Pass Failure ]
@@ -7576,9 +7573,6 @@ webkit.org/b/281238 compositing/tiling/tile-cache-zoomed.html [ Failure ]
 # Platform-specific test enabled on macOS and iOS separately.
 webanimations/scroll-timeline-clamped-current-time-while-rubber-banding-ios.html [ Pass ]
 
-# webkit.org/b/277908 NEW TEST (284866@main): [ macOS iOS ] imported/w3c/web-platform-tests/html/cross-origin-opener-policy/tentative/noopener/coop-noopener-allow-popups.https.html is a flaky failure.
-imported/w3c/web-platform-tests/html/cross-origin-opener-policy/tentative/noopener/coop-noopener-allow-popups.https.html [ Pass Failure ]
-
 # webkit.org/b/282046 REGRESSION(285592@main): [ macOS iOS wk2 ] http/tests/site-isolation/load-event.html are near constant failures.
 http/tests/site-isolation/load-event.html [ Pass Failure ]
 
@@ -7682,3 +7676,6 @@ imported/w3c/web-platform-tests/html/interaction/focus/sequential-focus-navigati
 # webkit.org/b/284886 [iOS] 2 tests in fast/writing-mode are constantly failing (flaky in EWS)
 fast/writing-mode/inline-block-baseline.html [ ImageOnlyFailure ]
 fast/writing-mode/vertical-subst-font-vert-no-dflt.html [ ImageOnlyFailure ]
+
+# webkit.org/b/267890 REGRESSION (273260@main): [ iOS17 ] 3 tests in fast/forms/switch regularly timeout
+fast/forms/switch/pointer-tracking.html [ Timeout ]

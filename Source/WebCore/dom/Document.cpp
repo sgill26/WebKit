@@ -210,6 +210,7 @@
 #include "PolicyChecker.h"
 #include "PopStateEvent.h"
 #include "Position.h"
+#include "ProcessSyncData.h"
 #include "ProcessingInstruction.h"
 #include "PseudoClassChangeInvalidation.h"
 #include "PublicSuffixStore.h"
@@ -643,9 +644,6 @@ Document::Document(LocalFrame* frame, const Settings& settings, const URL& url, 
     , m_fragmentDirectiveForBindings(FragmentDirective::create())
     , m_documentClasses(documentClasses)
     , m_latestFocusTrigger { FocusTrigger::Other }
-#if ENABLE(DOM_AUDIO_SESSION)
-    , m_audioSessionType { DOMAudioSession::Type::Auto }
-#endif
     , m_isSynthesized(constructionFlags.contains(ConstructionFlag::Synthesized))
     , m_isNonRenderedPlaceholder(constructionFlags.contains(ConstructionFlag::NonRenderedPlaceholder))
     , m_frameIdentifier(frame ? std::optional(frame->frameID()) : std::nullopt)
@@ -685,6 +683,31 @@ Document::Document(LocalFrame* frame, const Settings& settings, const URL& url, 
     ASSERT(!hasEmptySecurityOriginPolicyAndContentSecurityPolicy() || !hasInitializedSecurityOriginPolicyOrContentSecurityPolicy());
     m_constructionDidFinish = true;
 
+    // We walk all of the relevant enums to popular one at a time in a switch statement to make sure
+    // that an engineer writes the relevant manual code whenever a new generated type is added.
+    for (const ProcessSyncDataType dataType : allDocumentSyncDataTypes)
+        populateDocumentSyncDataForNewlyConstructedDocument(dataType);
+}
+
+void Document::populateDocumentSyncDataForNewlyConstructedDocument(ProcessSyncDataType dataType)
+{
+    switch (dataType) {
+    case ProcessSyncDataType::DocumentClasses:
+        m_syncData->documentClasses = m_documentClasses;
+        break;
+#if ENABLE(DOM_AUDIO_SESSION)
+    case ProcessSyncDataType::AudioSessionType:
+        m_syncData->audioSessionType = DOMAudioSession::Type::Auto;
+        break;
+#endif
+    // The following either have default values that match a newly constructed document
+    // or are populated other ways even on newly constructed documents.
+    case ProcessSyncDataType::IsAutofocusProcessed:
+    case ProcessSyncDataType::UserDidInteractWithPage:
+    case ProcessSyncDataType::DocumentURL:
+    case ProcessSyncDataType::DocumentSecurityOrigin:
+        break;
+    }
 }
 
 void Document::createNewIdentifier()
@@ -1000,13 +1023,9 @@ SecurityOrigin& Document::topOrigin() const
     if (!settings().siteIsolationEnabled())
         return topDocument().securityOrigin();
 
-    RefPtr frame = this->frame();
-    if (RefPtr localMainFrame = frame ? dynamicDowncast<LocalFrame>(frame->mainFrame()) : nullptr) {
-        if (RefPtr mainFrameDocument = localMainFrame->document())
-            return mainFrameDocument->securityOrigin();
-    }
-    if (RefPtr page = this->page())
-        return page->mainFrameOrigin();
+    if (isTopDocument())
+        return securityOrigin();
+
     return SecurityOrigin::opaqueOrigin();
 }
 
@@ -4152,9 +4171,10 @@ void Document::setURL(const URL& url)
         newURL.removeHostAndPort();
     // SecurityContext::securityOrigin may not be initialized at this time if setURL() is called in the constructor, therefore calling topOrigin() is not always safe.
     auto topOrigin = isTopDocument() && !SecurityContext::securityOrigin() ? SecurityOrigin::create(url)->data() : this->topOrigin().data();
+    m_syncData->documentURL = newURL;
     m_url = { WTFMove(newURL), topOrigin };
     if (m_frame)
-        m_frame->documentURLDidChange(m_url);
+        m_frame->documentURLOrOriginDidChange();
 
     m_documentURI = m_url.url();
     m_adjustedURL = adjustedURL();
@@ -11144,7 +11164,10 @@ PermissionsPolicy Document::permissionsPolicy() const
 
 void Document::securityOriginDidChange()
 {
+    m_syncData->documentSecurityOrigin = SecurityContext::securityOrigin();
     m_permissionsPolicy = nullptr;
+    if (m_frame)
+        m_frame->documentURLOrOriginDidChange();
 }
 
 #if ENABLE(CONTENT_EXTENSIONS)

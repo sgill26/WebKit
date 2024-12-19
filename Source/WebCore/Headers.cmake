@@ -1044,6 +1044,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     dom/DeviceOrientationData.h
     dom/DeviceOrientationOrMotionPermissionState.h
     dom/Document.h
+    dom/DocumentClasses.h
     dom/DocumentEventTiming.h
     dom/DocumentFontLoader.h
     dom/DocumentFragment.h
@@ -2185,6 +2186,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/graphics/ShareableBitmap.h
     platform/graphics/ShareableBitmapHandle.h
     platform/graphics/ShouldLocalizeAxisNames.h
+    platform/graphics/SnapshotIdentifier.h
     platform/graphics/SourceBrush.h
     platform/graphics/SourceBrushLogicalGradient.h
     platform/graphics/SourceBufferPrivate.h
@@ -2414,6 +2416,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/network/HTTPParsers.h
     platform/network/HTTPSByDefaultMode.h
     platform/network/HTTPStatusCodes.h
+    platform/network/ShouldPartitionCookie.h
     platform/network/NetworkLoadInformation.h
     platform/network/NetworkLoadMetrics.h
     platform/network/NetworkStateNotifier.h
