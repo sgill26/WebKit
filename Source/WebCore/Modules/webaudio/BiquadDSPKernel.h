@@ -49,7 +49,7 @@ public:
 
     // Get the magnitude and phase response of the filter at the given
     // set of frequencies (in Hz). The phase response is in radians.
-    void getFrequencyResponse(unsigned nFrequencies, const float* frequencyHz, float* magResponse, float* phaseResponse);
+    void getFrequencyResponse(unsigned nFrequencies, std::span<const float> frequencyHz, std::span<float> magResponse, std::span<float> phaseResponse);
 
     double tailTime() const override;
     double latencyTime() const override;
@@ -60,7 +60,7 @@ public:
 
 private:
     Biquad m_biquad;
-    BiquadProcessor* biquadProcessor() { return static_cast<BiquadProcessor*>(processor()); }
+    BiquadProcessor* biquadProcessor() { return downcast<BiquadProcessor>(processor()); }
 
     // To prevent audio glitches when parameters are changed,
     // dezippering is used to slowly change the parameters.

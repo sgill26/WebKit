@@ -41,6 +41,7 @@
 #import <wtf/SoftLinking.h>
 #import <wtf/cocoa/SpanCocoa.h>
 #import <wtf/cocoa/TypeCastsCocoa.h>
+#import <wtf/cocoa/VectorCocoa.h>
 #import <wtf/text/MakeString.h>
 #import <wtf/text/WTFString.h>
 
@@ -179,15 +180,21 @@ void AccessibilityObject::setLastPresentedTextPrediction(Node& previousCompositi
 #endif // HAVE (INLINE_PREDICTIONS)
 }
 
+#if !PLATFORM(MACCATALYST)
+
 static RetainPtr<NSDictionary> unarchivedTokenForData(RetainPtr<NSData> tokenData)
 {
     NSError *error = nil;
     return [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithObjects:[NSDictionary class], [NSNumber class], [NSString class], nil] fromData:tokenData.get() error:&error];
 }
 
-std::span<const uint8_t> AXRemoteFrame::generateRemoteToken() const
+#endif
+
+Vector<uint8_t> AXRemoteFrame::generateRemoteToken() const
 {
-    return span(Accessibility::newAccessibilityRemoteToken([[NSUUID UUID] UUIDString]));
+    if (RetainPtr data = Accessibility::newAccessibilityRemoteToken([[NSUUID UUID] UUIDString]))
+        return makeVector(data.get());
+    return { };
 }
 
 void AXRemoteFrame::initializePlatformElementWithRemoteToken(std::span<const uint8_t> token, int processIdentifier)
@@ -338,7 +345,7 @@ RetainPtr<NSAttributedString> attributedStringCreate(Node& node, StringView text
 
 namespace Accessibility {
 
-NSData *newAccessibilityRemoteToken(NSString *uuidString)
+RetainPtr<NSData> newAccessibilityRemoteToken(NSString *uuidString)
 {
     if (!uuidString)
         return nil;

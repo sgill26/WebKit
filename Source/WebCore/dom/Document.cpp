@@ -2655,10 +2655,9 @@ void Document::resolveStyle(ResolveStyleType type)
         // As a result of the style recalculation, the currently hovered element might have been
         // detached (for example, by setting display:none in the :hover style), schedule another mouseMove event
         // to check if any other elements ended up under the mouse pointer due to re-layout.
-        if (m_hoveredElement && !m_hoveredElement->renderer()) {
-            if (RefPtr localMainFrame = dynamicDowncast<LocalFrame>(frameView->frame().mainFrame()))
-                localMainFrame->eventHandler().dispatchFakeMouseMoveEventSoon();
-        }
+        RefPtr localMainFrame = this->localMainFrame();
+        if (m_hoveredElement && !m_hoveredElement->renderer() && localMainFrame)
+            localMainFrame->eventHandler().dispatchFakeMouseMoveEventSoon();
 
         ++m_styleRecalcCount;
         // FIXME: Assert ASSERT(!needsStyleRecalc()) here. fast/events/media-element-focus-tab.html hits this assertion.
@@ -7372,18 +7371,28 @@ Document& Document::topDocument() const
     // FIXME: This special-casing avoids incorrectly determined top documents during the process
     // of AXObjectCache teardown or notification posting for cached or being-destroyed documents.
     if (backForwardCacheState() == NotInBackForwardCache && !m_renderTreeBeingDestroyed) {
-        if (!m_frame)
-            return const_cast<Document&>(*this);
-        // This should always be non-null.
-        Document* mainFrameDocument = nullptr;
-        if (auto* localFrame = dynamicDowncast<LocalFrame>(m_frame->mainFrame()))
-            mainFrameDocument = localFrame->document();
-        return mainFrameDocument ? *mainFrameDocument : const_cast<Document&>(*this);
+        Document* localMainDocument = nullptr;
+        if (RefPtr localMainFrame = this->localMainFrame())
+            localMainDocument = localMainFrame->document();
+#if !LOG_DISABLED
+        if (!localMainDocument && settings().siteIsolationEnabled())
+            LOG_ERROR("Document::topDocument() - Grabbing main frame directly, the Page's main frame is not a LocalFrame, therefore we're about to lie about which Document is the top document");
+#endif
+        return localMainDocument ? *localMainDocument : const_cast<Document&>(*this);
     }
 
     Document* document = const_cast<Document*>(this);
     while (HTMLFrameOwnerElement* element = document->ownerElement())
         document = &element->document();
+#if !LOG_DISABLED
+    if (settings().siteIsolationEnabled()) {
+        Document* localMainDocument = nullptr;
+        if (RefPtr localMainFrame = this->localMainFrame())
+            localMainDocument = localMainFrame->document();
+        if (localMainDocument != document)
+            LOG_ERROR("Document::topDocument() - Walking frame owner elements, the Page's main frame is not a LocalFrame, therefore we're about to lie about which Document is the top document");
+    }
+#endif
     return *document;
 }
 
@@ -7392,12 +7401,17 @@ bool Document::isTopDocument() const
     if (!settings().siteIsolationEnabled())
         return isTopDocumentLegacy();
 
-    if (WeakPtr currentFrame = frame()) {
-        if (auto localMainFrame = dynamicDowncast<LocalFrame>(currentFrame->mainFrame()))
-            return localMainFrame->document() == this;
-    }
+    if (RefPtr localMainFrame = this->localMainFrame())
+        return localMainFrame->document() == this;
 
     return false;
+}
+
+RefPtr<LocalFrame> Document::localMainFrame() const
+{
+    if (RefPtr page = protectedPage())
+        return page->localMainFrame();
+    return nullptr;
 }
 
 ScriptRunner& Document::ensureScriptRunner()
@@ -9209,13 +9223,6 @@ float Document::deviceScaleFactor() const
     return deviceScaleFactor;
 }
 
-bool Document::useSystemAppearance() const
-{
-    if (RefPtr documentPage = page())
-        return documentPage->useSystemAppearance();
-    return false;
-}
-
 bool Document::useDarkAppearance(const RenderStyle* style) const
 {
 #if ENABLE(DARK_MODE_CSS)
@@ -9232,7 +9239,7 @@ bool Document::useDarkAppearance(const RenderStyle* style) const
     if (RefPtr documentPage = page())
         pageUsesDarkAppearance = documentPage->useDarkAppearance();
 
-    if (useSystemAppearance())
+    if (settings().useSystemAppearance())
         return pageUsesDarkAppearance;
 
 #if ENABLE(DARK_MODE_CSS)
@@ -9253,7 +9260,7 @@ bool Document::useElevatedUserInterfaceLevel() const
 OptionSet<StyleColorOptions> Document::styleColorOptions(const RenderStyle* style) const
 {
     OptionSet<StyleColorOptions> options;
-    if (useSystemAppearance())
+    if (settings().useSystemAppearance())
         options.add(StyleColorOptions::UseSystemAppearance);
     if (useDarkAppearance(style))
         options.add(StyleColorOptions::UseDarkAppearance);

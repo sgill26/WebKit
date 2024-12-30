@@ -243,6 +243,7 @@ Tests/WebKitCocoa/RunScriptAfterDocumentLoad.mm
 Tests/WebKitCocoa/SafeBrowsing.mm
 Tests/WebKitCocoa/SampledPageTopColor.mm
 Tests/WebKitCocoa/SchemeRegistry.mm
+Tests/WebKitCocoa/ScreenTime.mm
 Tests/WebKitCocoa/ScriptTelemetryTests.mm
 Tests/WebKitCocoa/ServiceWorkerBasic.mm
 Tests/WebKitCocoa/SessionStorage.mm
@@ -275,6 +276,7 @@ Tests/WebKitCocoa/UnifiedPDFTestHelpers.mm
 Tests/WebKitCocoa/UnifiedPDFTests.mm
 Tests/WebKitCocoa/UploadDirectory.mm
 Tests/WebKitCocoa/UseSelectionAsFindString.mm
+Tests/WebKitCocoa/UseSystemAppearance.mm
 Tests/WebKitCocoa/UserContentController.mm
 Tests/WebKitCocoa/UserContentWorld.mm
 Tests/WebKitCocoa/UserInitiatedActionInNavigationAction.mm

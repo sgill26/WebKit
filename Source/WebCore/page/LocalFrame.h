@@ -148,6 +148,7 @@ public:
     RefPtr<Document> protectedDocument() const;
     LocalFrameView* view() const;
     inline RefPtr<LocalFrameView> protectedView() const; // Defined in LocalFrameView.h.
+    WEBCORE_EXPORT RefPtr<LocalFrame> localMainFrame() const;
 
     Editor& editor() { return document()->editor(); }
     const Editor& editor() const { return document()->editor(); }
@@ -364,7 +365,7 @@ private:
 
     Vector<std::pair<Ref<DOMWrapperWorld>, UniqueRef<UserScript>>> m_userScriptsAwaitingNotification;
 
-    UniqueRef<FrameLoader> m_loader;
+    const UniqueRef<FrameLoader> m_loader;
 
     RefPtr<LocalFrameView> m_view;
     RefPtr<Document> m_doc;

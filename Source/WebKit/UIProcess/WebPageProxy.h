@@ -498,6 +498,10 @@ class WebWheelEvent;
 class WebWheelEventCoalescer;
 class WebsiteDataStore;
 
+#if PLATFORM(IOS_FAMILY) && ENABLE(MODEL_PROCESS)
+class ModelPresentationManagerProxy;
+#endif
+
 struct AppPrivacyReportTestingData;
 struct DataDetectionResult;
 struct DocumentEditingContext;
@@ -1444,9 +1448,6 @@ public:
     void isJITEnabled(CompletionHandler<void(bool)>&&);
 
 #if PLATFORM(MAC)
-    void setUseSystemAppearance(bool);
-    bool useSystemAppearance() const { return m_useSystemAppearance; }
-
     bool useFormSemanticContext() const;
     void semanticContextDidChange();
 
@@ -1729,6 +1730,7 @@ public:
 
     const PageLoadState& pageLoadState() const;
     PageLoadState& pageLoadState();
+    Ref<const PageLoadState> protectedPageLoadState() const;
     Ref<PageLoadState> protectedPageLoadState();
 
 #if PLATFORM(COCOA)
@@ -2586,7 +2588,9 @@ public:
     void nowPlayingMetadataChanged(const WebCore::NowPlayingMetadata&);
 
     void didAdjustVisibilityWithSelectors(Vector<String>&&);
+
     BrowsingContextGroup& browsingContextGroup() const { return m_browsingContextGroup; }
+    Ref<BrowsingContextGroup> protectedBrowsingContextGroup() const;
 
     WebPageProxyTesting* pageForTesting() const;
     RefPtr<WebPageProxyTesting> protectedPageForTesting() const;
@@ -2630,6 +2634,10 @@ public:
 #if HAVE(AUDIT_TOKEN)
     const std::optional<audit_token_t>& presentingApplicationAuditToken() const;
     void setPresentingApplicationAuditToken(const audit_token_t&);
+#endif
+
+#if PLATFORM(IOS_FAMILY) && ENABLE(MODEL_PROCESS)
+    RefPtr<ModelPresentationManagerProxy> modelPresentationManagerProxy() const;
 #endif
 
 private:
@@ -3010,6 +3018,7 @@ private:
     void elementDidFocus(const FocusedElementInformation&, bool userIsInteracting, bool blurPreviousNode, OptionSet<WebCore::ActivityState> activityStateChanges, const UserData&);
     void elementDidBlur();
     void updateInputContextAfterBlurringAndRefocusingElement();
+    void didProgrammaticallyClearFocusedElement(WebCore::ElementContext&&);
     void updateFocusedElementInformation(const FocusedElementInformation&);
     void focusedElementDidChangeInputMode(WebCore::InputMode);
     void didReleaseAllTouchPoints();
@@ -3277,8 +3286,6 @@ private:
     bool hasValidOpeningAppLinkActivity() const;
 #endif
 
-    Ref<BrowsingContextGroup> protectedBrowsingContextGroup() const;
-
     UniqueRef<Internals> m_internals;
     Identifier m_identifier;
     WebCore::PageIdentifier m_webPageID;
@@ -3372,7 +3379,6 @@ private:
 #endif
 
 #if PLATFORM(MAC)
-    bool m_useSystemAppearance { false };
     bool m_acceptsFirstMouse { false };
 #endif
 

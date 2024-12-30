@@ -877,7 +877,7 @@ LocalFrame* WebLocalFrameLoaderClient::dispatchCreatePage(const NavigationAction
     if (!newPage)
         return nullptr;
     
-    return dynamicDowncast<LocalFrame>(newPage->mainFrame());
+    return newPage->localMainFrame().get();
 }
 
 void WebLocalFrameLoaderClient::dispatchShow()
@@ -1407,7 +1407,7 @@ void WebLocalFrameLoaderClient::saveViewStateToItem(HistoryItem& historyItem)
 void WebLocalFrameLoaderClient::restoreViewState()
 {
 #if PLATFORM(IOS_FAMILY)
-    auto* currentItem = m_localFrame->history().currentItem();
+    auto* currentItem = m_localFrame->loader().history().currentItem();
     if (auto* view =  m_localFrame->view()) {
         if (m_frame->isMainFrame())
             m_frame->page()->restorePageState(*currentItem);
@@ -1416,7 +1416,7 @@ void WebLocalFrameLoaderClient::restoreViewState()
     }
 #else
     // Inform the UI process of the scale factor.
-    double scaleFactor = m_localFrame->history().currentItem()->pageScaleFactor();
+    double scaleFactor = m_localFrame->loader().history().currentItem()->pageScaleFactor();
 
     // A scale factor of 0 means the history item has the default scale factor, thus we do not need to update it.
     if (scaleFactor)

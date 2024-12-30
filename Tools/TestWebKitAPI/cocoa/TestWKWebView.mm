@@ -284,6 +284,31 @@ static NSString *overrideBundleIdentifier(id, SEL)
     [self.textInputContentView insertTextSuggestion:textSuggestion];
 }
 
+#if HAVE(UI_WK_DOCUMENT_CONTEXT)
+
+- (UIWKDocumentContext *)synchronouslyRequestDocumentContext:(UIWKDocumentRequest *)request
+{
+    __block bool finished = false;
+    __block RetainPtr<id> result;
+    [self.textInputContentView requestDocumentContext:request completionHandler:^(UIWKDocumentContext *context) {
+        result = context;
+        finished = true;
+    }];
+    TestWebKitAPI::Util::run(&finished);
+
+#if USE(BROWSERENGINEKIT)
+    if (RetainPtr context = dynamic_objc_cast<BETextDocumentContext>(result.get()))
+        return [context _uikitDocumentContext];
+#endif
+
+    if (RetainPtr context = dynamic_objc_cast<UIWKDocumentContext>(result.get()))
+        return context.autorelease();
+
+    return nil;
+}
+
+#endif // HAVE(UI_WK_DOCUMENT_CONTEXT)
+
 #if USE(BROWSERENGINEKIT)
 
 - (id<BETextInput>)asyncTextInput
@@ -449,6 +474,23 @@ static WebEvent *unwrap(BEKeyEntry *event)
     [self.textInputContentView prepareSelectionForContextMenuWithLocationInView:locationInView completionHandler:[completion = makeBlockPtr(completion)](BOOL shouldPresent, RVItem *) {
         completion(shouldPresent);
     }];
+}
+
+- (void)selectTextInGranularity:(UITextGranularity)granularity atPoint:(CGPoint)pointInRootView
+{
+    bool done = false;
+    auto completion = makeBlockPtr([&] {
+        done = true;
+    });
+
+#if USE(BROWSERENGINEKIT)
+    if (self.hasAsyncTextInput)
+        [self.asyncTextInput selectTextInGranularity:granularity atPoint:pointInRootView completionHandler:completion.get()];
+    else
+#endif
+        [self.textInputContentView selectTextWithGranularity:granularity atPoint:pointInRootView completionHandler:completion.get()];
+
+    TestWebKitAPI::Util::run(&done);
 }
 
 - (void)handleKeyEvent:(WebEvent *)event completion:(void (^)(WebEvent *theEvent, BOOL handled))completion

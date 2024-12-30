@@ -2457,6 +2457,8 @@ bool WebProcess::requiresScriptTelemetryForURL(const URL& url, const WebCore::Se
 
 void WebProcess::enableMediaPlayback()
 {
+    m_mediaPlaybackEnabled = true;
+
 #if USE(AUDIO_SESSION)
     if (!WebCore::AudioSession::enableMediaPlayback())
         return;
@@ -2489,7 +2491,8 @@ void WebProcess::setResourceMonitorContentRuleList(WebCompiledContentRuleListDat
     }
 
     WebCore::ContentExtensions::ContentExtensionsBackend backend;
-    backend.addContentExtension(ruleListData.identifier, compiledContentRuleList.releaseNonNull(), { }, ContentExtensions::ContentExtension::ShouldCompileCSS::No);
+    auto identifier = compiledContentRuleList->data().identifier;
+    backend.addContentExtension(identifier, compiledContentRuleList.releaseNonNull(), { }, ContentExtensions::ContentExtension::ShouldCompileCSS::No);
 
     WebCore::ResourceMonitorChecker::singleton().setContentRuleList(WTFMove(backend));
 }

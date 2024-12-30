@@ -30,6 +30,7 @@
 
 #include "AsyncPDFRenderer.h"
 #include "DataDetectionResult.h"
+#include "DocumentEditingContext.h"
 #include "EditorState.h"
 #include "FindController.h"
 #include "GestureTypes.h"
@@ -536,7 +537,7 @@ void UnifiedPDFPlugin::ensureLayers()
         m_rootLayer->addChild(*m_overflowControlsContainer);
     }
 
-    m_presentationController->setupLayers(*m_scrollContainerLayer);
+    m_presentationController->setupLayers(*m_scrolledContentsLayer);
 }
 
 void UnifiedPDFPlugin::incrementalLoadingRepaintTimerFired()
@@ -774,7 +775,7 @@ void UnifiedPDFPlugin::paintContents(const GraphicsLayer* layer, GraphicsContext
     ASSERT_NOT_REACHED();
 }
 
-void UnifiedPDFPlugin::paintPDFContent(const WebCore::GraphicsLayer* layer, GraphicsContext& context, const FloatRect& clipRect, const std::optional<PDFLayoutRow>& row, PaintingBehavior behavior, AsyncPDFRenderer* asyncRenderer)
+void UnifiedPDFPlugin::paintPDFContent(const WebCore::GraphicsLayer* layer, GraphicsContext& context, const FloatRect& clipRect, const std::optional<PDFLayoutRow>& row, AsyncPDFRenderer* asyncRenderer)
 {
     if (visibleOrDocumentSizeIsEmpty() || !m_presentationController)
         return;
@@ -782,15 +783,6 @@ void UnifiedPDFPlugin::paintPDFContent(const WebCore::GraphicsLayer* layer, Grap
     auto stateSaver = GraphicsContextStateSaver(context);
 
     auto showDebugIndicators = shouldShowDebugIndicators();
-
-    bool haveSelection = false;
-    bool isVisibleAndActive = false;
-    bool shouldPaintSelection = behavior == PaintingBehavior::All && !canPaintSelectionIntoOwnedLayer();
-    if (m_currentSelection && ![m_currentSelection isEmpty] && shouldPaintSelection) {
-        haveSelection = true;
-        if (RefPtr page = this->page())
-            isVisibleAndActive = page->isVisibleAndActive();
-    }
 
     auto pageWithAnnotation = pageIndexWithHoveredAnnotation();
 
@@ -826,7 +818,7 @@ void UnifiedPDFPlugin::paintPDFContent(const WebCore::GraphicsLayer* layer, Grap
         }
 
         bool currentPageHasAnnotation = pageWithAnnotation && *pageWithAnnotation == pageInfo.pageIndex;
-        if (asyncRenderer && !haveSelection && !currentPageHasAnnotation)
+        if (asyncRenderer && !currentPageHasAnnotation)
             continue;
 
         auto pageStateSaver = GraphicsContextStateSaver(context);
@@ -851,17 +843,12 @@ void UnifiedPDFPlugin::paintPDFContent(const WebCore::GraphicsLayer* layer, Grap
             [page drawWithBox:kPDFDisplayBoxCropBox toContext:context.platformContext()];
         }
 
-        if (haveSelection || currentPageHasAnnotation) {
+        if (currentPageHasAnnotation) {
             auto pageGeometry = m_documentLayout.geometryForPage(page);
             auto transformForBox = m_documentLayout.toPageTransform(*pageGeometry).inverse().value_or(AffineTransform { });
             GraphicsContextStateSaver stateSaver(context);
             context.concatCTM(transformForBox);
-
-            if (haveSelection)
-                [m_currentSelection drawForPage:page.get() withBox:kCGPDFCropBox active:isVisibleAndActive inContext:context.platformContext()];
-
-            if (currentPageHasAnnotation)
-                paintHoveredAnnotationOnPage(pageInfo.pageIndex, context, clipRect);
+            paintHoveredAnnotationOnPage(pageInfo.pageIndex, context, clipRect);
         }
     }
 }
@@ -869,7 +856,7 @@ void UnifiedPDFPlugin::paintPDFContent(const WebCore::GraphicsLayer* layer, Grap
 #if ENABLE(UNIFIED_PDF_SELECTION_LAYER)
 void UnifiedPDFPlugin::paintPDFSelection(const GraphicsLayer* layer, GraphicsContext& context, const FloatRect& clipRect, std::optional<PDFLayoutRow> row)
 {
-    if (!m_currentSelection || [m_currentSelection isEmpty] || !canPaintSelectionIntoOwnedLayer() || !m_presentationController)
+    if (!m_currentSelection || [m_currentSelection isEmpty] || !m_presentationController)
         return;
 
     bool isVisibleAndActive = false;
@@ -930,14 +917,6 @@ void UnifiedPDFPlugin::paintPDFSelection(const GraphicsLayer* layer, GraphicsCon
     }
 }
 #endif
-
-bool UnifiedPDFPlugin::canPaintSelectionIntoOwnedLayer() const
-{
-#if ENABLE(UNIFIED_PDF_SELECTION_LAYER)
-    return [getPDFSelectionClass() instancesRespondToSelector:@selector(enumerateRectsAndTransformsForPage:usingBlock:)];
-#endif
-    return false;
-}
 
 static const WebCore::Color textAnnotationHoverColor()
 {
@@ -2925,6 +2904,48 @@ String UnifiedPDFPlugin::selectionString() const
     return m_currentSelection.get().string;
 }
 
+std::pair<String, String> UnifiedPDFPlugin::stringsBeforeAndAfterSelection(int characterCount) const
+{
+    RetainPtr selection = m_currentSelection;
+    if (!selection)
+        return { };
+
+    auto selectionLength = [selection string].length;
+    auto stringBeforeSelection = [&] -> String {
+        RetainPtr beforeSelection = adoptNS([selection copy]);
+        [beforeSelection extendSelectionAtStart:characterCount];
+
+        RetainPtr result = [beforeSelection string];
+        if (selectionLength > [result length]) {
+            ASSERT_NOT_REACHED();
+            return { };
+        }
+
+        auto targetIndex = [result length] - selectionLength;
+        if (targetIndex > [result length]) {
+            ASSERT_NOT_REACHED();
+            return { };
+        }
+
+        return [result substringToIndex:targetIndex];
+    }();
+
+    auto stringAfterSelection = [&] -> String {
+        RetainPtr afterSelection = adoptNS([selection copy]);
+        [afterSelection extendSelectionAtEnd:characterCount];
+
+        RetainPtr result = [afterSelection string];
+        if (selectionLength > [result length]) {
+            ASSERT_NOT_REACHED();
+            return { };
+        }
+
+        return [result substringFromIndex:selectionLength];
+    }();
+
+    return { WTFMove(stringBeforeSelection), WTFMove(stringAfterSelection) };
+}
+
 bool UnifiedPDFPlugin::existingSelectionContainsPoint(const FloatPoint& rootViewPoint) const
 {
     auto pluginPoint = convertFromRootViewToPlugin(roundedIntPoint(rootViewPoint));
@@ -3288,7 +3309,7 @@ RefPtr<TextIndicator> UnifiedPDFPlugin::textIndicatorForSelection(PDFSelection *
         context.translate(-rectInContentsCoordinates.location());
 
         auto layoutRow = m_documentLayout.rowForPageIndex(selectionPageCoverage[0].pageIndex);
-        paintPDFContent(nullptr, context, rectInContentsCoordinates, layoutRow, PaintingBehavior::PageContentsOnly);
+        paintPDFContent(nullptr, context, rectInContentsCoordinates, layoutRow);
     }
 
     // FIXME: Figure out how to share this with WebTextIndicatorLayer.
@@ -4222,6 +4243,41 @@ CursorContext UnifiedPDFPlugin::cursorContext(FloatPoint pointInRootView) const
 #else
     UNUSED_PARAM(pointInRootView);
 #endif
+    return context;
+}
+
+DocumentEditingContext UnifiedPDFPlugin::documentEditingContext(DocumentEditingContextRequest&& request) const
+{
+    using enum DocumentEditingContextRequest::Options;
+
+    static constexpr OptionSet unsupportedOptions { SpatialAndCurrentSelection, Spatial, Rects };
+
+    if (request.options.containsAny(unsupportedOptions)) {
+        // FIXME: Consider implementing support for these in the future, if needed.
+        // At the moment, these are only used to drive specific interactions in editable content.
+        return { };
+    }
+
+    bool wantsAttributedText = request.options.contains(AttributedText);
+    bool wantsPlainText = request.options.contains(Text);
+    if (!wantsAttributedText && !wantsPlainText)
+        return { };
+
+    RetainPtr selection = m_currentSelection;
+    if (!selection)
+        return { };
+
+    DocumentEditingContext context;
+    context.selectedText = [&] {
+        if (wantsAttributedText)
+            return AttributedString::fromNSAttributedString({ [selection attributedString] });
+
+        ASSERT(wantsPlainText);
+        return AttributedString { String { [selection string] }, { }, { } };
+    }();
+
+    // FIXME: We should populate `contextBefore` and `contextAfter` as well, but PDFKit currently doesn't expose
+    // any APIs to (efficiently) extend the selection by word, sentence or paragraph granularity.
     return context;
 }
 

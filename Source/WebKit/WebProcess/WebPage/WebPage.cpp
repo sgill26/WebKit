@@ -988,7 +988,6 @@ WebPage::WebPage(PageIdentifier pageID, WebPageCreationParameters&& parameters)
         setEditable(true);
 
 #if PLATFORM(MAC)
-    setUseSystemAppearance(parameters.useSystemAppearance);
     setUseFormSemanticContext(parameters.useFormSemanticContext);
     setHeaderBannerHeight(parameters.headerBannerHeight);
     setFooterBannerHeight(parameters.footerBannerHeight);
@@ -1555,7 +1554,7 @@ EditorState WebPage::editorState(ShouldPerformLayout shouldPerformLayout) const
     });
 
 #if ENABLE(PDF_PLUGIN)
-    if (RefPtr pluginView = pluginViewForFrame(frame.get()); pluginView && pluginView->populateEditorStateIfNeeded(result))
+    if (RefPtr pluginView = focusedPluginViewForFrame(*frame); pluginView && pluginView->populateEditorStateIfNeeded(result))
         return result;
 #endif
 
@@ -1642,9 +1641,8 @@ void WebPage::selectAll()
 
 bool WebPage::shouldDispatchSyntheticMouseEventsWhenModifyingSelection() const
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
-    RefPtr document = localMainFrame ? localMainFrame->document() : nullptr;
-    return document && document->quirks().shouldDispatchSyntheticMouseEventsWhenModifyingSelection();
+    RefPtr localTopDocument = m_page->localTopDocument();
+    return localTopDocument && localTopDocument->quirks().shouldDispatchSyntheticMouseEventsWhenModifyingSelection();
 }
 
 #if !PLATFORM(IOS_FAMILY)
@@ -1788,7 +1786,7 @@ PluginView* WebPage::pluginViewForFrame(LocalFrame* frame)
 
 PluginView* WebPage::mainFramePlugIn() const
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     return pluginViewForFrame(localMainFrame.get());
 }
 
@@ -2024,7 +2022,7 @@ void WebPage::suspendForProcessSwap()
     };
 
     // FIXME: Make this work if the main frame is not a LocalFrame.
-    RefPtr currentHistoryItem = m_mainFrame->coreLocalFrame()->history().currentItem();
+    RefPtr currentHistoryItem = m_mainFrame->coreLocalFrame()->loader().history().currentItem();
     if (!currentHistoryItem) {
         failedToSuspend();
         return;
@@ -2333,7 +2331,7 @@ void WebPage::goToBackForwardItem(GoToBackForwardItemParameters&& parameters)
     m_sandboxExtensionTracker.beginLoad(WTFMove(parameters.sandboxExtensionHandle));
 
     m_lastNavigationWasAppInitiated = parameters.lastNavigationWasAppInitiated;
-    if (RefPtr localMainFrame = dynamicDowncast<LocalFrame>(corePage()->mainFrame())) {
+    if (RefPtr localMainFrame = corePage()->localMainFrame()) {
         if (RefPtr documentLoader = localMainFrame->loader().documentLoader())
             documentLoader->setLastNavigationWasAppInitiated(parameters.lastNavigationWasAppInitiated);
     }
@@ -2381,8 +2379,8 @@ void WebPage::goToBackForwardItemWaitingForProcessLaunch(GoToBackForwardItemPara
 
 void WebPage::tryRestoreScrollPosition()
 {
-    if (RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
-        localMainFrame->checkedHistory()->restoreScrollPositionAndViewState();
+    if (RefPtr localMainFrame = this->localMainFrame())
+        localMainFrame->loader().checkedHistory()->restoreScrollPositionAndViewState();
 }
 
 WebPage* WebPage::fromCorePage(Page& page)
@@ -2419,7 +2417,7 @@ void WebPage::setSize(const WebCore::IntSize& viewSize)
 void WebPage::drawRect(GraphicsContext& graphicsContext, const IntRect& rect)
 {
 #if PLATFORM(MAC)
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
     RefPtr mainFrameView = localMainFrame->view();
@@ -2885,7 +2883,7 @@ void WebPage::viewportPropertiesDidChange(const ViewportArguments& viewportArgum
         viewportConfigurationChanged();
 #elif PLATFORM(GTK) || PLATFORM(WPE)
     // Adjust view dimensions when using fixed layout.
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     RefPtr view = localMainFrame ? localMainFrame->view() : nullptr;
     if (view && view->useFixedLayout() && !m_viewSize.isEmpty()) {
         Settings& settings = m_page->settings();
@@ -3270,7 +3268,7 @@ void WebPage::pageStoppedScrolling()
 {
     // Maintain the current history item's scroll position up-to-date.
     if (RefPtr frame = m_mainFrame->coreLocalFrame())
-        frame->checkedHistory()->saveScrollPositionAndViewStateToItem(frame->history().currentItem());
+        frame->loader().checkedHistory()->saveScrollPositionAndViewStateToItem(frame->loader().history().currentItem());
 }
 
 void WebPage::setHasActiveAnimatedScrolls(bool hasActiveAnimatedScrolls)
@@ -3734,7 +3732,7 @@ std::pair<HandleUserInputEventResult, OptionSet<EventHandling>> WebPage::wheelEv
 void WebPage::dispatchWheelEventWithoutScrolling(FrameIdentifier frameID, const WebWheelEvent& wheelEvent, CompletionHandler<void(bool)>&& completionHandler)
 {
 #if ENABLE(KINETIC_SCROLLING)
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     auto gestureState =  localMainFrame ? localMainFrame->eventHandler().wheelScrollGestureState() : std::nullopt;
     bool isCancelable = !gestureState || gestureState == WheelScrollGestureState::Blocking || wheelEvent.phase() == WebWheelEvent::PhaseBegan;
 #else
@@ -3821,8 +3819,8 @@ void WebPage::setNeedsFontAttributes(bool needsFontAttributes)
 
 void WebPage::setCurrentHistoryItemForReattach(Ref<FrameState>&& mainFrameState)
 {
-    if (RefPtr localMainFrame = dynamicDowncast<LocalFrame>(corePage()->mainFrame()))
-        localMainFrame->checkedHistory()->setCurrentItem(toHistoryItem(m_historyItemClient, mainFrameState));
+    if (RefPtr localMainFrame = this->localMainFrame())
+        localMainFrame->loader().checkedHistory()->setCurrentItem(toHistoryItem(m_historyItemClient, mainFrameState));
 }
 
 void WebPage::requestFontAttributesAtSelectionStart(CompletionHandler<void(const WebCore::FontAttributes&)>&& completionHandler)
@@ -3885,7 +3883,7 @@ void WebPage::updatePotentialTapSecurityOrigin(const WebTouchEvent& touchEvent, 
     if (touchEvent.type() != WebEventType::TouchStart)
         return;
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -3912,7 +3910,7 @@ void WebPage::updatePotentialTapSecurityOrigin(const WebTouchEvent& touchEvent, 
 #elif ENABLE(TOUCH_EVENTS)
 void WebPage::touchEvent(const WebTouchEvent& touchEvent, CompletionHandler<void(std::optional<WebEventType>, bool)>&& completionHandler)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -4161,7 +4159,7 @@ void WebPage::visibilityDidChange()
         // We save the document / scroll state when backgrounding a tab so that we are able to restore it
         // if it gets terminated while in the background.
         if (RefPtr frame = m_mainFrame->coreLocalFrame())
-            frame->checkedHistory()->saveDocumentAndScrollState();
+            frame->loader().checkedHistory()->saveDocumentAndScrollState();
     }
 }
 
@@ -4266,9 +4264,8 @@ void WebPage::setNeedsDOMWindowResizeEvent()
     if (!m_page)
         return;
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
-    if (RefPtr document = localMainFrame ? localMainFrame->document() : nullptr)
-        document->setNeedsDOMWindowResizeEvent();
+    if (RefPtr localTopDocument = m_page->localTopDocument())
+        localTopDocument->setNeedsDOMWindowResizeEvent();
 }
 
 String WebPage::userAgent(const URL& webCoreURL) const
@@ -4389,9 +4386,8 @@ void WebPage::runJavaScript(WebFrame* frame, RunJavaScriptParameters&& parameter
 #if ENABLE(APP_BOUND_DOMAINS)
     if (frame->shouldEnableInAppBrowserPrivacyProtections()) {
         completionHandler({ }, ExceptionDetails { "Unable to execute JavaScript in a frame that is not in an app-bound domain"_s, 0, 0, ExceptionDetails::Type::AppBoundDomain });
-        RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
-        if (RefPtr document = localMainFrame ? localMainFrame->document() : nullptr)
-            document->addConsoleMessage(MessageSource::Security, MessageLevel::Warning, "Ignoring user script injection for non-app bound domain."_s);
+        if (RefPtr localTopDocument = m_page->localTopDocument())
+            localTopDocument->addConsoleMessage(MessageSource::Security, MessageLevel::Warning, "Ignoring user script injection for non-app bound domain."_s);
         WEBPAGE_RELEASE_LOG_ERROR(Loading, "runJavaScript: Ignoring user script injection for non app-bound domain");
         return;
     }
@@ -5427,7 +5423,7 @@ void WebPage::performDragControllerAction(DragControllerAction action, const Int
     if (!m_page)
         return completionHandler(std::nullopt, DragHandlingMethod::None, false, 0, { }, { }, std::nullopt);
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -5551,14 +5547,14 @@ void WebPage::mayPerformUploadDragDestinationAction()
 void WebPage::didStartDrag()
 {
     m_isStartingDrag = false;
-    if (RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->eventHandler().didStartDrag();
 }
 
 void WebPage::dragCancelled()
 {
     m_isStartingDrag = false;
-    if (RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->eventHandler().dragCancelled();
 }
 
@@ -6103,7 +6099,7 @@ void WebPage::restoreSelectionInFocusedEditableElement()
 
 bool WebPage::mainFrameHasCustomContentProvider() const
 {
-    if (RefPtr frame = dynamicDowncast<LocalFrame>(mainFrame())) {
+    if (RefPtr frame = localMainFrame()) {
         auto* webFrameLoaderClient = toWebLocalFrameLoaderClient(frame->loader().client());
         ASSERT(webFrameLoaderClient);
         return webFrameLoaderClient->frameHasCustomContentProvider();
@@ -6369,7 +6365,7 @@ void WebPage::SandboxExtensionTracker::didFailProvisionalLoad(WebFrame* frame)
 
 void WebPage::setCustomTextEncodingName(const String& encoding)
 {
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->loader().reloadWithOverrideEncoding(encoding);
 }
 
@@ -6406,11 +6402,6 @@ void WebPage::setCaretBlinkingSuspended(bool suspended)
         return;
 
     frame->selection().setCaretBlinkingSuspended(suspended);
-}
-
-void WebPage::setUseSystemAppearance(bool useSystemAppearance)
-{
-    corePage()->setUseSystemAppearance(useSystemAppearance);
 }
 
 #endif
@@ -6582,7 +6573,7 @@ void WebPage::drawMainFrameToPDF(LocalFrame& localMainFrame, GraphicsContext& co
 
 void WebPage::drawToPDF(FrameIdentifier frameID, const std::optional<FloatRect>& rect, bool allowTransparentBackground, CompletionHandler<void(RefPtr<WebCore::SharedBuffer>&&)>&& completionHandler)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -6601,7 +6592,7 @@ void WebPage::drawCompositedToPDF(FrameIdentifier frameID, const std::optional<F
 {
     ASSERT(m_page->settings().siteIsolationEnabled());
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -6948,7 +6939,7 @@ void WebPage::recomputeShortCircuitHorizontalWheelEventsState()
 
     if (canShortCircuitHorizontalWheelEvents) {
         // Check if we have any horizontal scroll bars on the page.
-        if (pageContainsAnyHorizontalScrollbars(dynamicDowncast<LocalFrame>(mainFrame())))
+        if (pageContainsAnyHorizontalScrollbars(localMainFrame().get()))
             canShortCircuitHorizontalWheelEvents = false;
     }
 
@@ -6962,6 +6953,20 @@ void WebPage::recomputeShortCircuitHorizontalWheelEventsState()
 Frame* WebPage::mainFrame() const
 {
     return m_page ? &m_page->mainFrame() : nullptr;
+}
+
+RefPtr<WebCore::LocalFrame> WebPage::localMainFrame() const
+{
+    if (m_page)
+        return m_page->localMainFrame();
+    return nullptr;
+}
+
+RefPtr<WebCore::Document> WebPage::localTopDocument() const
+{
+    if (m_page)
+        return m_page->localTopDocument();
+    return nullptr;
 }
 
 FrameView* WebPage::mainFrameView() const
@@ -7082,7 +7087,7 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange&)>
 
 void WebPage::characterIndexForPointAsync(const WebCore::IntPoint& point, CompletionHandler<void(uint64_t)>&& completionHandler)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame)
         return;
     constexpr OptionSet<HitTestRequest::Type> hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::DisallowUserAgentShadowContent,  HitTestRequest::Type::AllowChildFrameContent };
@@ -8092,7 +8097,7 @@ void WebPage::updateWebsitePolicies(WebsitePoliciesData&& websitePolicies)
         return;
     }
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     RefPtr documentLoader = localMainFrame ? localMainFrame->loader().documentLoader() : nullptr;
     if (!documentLoader)
         return;
@@ -8124,7 +8129,7 @@ unsigned WebPage::extendIncrementalRenderingSuppression()
         token++;
 
     m_activeRenderingSuppressionTokens.add(token);
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->view()->setVisualUpdatesAllowedByClient(false);
 
     m_maximumRenderingSuppressionToken = token;
@@ -8137,7 +8142,7 @@ void WebPage::stopExtendingIncrementalRenderingSuppression(unsigned token)
     if (!m_activeRenderingSuppressionTokens.remove(token))
         return;
 
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->view()->setVisualUpdatesAllowedByClient(!shouldExtendIncrementalRenderingSuppression());
 }
 
@@ -8149,7 +8154,7 @@ WebCore::ScrollPinningBehavior WebPage::scrollPinningBehavior()
 void WebPage::setScrollPinningBehavior(WebCore::ScrollPinningBehavior pinning)
 {
     m_internals->scrollPinningBehavior = pinning;
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->view()->setScrollPinningBehavior(m_internals->scrollPinningBehavior);
 }
 
@@ -8160,7 +8165,7 @@ void WebPage::setScrollbarOverlayStyle(std::optional<uint32_t> scrollbarStyle)
     else
         m_scrollbarOverlayStyle = std::optional<ScrollbarOverlayStyle>();
     
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = this->localMainFrame())
         localMainFrame->view()->recalculateScrollbarOverlayStyle();
 }
 
@@ -8567,11 +8572,8 @@ void WebPage::clearPageLevelStorageAccess()
 
 void WebPage::wasLoadedWithDataTransferFromPrevalentResource()
 {
-    auto* frame = dynamicDowncast<LocalFrame>(mainFrame());
-    if (!frame || !frame->document())
-        return;
-
-    frame->document()->wasLoadedWithDataTransferFromPrevalentResource();
+    if (RefPtr localTopDocument = this->localTopDocument())
+        localTopDocument->wasLoadedWithDataTransferFromPrevalentResource();
 }
 
 void WebPage::didLoadFromRegistrableDomain(RegistrableDomain&& targetDomain)
@@ -8632,11 +8634,8 @@ WebCore::DOMPasteAccessResponse WebPage::requestDOMPasteAccess(DOMPasteAccessCat
 void WebPage::simulateDeviceOrientationChange(double alpha, double beta, double gamma)
 {
 #if ENABLE(DEVICE_ORIENTATION) && PLATFORM(IOS_FAMILY)
-    auto* frame = dynamicDowncast<LocalFrame>(mainFrame());
-    if (!frame || !frame->document())
-        return;
-
-    frame->document()->simulateDeviceOrientationChange(alpha, beta, gamma);
+    if (RefPtr localTopDocument = this->localTopDocument())
+        localTopDocument->simulateDeviceOrientationChange(alpha, beta, gamma);
 #endif
 }
 
@@ -8750,15 +8749,10 @@ void WebPage::requestAttachmentIcon(const String& identifier, const WebCore::Flo
 RefPtr<HTMLAttachmentElement> WebPage::attachmentElementWithIdentifier(const String& identifier) const
 {
     // FIXME: Handle attachment elements in subframes too as well.
-    RefPtr frame = dynamicDowncast<LocalFrame>(mainFrame());
-    if (!frame)
-        return nullptr;
+    if (RefPtr localTopDocument = this->localTopDocument())
+        return localTopDocument->attachmentForIdentifier(identifier);
 
-    RefPtr document = frame->document();
-    if (!document)
-        return nullptr;
-
-    return document->attachmentForIdentifier(identifier);
+    return nullptr;
 }
 
 #endif // ENABLE(ATTACHMENT_ELEMENT)
@@ -8851,7 +8845,7 @@ RefPtr<Element> WebPage::elementForContext(const ElementContext& elementContext)
     return element;
 }
 
-std::optional<WebCore::ElementContext> WebPage::contextForElement(WebCore::Element& element) const
+std::optional<WebCore::ElementContext> WebPage::contextForElement(const WebCore::Element& element) const
 {
     Ref document = element.document();
     if (!m_page || document->page() != m_page.get())
@@ -9446,10 +9440,10 @@ void WebPage::createMediaSessionCoordinator(const String& identifier, Completion
 
 void WebPage::lastNavigationWasAppInitiated(CompletionHandler<void(bool)>&& completionHandler)
 {
-    RefPtr mainFrame = dynamicDowncast<LocalFrame>(this->mainFrame());
-    if (!mainFrame)
+    RefPtr localTopDocument = this->localTopDocument();
+    if (!localTopDocument)
         return completionHandler(false);
-    return completionHandler(mainFrame->document()->loader()->lastNavigationWasAppInitiated());
+    return completionHandler(localTopDocument->loader()->lastNavigationWasAppInitiated());
 }
 
 #if HAVE(TRANSLATION_UI_SERVICES) && ENABLE(CONTEXT_MENUS)
@@ -9577,9 +9571,8 @@ void WebPage::removeTextPlaceholder(const ElementContext& placeholder, Completio
 
 void WebPage::generateTestReport(String&& message, String&& group)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
-    if (RefPtr document = localMainFrame ? localMainFrame->document() : nullptr)
-        document->reportingScope().generateTestReport(WTFMove(message), WTFMove(group));
+    if (RefPtr localTopDocument = this->localTopDocument())
+        localTopDocument->reportingScope().generateTestReport(WTFMove(message), WTFMove(group));
 }
 
 #if ENABLE(ACCESSIBILITY_ANIMATION_CONTROL)
@@ -9704,7 +9697,7 @@ uint64_t WebPage::logIdentifier() const
 
 void WebPage::useRedirectionForCurrentNavigation(WebCore::ResourceResponse&& response)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = this->localMainFrame();
     if (!localMainFrame) {
         WEBPAGE_RELEASE_LOG_ERROR(Loading, "WebPage::useRedirectionForCurrentNavigation failed without frame");
         return;

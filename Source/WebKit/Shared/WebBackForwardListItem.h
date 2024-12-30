@@ -65,7 +65,7 @@ public:
     void setLastProcessIdentifier(const WebCore::ProcessIdentifier& identifier) { m_lastProcessIdentifier = identifier; }
 
     void setRootFrameState(Ref<FrameState>&&);
-    FrameState& rootFrameState() const;
+    Ref<FrameState> rootFrameState() const;
 
     const String& originalURL() const;
     const String& url() const;
@@ -104,6 +104,8 @@ public:
     void setIsRemoteFrameNavigation(bool isRemoteFrameNavigation) { m_isRemoteFrameNavigation = isRemoteFrameNavigation; }
     bool isRemoteFrameNavigation() const { return m_isRemoteFrameNavigation; }
 
+    void setParentFromItem(WebBackForwardListItem*);
+
     void setWasRestoredFromSession();
 
 #if !LOG_DISABLED
@@ -121,7 +123,7 @@ private:
 
     RefPtr<WebsiteDataStore> m_dataStoreForWebArchive;
 
-    Ref<WebBackForwardListFrameItem> m_rootFrameItem;
+    const Ref<WebBackForwardListFrameItem> m_rootFrameItem;
     URL m_resourceDirectoryURL;
     WebPageProxyIdentifier m_pageID;
     WebCore::ProcessIdentifier m_lastProcessIdentifier;

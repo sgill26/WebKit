@@ -57,6 +57,10 @@
 #include "AcceleratedEffectStack.h"
 #endif
 
+#if HAVE(CORE_MATERIAL)
+#include "AppleVisualEffect.h"
+#endif
+
 namespace WTF {
 class TextStream;
 }
@@ -78,6 +82,10 @@ class TimingFunction;
 class TransformationMatrix;
 
 typedef unsigned TileCoverage;
+
+#if ENABLE(MODEL_PROCESS)
+class ModelContext;
+#endif
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 struct AcceleratedEffectValues;
@@ -438,7 +446,12 @@ public:
 #endif
 #endif
 
-    bool needsBackdrop() const { return !m_backdropFilters.isEmpty(); }
+#if HAVE(CORE_MATERIAL)
+    AppleVisualEffect appleVisualEffect() const { return m_appleVisualEffect; }
+    virtual void setAppleVisualEffect(AppleVisualEffect effect) { m_appleVisualEffect = effect; }
+#endif
+
+    bool needsBackdrop() const;
 
     // The color used to paint the layer background. Pass an invalid color to remove it.
     // Note that this covers the entire layer. Use setContentsToSolidColor() if the color should
@@ -560,7 +573,9 @@ public:
     virtual void setContentsToSolidColor(const Color&) { }
     virtual void setContentsToPlatformLayer(PlatformLayer*, ContentsLayerPurpose) { }
     virtual void setContentsToPlatformLayerHost(LayerHostingContextIdentifier) { }
-    virtual void setContentsToRemotePlatformContext(LayerHostingContextIdentifier, ContentsLayerPurpose) { }
+#if ENABLE(MODEL_PROCESS)
+    virtual void setContentsToModelContext(Ref<ModelContext>, ContentsLayerPurpose) { }
+#endif
     virtual void setContentsToVideoElement(HTMLVideoElement&, ContentsLayerPurpose) { }
     virtual void setContentsDisplayDelegate(RefPtr<GraphicsLayerContentsDisplayDelegate>&&, ContentsLayerPurpose);
     WEBCORE_EXPORT virtual RefPtr<GraphicsLayerAsyncContentsDisplayDelegate> createAsyncContentsDisplayDelegate(GraphicsLayerAsyncContentsDisplayDelegate* existing);
@@ -792,6 +807,11 @@ protected:
 
     const Type m_type;
     CustomAppearance m_customAppearance { CustomAppearance::None };
+
+#if HAVE(CORE_MATERIAL)
+    AppleVisualEffect m_appleVisualEffect { AppleVisualEffect::None };
+#endif
+
     OptionSet<GraphicsLayerPaintingPhase> m_paintingPhase { GraphicsLayerPaintingPhase::Foreground, GraphicsLayerPaintingPhase::Background };
     CompositingCoordinatesOrientation m_contentsOrientation { CompositingCoordinatesOrientation::TopDown }; // affects orientation of layer contents
 
@@ -855,6 +875,7 @@ protected:
     WindRule m_shapeLayerWindRule { WindRule::NonZero };
     Path m_shapeLayerPath;
 #endif
+
     LayerHostingContextID m_layerHostingContextID { 0 };
 };
 

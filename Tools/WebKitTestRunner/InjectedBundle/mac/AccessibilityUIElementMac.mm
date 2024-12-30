@@ -1082,6 +1082,15 @@ JSRetainPtr<JSStringRef> AccessibilityUIElement::dateValue()
     return nullptr;
 }
 
+JSRetainPtr<JSStringRef> AccessibilityUIElement::dateTimeValue() const
+{
+    BEGIN_AX_OBJC_EXCEPTIONS
+    return stringAttributeValueNS(@"AXDateTimeValue");
+    END_AX_OBJC_EXCEPTIONS
+
+    return nullptr;
+}
+
 JSRetainPtr<JSStringRef> AccessibilityUIElement::language()
 {
     BEGIN_AX_OBJC_EXCEPTIONS
@@ -1365,7 +1374,7 @@ JSRetainPtr<JSStringRef> AccessibilityUIElement::speakAs()
     return nullptr;
 }
 
-bool AccessibilityUIElement::ariaIsGrabbed() const
+bool AccessibilityUIElement::isGrabbed() const
 {
     return boolAttributeValueNS(NSAccessibilityGrabbedAttribute);
 }

@@ -856,7 +856,7 @@ void WebProcessProxy::addExistingWebPage(WebPageProxy& webPage, BeginsUsingDataS
 
     updateRegistrationWithDataStore();
     updateBackgroundResponsivenessTimer();
-    protectedWebsiteDataStore()->propagateSettingUpdatesToNetworkProcess();
+    protectedWebsiteDataStore()->propagateSettingUpdates();
 
     // If this was previously a standalone worker process with no pages we need to call didChangeThrottleState()
     // to update our process assertions on the network process since standalone worker processes do not hold
@@ -899,7 +899,7 @@ void WebProcessProxy::removeWebPage(WebPageProxy& webPage, EndsUsingDataStore en
     updateAudibleMediaAssertions();
     updateMediaStreamingActivity();
     updateBackgroundResponsivenessTimer();
-    protectedWebsiteDataStore()->propagateSettingUpdatesToNetworkProcess();
+    protectedWebsiteDataStore()->propagateSettingUpdates();
 
     maybeShutDown();
 }
@@ -1806,12 +1806,12 @@ RefPtr<API::Object> WebProcessProxy::transformHandlesToObjects(API::Object* obje
         {
             switch (object.type()) {
             case API::Object::Type::FrameHandle: {
-                ASSERT(static_cast<API::FrameHandle&>(object).isAutoconverting());
+                ASSERT(downcast<API::FrameHandle>(object).isAutoconverting());
                 auto frameID = downcast<API::FrameHandle>(object).frameID();
                 return WebFrameProxy::webFrame(frameID);
             }
             case API::Object::Type::PageHandle:
-                ASSERT(static_cast<API::PageHandle&>(object).isAutoconverting());
+                ASSERT(downcast<API::PageHandle>(object).isAutoconverting());
                 return protectedProcess()->webPage(downcast<API::PageHandle>(object).pageProxyID());
 
             default:

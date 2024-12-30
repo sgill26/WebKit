@@ -43,6 +43,8 @@
 #include <wtf/Compiler.h>
 #include <wtf/GetPtr.h>
 #include <wtf/IterationStatus.h>
+#include <wtf/NotFound.h>
+#include <wtf/StringExtras.h>
 #include <wtf/TypeCasts.h>
 #include <wtf/TypeTraits.h>
 
@@ -737,7 +739,7 @@ namespace WTF {
 template<class T, class... Args>
 ALWAYS_INLINE decltype(auto) makeUnique(Args&&... args)
 {
-    static_assert(std::is_same<typename T::WTFIsFastAllocated, int>::value, "T sould use FastMalloc (WTF_MAKE_FAST_ALLOCATED)");
+    static_assert(std::is_same<typename T::WTFIsFastAllocated, int>::value, "T should use FastMalloc (WTF_MAKE_FAST_ALLOCATED)");
     static_assert(!HasRefPtrMemberFunctions<T>::value, "T should not be RefCounted");
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
@@ -745,7 +747,7 @@ ALWAYS_INLINE decltype(auto) makeUnique(Args&&... args)
 template<class T, class... Args>
 ALWAYS_INLINE decltype(auto) makeUniqueWithoutRefCountedCheck(Args&&... args)
 {
-    static_assert(std::is_same<typename T::WTFIsFastAllocated, int>::value, "T sould use FastMalloc (WTF_MAKE_FAST_ALLOCATED)");
+    static_assert(std::is_same<typename T::WTFIsFastAllocated, int>::value, "T should use FastMalloc (WTF_MAKE_FAST_ALLOCATED)");
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
 
@@ -859,28 +861,16 @@ std::span<uint8_t> asMutableByteSpan(std::span<T, Extent> input)
     return unsafeMakeSpan(reinterpret_cast<uint8_t*>(input.data()), input.size_bytes());
 }
 
-template<typename T, std::size_t Extent>
-const T& reinterpretCastSpanStartTo(std::span<const uint8_t, Extent> span)
+template<typename T, typename U, std::size_t Extent>
+const T& reinterpretCastSpanStartTo(std::span<const U, Extent> span)
 {
-    return spanReinterpretCast<const T>(span.first(sizeof(T)))[0];
+    return spanReinterpretCast<const T>(asByteSpan(span).first(sizeof(T)))[0];
 }
 
-template<typename T, std::size_t Extent>
-T& reinterpretCastSpanStartTo(std::span<uint8_t, Extent> span)
+template<typename T, typename U, std::size_t Extent>
+T& reinterpretCastSpanStartTo(std::span<U, Extent> span)
 {
-    return spanReinterpretCast<T>(span.first(sizeof(T)))[0];
-}
-
-template<typename T, std::size_t Extent>
-const T& reinterpretCastSpanStartTo(std::span<const std::byte, Extent> span)
-{
-    return spanReinterpretCast<const T>(span.first(sizeof(T)))[0];
-}
-
-template<typename T, std::size_t Extent>
-T& reinterpretCastSpanStartTo(std::span<std::byte, Extent> span)
-{
-    return spanReinterpretCast<T>(span.first(sizeof(T)))[0];
+    return spanReinterpretCast<T>(asMutableByteSpan(span).first(sizeof(T)))[0];
 }
 
 enum class IgnoreTypeChecks : bool { No, Yes };
@@ -897,6 +887,28 @@ bool equalSpans(std::span<T, TExtent> a, std::span<U, UExtent> b)
 }
 
 template<typename T, std::size_t TExtent, typename U, std::size_t UExtent>
+bool spanHasPrefix(std::span<T, TExtent> span, std::span<U, UExtent> prefix)
+{
+    static_assert(sizeof(T) == sizeof(U));
+    static_assert(std::has_unique_object_representations_v<T>);
+    static_assert(std::has_unique_object_representations_v<U>);
+    if (span.size() < prefix.size())
+        return false;
+    return !memcmp(span.data(), prefix.data(), prefix.size_bytes());
+}
+
+template<typename T, std::size_t TExtent, typename U, std::size_t UExtent>
+bool spanHasSuffix(std::span<T, TExtent> span, std::span<U, UExtent> suffix)
+{
+    static_assert(sizeof(T) == sizeof(U));
+    static_assert(std::has_unique_object_representations_v<T>);
+    static_assert(std::has_unique_object_representations_v<U>);
+    if (span.size() < suffix.size())
+        return false;
+    return !memcmp(span.last(suffix.size()).data(), suffix.data(), suffix.size_bytes());
+}
+
+template<typename T, std::size_t TExtent, typename U, std::size_t UExtent>
 int compareSpans(std::span<T, TExtent> a, std::span<U, UExtent> b)
 {
     static_assert(sizeof(T) == sizeof(U));
@@ -906,6 +918,16 @@ int compareSpans(std::span<T, TExtent> a, std::span<U, UExtent> b)
     if (!result && a.size() != b.size())
         result = (a.size() > b.size()) ? 1 : -1;
     return result;
+}
+
+// Returns the index of the first occurrence of |needed| in |haystack| or notFound if not present.
+template<typename T, std::size_t TExtent, typename U, std::size_t UExtent>
+size_t memmemSpan(std::span<T, TExtent> haystack, std::span<U, UExtent> needle)
+{
+    auto* result = static_cast<T*>(memmem(haystack.data(), haystack.size(), needle.data(), needle.size()));
+    if (!result)
+        return notFound;
+    return result - haystack.data();
 }
 
 template<typename T, std::size_t TExtent, typename U, std::size_t UExtent>
@@ -1223,6 +1245,7 @@ using WTF::makeUnique;
 using WTF::makeUniqueWithoutFastMallocCheck;
 using WTF::makeUniqueWithoutRefCountedCheck;
 using WTF::memcpySpan;
+using WTF::memmemSpan;
 using WTF::memmoveSpan;
 using WTF::memsetSpan;
 using WTF::mergeDeduplicatedSorted;
@@ -1234,6 +1257,8 @@ using WTF::safeCast;
 using WTF::secureMemsetSpan;
 using WTF::singleElementSpan;
 using WTF::spanConstCast;
+using WTF::spanHasPrefix;
+using WTF::spanHasSuffix;
 using WTF::spanReinterpretCast;
 using WTF::toTwosComplement;
 using WTF::tryBinarySearch;

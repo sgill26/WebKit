@@ -105,6 +105,7 @@
 #import <WebCore/HTMLLabelElement.h>
 #import <WebCore/HTMLOptGroupElement.h>
 #import <WebCore/HTMLOptionElement.h>
+#import <WebCore/HTMLPlugInElement.h>
 #import <WebCore/HTMLSelectElement.h>
 #import <WebCore/HTMLSummaryElement.h>
 #import <WebCore/HTMLTextAreaElement.h>
@@ -133,6 +134,7 @@
 #import <WebCore/PlatformMediaSessionManager.h>
 #import <WebCore/PlatformMouseEvent.h>
 #import <WebCore/PluginDocument.h>
+#import <WebCore/PluginViewBase.h>
 #import <WebCore/PointerCaptureController.h>
 #import <WebCore/PointerCharacteristics.h>
 #import <WebCore/PrintContext.h>
@@ -251,7 +253,7 @@ void WebPage::platformInitializeAccessibility()
     m_mockAccessibilityElement = adoptNS([[WKAccessibilityWebPageObject alloc] init]);
     [m_mockAccessibilityElement setWebPage:this];
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (localMainFrame)
         accessibilityTransferRemoteToken(accessibilityRemoteTokenData());
 }
@@ -529,7 +531,7 @@ void WebPage::restorePageState(const HistoryItem& historyItem)
     // scroll to the correct position through a regular VisibleContentRectUpdate.
 
     m_userHasChangedPageScaleFactor = !historyItem.scaleIsInitial();
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
     auto& frameView = *localMainFrame->view();
@@ -652,9 +654,17 @@ void WebPage::getSelectionContext(CompletionHandler<void(const String&, const St
     if (!frame)
         return;
 
+    static constexpr auto selectionExtendedContextLength = 350;
+
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = focusedPluginViewForFrame(*frame)) {
+        auto [textBefore, textAfter] = pluginView->stringsBeforeAndAfterSelection(selectionExtendedContextLength);
+        return completionHandler(pluginView->selectionString(), WTFMove(textBefore), WTFMove(textAfter));
+    }
+#endif
+
     if (!frame->selection().isRange())
         return completionHandler({ }, { }, { });
-    const int selectionExtendedContextLength = 350;
 
     auto& selection = frame->selection().selection();
     String selectedText = plainTextForContext(selection.firstRange());
@@ -744,7 +754,7 @@ void WebPage::advanceToNextMisspelling(bool)
 IntRect WebPage::rectForElementAtInteractionLocation() const
 {
     constexpr OptionSet<HitTestRequest::Type> hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::AllowVisibleChildFrameContentOnly };
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return IntRect();
     HitTestResult result = localMainFrame->eventHandler().hitTestResultAtPoint(m_lastInteractionLocation, hitType);
@@ -844,7 +854,7 @@ void WebPage::handleSyntheticClick(Node& nodeRespondingToClick, const WebCore::F
     {
         LOG_WITH_STREAM(ContentObservation, stream << "handleSyntheticClick: node(" << &nodeRespondingToClick << ") " << location);
         ContentChangeObserver::MouseMovedScope observingScope(respondingDocument);
-        RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+        RefPtr localMainFrame = m_page->localMainFrame();
         if (!localMainFrame)
             return;
         dispatchSyntheticMouseMove(*localMainFrame, location, modifiers, pointerId);
@@ -944,7 +954,7 @@ void WebPage::completeSyntheticClick(Node& nodeRespondingToClick, const WebCore:
 {
     SetForScope completeSyntheticClickScope { m_completingSyntheticClick, true };
     IntPoint roundedAdjustedPoint = roundedIntPoint(location);
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame) {
         invokePendingSyntheticClickCallback(SyntheticClickResult::PageInvalid);
         return;
@@ -990,8 +1000,10 @@ void WebPage::completeSyntheticClick(Node& nodeRespondingToClick, const WebCore:
         return;
 
 #if ENABLE(PDF_PLUGIN)
-    if (RefPtr pluginView = pluginViewForFrame(newFocusedFrame.get()))
-        pluginView->handleSyntheticClick(WTFMove(releaseEvent));
+    if (RefPtr pluginElement = dynamicDowncast<HTMLPlugInElement>(nodeRespondingToClick)) {
+        if (RefPtr pluginWidget = static_cast<PluginView*>(pluginElement->pluginWidget()))
+            pluginWidget->handleSyntheticClick(WTFMove(releaseEvent));
+    }
 #endif
 
     invokePendingSyntheticClickCallback(SyntheticClickResult::Click);
@@ -1007,7 +1019,7 @@ void WebPage::completeSyntheticClick(Node& nodeRespondingToClick, const WebCore:
 void WebPage::attemptSyntheticClick(const IntPoint& point, OptionSet<WebEventModifier> modifiers, TransactionID lastLayerTreeTransactionId)
 {
     FloatPoint adjustedPoint;
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     Node* nodeRespondingToClick = localMainFrame ? localMainFrame->nodeRespondingToClickEvents(point, adjustedPoint) : nullptr;
     auto* frameRespondingToClick = nodeRespondingToClick ? nodeRespondingToClick->document().frame() : nullptr;
     IntPoint adjustedIntPoint = roundedIntPoint(adjustedPoint);
@@ -1023,7 +1035,7 @@ void WebPage::attemptSyntheticClick(const IntPoint& point, OptionSet<WebEventMod
 void WebPage::handleDoubleTapForDoubleClickAtPoint(const IntPoint& point, OptionSet<WebEventModifier> modifiers, TransactionID lastLayerTreeTransactionId)
 {
     FloatPoint adjustedPoint;
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     auto* nodeRespondingToDoubleClick = localMainFrame ? localMainFrame->nodeRespondingToDoubleClickEvent(point, adjustedPoint) : nullptr;
     if (!nodeRespondingToDoubleClick)
         return;
@@ -1069,7 +1081,7 @@ void WebPage::updateFocusedElementInformation()
 void WebPage::requestDragStart(const IntPoint& clientPosition, const IntPoint& globalPosition, OptionSet<WebCore::DragSourceAction> allowedActionsMask)
 {
     SetForScope allowedActionsForScope(m_allowedDragSourceActions, allowedActionsMask);
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
     bool didStart = localMainFrame->eventHandler().tryToBeginDragAtPoint(clientPosition, globalPosition);
@@ -1084,7 +1096,7 @@ void WebPage::requestAdditionalItemsForDragSession(const IntPoint& clientPositio
     // is opaque to the web process, which only sees that the current drag has ended, and that a new one is beginning.
     PlatformMouseEvent event(clientPosition, globalPosition, MouseButton::Left, PlatformEvent::Type::MouseMoved, 0, { }, WallTime::now(), 0, WebCore::SyntheticClickType::NoTap);
     m_page->dragController().dragEnded();
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -1196,7 +1208,7 @@ void WebPage::sendTapHighlightForNodeIfNecessary(WebKit::TapIdentifier requestID
     if (!node)
         return;
 
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -1253,7 +1265,7 @@ void WebPage::sendTapHighlightForNodeIfNecessary(WebKit::TapIdentifier requestID
 void WebPage::handleTwoFingerTapAtPoint(const WebCore::IntPoint& point, OptionSet<WebKit::WebEventModifier> modifiers, WebKit::TapIdentifier requestID)
 {
     FloatPoint adjustedPoint;
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     Node* nodeRespondingToClick = localMainFrame ? localMainFrame->nodeRespondingToClickEvents(point, adjustedPoint) : nullptr;
     if (!nodeRespondingToClick || !nodeRespondingToClick->renderer()) {
         send(Messages::WebPageProxy::DidNotHandleTapAsClick(roundedIntPoint(adjustedPoint)));
@@ -1265,7 +1277,7 @@ void WebPage::handleTwoFingerTapAtPoint(const WebCore::IntPoint& point, OptionSe
 
 void WebPage::potentialTapAtPosition(WebKit::TapIdentifier requestID, const WebCore::FloatPoint& position, bool shouldRequestMagnificationInformation)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (localMainFrame)
         m_potentialTapNode = localMainFrame->nodeRespondingToClickEvents(position, m_potentialTapLocation, m_potentialTapSecurityOrigin.get());
 
@@ -1339,7 +1351,7 @@ void WebPage::commitPotentialTap(OptionSet<WebEventModifier> modifiers, Transact
     }
 
     FloatPoint adjustedPoint;
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     Node* nodeRespondingToClick = localMainFrame ? localMainFrame->nodeRespondingToClickEvents(m_potentialTapLocation, adjustedPoint, m_potentialTapSecurityOrigin.get()) : nullptr;
     auto* frameRespondingToClick = nodeRespondingToClick ? nodeRespondingToClick->document().frame() : nullptr;
 
@@ -1363,7 +1375,7 @@ void WebPage::commitPotentialTapFailed()
     if (auto selectionChangedHandler = std::exchange(m_selectionChangedHandler, {}))
         selectionChangedHandler();
 
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = m_page->localMainFrame())
         ContentChangeObserver::didCancelPotentialTap(*localMainFrame);
     clearSelectionAfterTapIfNeeded();
     invokePendingSyntheticClickCallback(SyntheticClickResult::Failed);
@@ -1393,7 +1405,7 @@ void WebPage::clearSelectionAfterTapIfNeeded()
 
 void WebPage::cancelPotentialTap()
 {   
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = m_page->localMainFrame())
         ContentChangeObserver::didCancelPotentialTap(*localMainFrame);
     cancelPotentialTapInFrame(m_mainFrame);
 }
@@ -1416,13 +1428,13 @@ void WebPage::cancelPotentialTapInFrame(WebFrame& frame)
 
 void WebPage::didRecognizeLongPress()
 {
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = m_page->localMainFrame())
         ContentChangeObserver::didRecognizeLongPress(*localMainFrame);
 }
 
 void WebPage::tapHighlightAtPosition(WebKit::TapIdentifier requestID, const FloatPoint& position)
 {
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
     FloatPoint adjustedPoint;
@@ -1431,7 +1443,7 @@ void WebPage::tapHighlightAtPosition(WebKit::TapIdentifier requestID, const Floa
 
 void WebPage::inspectorNodeSearchMovedToPosition(const FloatPoint& position)
 {
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
     IntPoint adjustedPoint = roundedIntPoint(position);
@@ -1442,7 +1454,7 @@ void WebPage::inspectorNodeSearchMovedToPosition(const FloatPoint& position)
 
 void WebPage::inspectorNodeSearchEndedAtPosition(const FloatPoint& position)
 {
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (Node* node = localMainFrame ? localMainFrame->deepestNodeAtLocation(position) : nullptr)
         node->inspect();
 }
@@ -1457,6 +1469,26 @@ void WebPage::updateInputContextAfterBlurringAndRefocusingElementIfNeeded(Elemen
         if (m_hasPendingInputContextUpdateAfterBlurringAndRefocusingElement)
             send(Messages::WebPageProxy::UpdateInputContextAfterBlurringAndRefocusingElement());
         m_hasPendingInputContextUpdateAfterBlurringAndRefocusingElement = false;
+    });
+}
+
+void WebPage::didProgrammaticallyClearTextFormControl(const HTMLTextFormControlElement& element)
+{
+    if (!m_isShowingInputViewForFocusedElement)
+        return;
+
+    if (m_focusedElement != &element && m_recentlyBlurredElement != &element)
+        return;
+
+    callOnMainRunLoop([protectedThis = Ref { *this }, element = Ref { element }] {
+        if (protectedThis->m_focusedElement != element.ptr())
+            return;
+
+        auto context = protectedThis->contextForElement(element);
+        if (!context)
+            return;
+
+        protectedThis->send(Messages::WebPageProxy::DidProgrammaticallyClearFocusedElement(WTFMove(*context)));
     });
 }
 
@@ -1586,7 +1618,7 @@ static std::optional<SimpleRange> expandForImageOverlay(const SimpleRange& range
 void WebPage::selectWithGesture(const IntPoint& point, GestureType gestureType, GestureRecognizerState gestureState, bool isInteractingWithFocusedElement, CompletionHandler<void(const WebCore::IntPoint&, GestureType, GestureRecognizerState, OptionSet<SelectionFlags>)>&& completionHandler)
 {
     if (static_cast<GestureRecognizerState>(gestureState) == GestureRecognizerState::Began)
-        setFocusedFrameBeforeSelectingTextAtLocation(point);
+        updateFocusBeforeSelectingTextAtLocation(point);
 
     RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
     if (!frame)
@@ -1723,7 +1755,7 @@ static std::pair<std::optional<SimpleRange>, SelectionWasFlipped> rangeForPointI
     VisibleSelection existingSelection = frame.selection().selection();
     VisiblePosition selectionStart = existingSelection.visibleStart();
     VisiblePosition selectionEnd = existingSelection.visibleEnd();
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(frame.mainFrame());
+    RefPtr localMainFrame = frame.localMainFrame();
     if (!localMainFrame)
         return { std::nullopt, SelectionWasFlipped::No };
 
@@ -1951,7 +1983,7 @@ void WebPage::dispatchSyntheticMouseEventsForSelectionGesture(SelectionTouch tou
     if (focusedElementRect.isEmpty())
         return;
 
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -1975,7 +2007,7 @@ void WebPage::dispatchSyntheticMouseEventsForSelectionGesture(SelectionTouch tou
 
 void WebPage::clearSelectionAfterTappingSelectionHighlightIfNeeded(WebCore::FloatPoint location)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -2057,7 +2089,7 @@ void WebPage::updateSelectionWithTouches(const IntPoint& point, SelectionTouch s
         return;
 
 #if ENABLE(PDF_PLUGIN)
-    if (RefPtr pluginView = pluginViewForFrame(frame.get())) {
+    if (RefPtr pluginView = focusedPluginViewForFrame(*frame)) {
         OptionSet<SelectionFlags> resultFlags;
         auto startOrEnd = baseIsStart ? SelectionEndpoint::End : SelectionEndpoint::Start;
         if (pluginView->moveSelectionEndpoint(point, startOrEnd) == SelectionWasFlipped::Yes)
@@ -2378,7 +2410,7 @@ void WebPage::requestEvasionRectsAboveSelection(CompletionHandler<void(const Vec
 
     float scaleFactor = pageScaleFactor();
     const double factorOfContentArea = 0.5;
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame) {
         reply({ });
         return;
@@ -2402,7 +2434,7 @@ void WebPage::requestEvasionRectsAboveSelection(CompletionHandler<void(const Vec
     FloatPoint centerTopInRootViewCoordinates { centerOfTargetBounds.x(), selectionBoundsInRootViewCoordinates.y() };
 
     auto clickableNonEditableNode = [&] (const FloatPoint& locationInRootViewCoordinates) -> Node* {
-        auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+        RefPtr localMainFrame = m_page->localMainFrame();
         if (!localMainFrame)
             return nullptr;
 
@@ -2542,7 +2574,7 @@ void WebPage::selectPositionAtPoint(const WebCore::IntPoint& point, bool isInter
 {
     SetForScope userIsInteractingChange { m_userIsInteracting, true };
 
-    setFocusedFrameBeforeSelectingTextAtLocation(point);
+    updateFocusBeforeSelectingTextAtLocation(point);
 
     RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
     if (!frame)
@@ -2628,24 +2660,33 @@ static inline bool rectIsTooBigForSelection(const IntRect& blockRect, const Loca
     return blockRect.height() > frame.view()->unobscuredContentRect().height() * factor;
 }
 
-void WebPage::setFocusedFrameBeforeSelectingTextAtLocation(const IntPoint& point)
+void WebPage::updateFocusBeforeSelectingTextAtLocation(const IntPoint& point)
 {
     static constexpr OptionSet hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::AllowVisibleChildFrameContentOnly };
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
     auto result = localMainFrame->eventHandler().hitTestResultAtPoint(point, hitType);
     RefPtr hitNode = result.innerNode();
-    if (hitNode && hitNode->renderer()) {
-        RefPtr frame = result.innerNodeFrame();
-        m_page->checkedFocusController()->setFocusedFrame(frame.get());
-    }
+    if (!hitNode || !hitNode->renderer())
+        return;
+
+    RefPtr frame = result.innerNodeFrame();
+    m_page->checkedFocusController()->setFocusedFrame(frame.get());
+
+    if (!result.isOverWidget())
+        return;
+
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = pluginViewForFrame(frame.get()))
+        pluginView->focusPluginElement();
+#endif
 }
 
 void WebPage::setSelectionRange(const WebCore::IntPoint& point, WebCore::TextGranularity granularity, bool isInteractingWithFocusedElement)
 {
-    setFocusedFrameBeforeSelectingTextAtLocation(point);
+    updateFocusBeforeSelectingTextAtLocation(point);
 
     RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
     if (!frame)
@@ -2653,7 +2694,7 @@ void WebPage::setSelectionRange(const WebCore::IntPoint& point, WebCore::TextGra
 
 #if ENABLE(PDF_PLUGIN)
     // FIXME: Support text selection in embedded PDFs.
-    if (RefPtr pluginView = pluginViewForFrame(frame.get())) {
+    if (RefPtr pluginView = focusedPluginViewForFrame(*frame)) {
         pluginView->setSelectionRange(point, granularity);
         return;
     }
@@ -2702,7 +2743,7 @@ void WebPage::updateSelectionWithExtentPointAndBoundary(const WebCore::IntPoint&
         return callback(false);
 
 #if ENABLE(PDF_PLUGIN)
-    if (RefPtr pluginView = pluginViewForFrame(frame.get())) {
+    if (RefPtr pluginView = focusedPluginViewForFrame(*frame)) {
         auto movedEndpoint = pluginView->extendInitialSelection(point, granularity);
         return callback(movedEndpoint == SelectionEndpoint::End);
     }
@@ -2831,7 +2872,7 @@ void WebPage::requestRVItemInCurrentSelectedRange(CompletionHandler<void(const W
 void WebPage::prepareSelectionForContextMenuWithLocationInView(IntPoint point, CompletionHandler<void(bool, const RevealItem&)>&& completionHandler)
 {
     constexpr OptionSet hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::AllowVisibleChildFrameContentOnly };
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return completionHandler(false, { });
     Ref frame = *localMainFrame;
@@ -3708,7 +3749,7 @@ InteractionInformationAtPosition WebPage::positionInformation(const InteractionI
     info.request = request;
 
     FloatPoint adjustedPoint;
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return info;
 
@@ -3737,7 +3778,7 @@ InteractionInformationAtPosition WebPage::positionInformation(const InteractionI
     auto hitTestResult = eventHandler.hitTestResultAtPoint(request.point, hitTestRequestTypes);
 
 #if ENABLE(PDF_PLUGIN)
-    RefPtr pluginView = pluginViewForFrame(hitTestResult.innerNodeFrame());
+    RefPtr pluginView = hitTestResult.isOverWidget() ? pluginViewForFrame(hitTestResult.innerNodeFrame()) : nullptr;
 #endif
 
     info.cursorContext = [&] {
@@ -3822,7 +3863,7 @@ void WebPage::startInteractionWithElementContextOrPosition(std::optional<WebCore
     }
 
     FloatPoint adjustedPoint;
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = m_page->localMainFrame())
         m_interactionNode = localMainFrame->nodeRespondingToInteraction(point, adjustedPoint);
 }
 
@@ -4214,7 +4255,7 @@ void WebPage::setDeviceOrientation(IntDegrees deviceOrientation)
         return;
     m_deviceOrientation = deviceOrientation;
 #if ENABLE(ORIENTATION_EVENTS)
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame()))
+    if (RefPtr localMainFrame = m_page->localMainFrame())
         localMainFrame->orientationChanged();
 #endif
 }
@@ -4226,7 +4267,7 @@ void WebPage::setOverrideViewportArguments(const std::optional<WebCore::Viewport
 
 void WebPage::dynamicViewportSizeUpdate(const DynamicViewportSizeUpdate& target)
 {
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -4525,7 +4566,7 @@ void WebPage::resetIdempotentTextAutosizingIfNeeded(double previousInitialScale)
     if (m_page->initialScaleIgnoringContentSize() >= 1 && previousInitialScale >= 1)
         return;
     
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
 
@@ -4636,7 +4677,7 @@ void WebPage::shrinkToFitContent(ZoomToInitialScale zoomToInitialScale)
 
 bool WebPage::shouldIgnoreMetaViewport() const
 {
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (auto* mainDocument = localMainFrame ? localMainFrame->document() : nullptr) {
         auto* loader = mainDocument->loader();
         if (loader && loader->metaViewportPolicy() == WebCore::MetaViewportPolicy::Ignore)
@@ -4866,7 +4907,7 @@ void WebPage::updateVisibleContentRects(const VisibleContentRectUpdateInfo& visi
     FloatRect exposedContentRect = visibleContentRectUpdateInfo.exposedContentRect();
     FloatRect adjustedExposedContentRect = adjustExposedRectForNewScale(exposedContentRect, visibleContentRectUpdateInfo.scale(), scaleToUse);
     m_drawingArea->setExposedContentRect(adjustedExposedContentRect);
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return;
     auto& frameView = *localMainFrame->view();
@@ -5206,7 +5247,7 @@ void WebPage::drawToImage(WebCore::FrameIdentifier frameID, const PrintInfo& pri
 void WebPage::drawToPDFiOS(FrameIdentifier frameID, const PrintInfo& printInfo, size_t pageCount, CompletionHandler<void(RefPtr<SharedBuffer>&&)>&& reply)
 {
     if (printInfo.snapshotFirstPage) {
-        RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+        RefPtr localMainFrame = m_page->localMainFrame();
         if (!localMainFrame)
             return;
 
@@ -5413,6 +5454,11 @@ void WebPage::requestDocumentEditingContext(DocumentEditingContextRequest&& requ
     RefPtr frame = m_page->checkedFocusController()->focusedOrMainFrame();
     if (!frame)
         return completionHandler({ });
+
+#if ENABLE(PDF_PLUGIN)
+    if (RefPtr pluginView = focusedPluginViewForFrame(*frame))
+        return completionHandler(pluginView->documentEditingContext(WTFMove(request)));
+#endif
 
     frame->protectedDocument()->updateLayout(LayoutOptions::IgnorePendingStylesheets);
 
@@ -5819,7 +5865,7 @@ FloatSize WebPage::screenSizeForFingerprintingProtections(const LocalFrame&, Flo
 
 void WebPage::shouldDismissKeyboardAfterTapAtPoint(FloatPoint point, CompletionHandler<void(bool)>&& completion)
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return completion(false);
 

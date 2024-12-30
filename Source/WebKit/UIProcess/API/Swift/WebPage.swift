@@ -26,10 +26,55 @@
 import Foundation
 import Observation
 
+@MainActor
+final class WebPageWebView: WKWebView {
+    weak var delegate: (any Delegate)? = nil
+
+#if os(iOS)
+    override func findInteraction(_ interaction: UIFindInteraction, didBegin session: UIFindSession) {
+        super.findInteraction(interaction, didBegin: session)
+        delegate?.findInteraction(interaction, didBegin: session)
+    }
+
+    override func findInteraction(_ interaction: UIFindInteraction, didEnd session: UIFindSession) {
+        super.findInteraction(interaction, didBegin: session)
+        delegate?.findInteraction(interaction, didEnd: session)
+    }
+
+    override func supportsTextReplacement() -> Bool {
+        guard let delegate else {
+            return super.supportsTextReplacement()
+        }
+
+        return super.supportsTextReplacement() && delegate.supportsTextReplacement()
+    }
+#endif
+}
+
+extension WebPageWebView {
+    @MainActor
+    protocol Delegate: AnyObject {
+#if os(iOS)
+        func findInteraction(_ interaction: UIFindInteraction, didBegin session: UIFindSession)
+
+        func findInteraction(_ interaction: UIFindInteraction, didEnd session: UIFindSession)
+
+        func supportsTextReplacement() -> Bool
+#endif
+    }
+}
+
 @_spi(Private)
 @MainActor
 @Observable
 public class WebPage_v0 {
+    public enum FullscreenState: Hashable, Sendable {
+        case enteringFullscreen
+        case exitingFullscreen
+        case inFullscreen
+        case notInFullscreen
+    }
+
     public static func handlesURLScheme(_ scheme: String) -> Bool {
         WKWebView.handlesURLScheme(scheme)
     }
@@ -42,8 +87,9 @@ public class WebPage_v0 {
         navigations = Navigations(source: stream)
 
         backingUIDelegate = WKUIDelegateAdapter(dialogPresenter: dialogPresenter)
-
         backingNavigationDelegate = WKNavigationDelegateAdapter(navigationProgressContinuation: continuation, navigationDecider: navigationDecider)
+
+        backingUIDelegate.owner = self
         backingNavigationDelegate.owner = self
     }
 
@@ -100,6 +146,20 @@ public class WebPage_v0 {
         backingProperty(\.isWritingToolsActive, backedBy: \.isWritingToolsActive)
     }
 
+    public var fullscreenState: WebPage_v0.FullscreenState {
+        backingProperty(\.fullscreenState, backedBy: \.fullscreenState) { backingValue in
+            WebPage_v0.FullscreenState(backingValue)
+        }
+    }
+
+    public var cameraCaptureState: WKMediaCaptureState {
+        backingProperty(\.cameraCaptureState, backedBy: \.cameraCaptureState)
+    }
+
+    public var microphoneCaptureState: WKMediaCaptureState {
+        backingProperty(\.microphoneCaptureState, backedBy: \.microphoneCaptureState)
+    }
+
     public var mediaType: String? {
         get { backingWebView.mediaType }
         set { backingWebView.mediaType = newValue }
@@ -125,12 +185,14 @@ public class WebPage_v0 {
     var isBoundToWebView = false
 
     @ObservationIgnored
-    lazy var backingWebView: WKWebView = {
-        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration(configuration))
+    lazy var backingWebView: WebPageWebView = {
+        let webView = WebPageWebView(frame: .zero, configuration: WKWebViewConfiguration(configuration))
         webView.navigationDelegate = backingNavigationDelegate
         webView.uiDelegate = backingUIDelegate
         return webView
     }()
+
+    // MARK: Loading functions
 
     @discardableResult
     public func load(_ request: URLRequest) -> NavigationID? {
@@ -200,6 +262,8 @@ public class WebPage_v0 {
         backingWebView.stopLoading()
     }
 
+    // MARK: Utility functions
+
     public func callAsyncJavaScript(_ functionBody: String, arguments: [String : Any] = [:], in frame: FrameInfo? = nil, contentWorld: WKContentWorld = .page) async throws -> Any? {
         try await backingWebView.callAsyncJavaScript(functionBody, arguments: arguments, in: frame?.wrapped, contentWorld: contentWorld)
     }
@@ -226,7 +290,35 @@ public class WebPage_v0 {
         }
     }
 
-    private func createObservation<Value, BackingValue>(for keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WKWebView, BackingValue>) -> NSKeyValueObservation {
+    // MARK: Media functions
+
+    public func pauseAllMediaPlayback() async {
+        await backingWebView.pauseAllMediaPlayback()
+    }
+
+    public func mediaPlaybackState() async -> WKMediaPlaybackState {
+        await backingWebView.requestMediaPlaybackState()
+    }
+
+    public func setAllMediaPlaybackSuspended(_ suspended: Bool) async {
+        await backingWebView.setAllMediaPlaybackSuspended(suspended)
+    }
+
+    public func closeAllMediaPresentations() async {
+        await backingWebView.closeAllMediaPresentations()
+    }
+
+    public func setCameraCaptureState(_ state: WKMediaCaptureState) async {
+        await backingWebView.setCameraCaptureState(state)
+    }
+
+    public func setMicrophoneCaptureState(_ state: WKMediaCaptureState) async {
+        await backingWebView.setMicrophoneCaptureState(state)
+    }
+
+    // MARK: Private helper functions
+
+    private func createObservation<Value, BackingValue>(for keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WebPageWebView, BackingValue>) -> NSKeyValueObservation {
         let boxed = UncheckedSendableKeyPathBox(keyPath: keyPath)
 
         return backingWebView.observe(backingKeyPath, options: [.prior, .old, .new]) { [_$observationRegistrar, unowned self] _, change in
@@ -238,7 +330,7 @@ public class WebPage_v0 {
         }
     }
 
-    func backingProperty<Value, BackingValue>(_ keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WKWebView, BackingValue>, _ transform: (BackingValue) -> Value) -> Value {
+    func backingProperty<Value, BackingValue>(_ keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WebPageWebView, BackingValue>, _ transform: (BackingValue) -> Value) -> Value {
         if observations.contents[keyPath] == nil {
             observations.contents[keyPath] = createObservation(for: keyPath, backedBy: backingKeyPath)
         }
@@ -249,8 +341,21 @@ public class WebPage_v0 {
         return transform(backingValue)
     }
 
-    func backingProperty<Value>(_ keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WKWebView, Value>) -> Value {
+    func backingProperty<Value>(_ keyPath: KeyPath<WebPage_v0, Value>, backedBy backingKeyPath: KeyPath<WebPageWebView, Value>) -> Value {
         backingProperty(keyPath, backedBy: backingKeyPath) { $0 }
+    }
+}
+
+extension WebPage_v0.FullscreenState {
+    init(_ wrapped: WKWebView.FullscreenState) {
+        self = switch wrapped {
+        case .enteringFullscreen: .enteringFullscreen
+        case .exitingFullscreen: .exitingFullscreen
+        case .inFullscreen: .inFullscreen
+        case .notInFullscreen: .notInFullscreen
+        @unknown default:
+            fatalError()
+        }
     }
 }
 

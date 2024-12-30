@@ -160,9 +160,7 @@ public:
     int axRowIndex() const override { return -1; }
 
     // Table column support.
-    bool isTableColumn() const override { return false; }
     unsigned columnIndex() const override { return 0; }
-    AccessibilityObject* columnHeader() override { return nullptr; }
 
     // Table row support.
     bool isTableRow() const override { return false; }
@@ -216,7 +214,7 @@ public:
     FloatRect primaryScreenRect() const final;
 #endif
     FloatRect convertFrameToSpace(const FloatRect&, AccessibilityConversionSpace) const final;
-    UncheckedKeyHashMap<String, AXEditingStyleValueVariant> resolvedEditingStyles() const final;
+    UncheckedKeyHashMap<String, AXEditingStyleValueVariant> resolvedEditingStyles() const;
 
     // In a multi-select list, many items can be selected but only one is active at a time.
     bool isSelectedOptionActive() const override { return false; }
@@ -227,8 +225,8 @@ public:
     std::optional<SimpleRange> misspellingRange(const SimpleRange& start, AccessibilitySearchDirection) const final;
     bool hasPlainText() const override { return false; }
     bool hasSameFont(AXCoreObject&) override { return false; }
-    bool hasSameFontColor(const AXCoreObject&) const override { return false; }
-    bool hasSameStyle(const AXCoreObject&) const override { return false; }
+    bool hasSameFontColor(AXCoreObject&) override { return false; }
+    bool hasSameStyle(AXCoreObject&) override { return false; }
     bool hasUnderline() const override { return false; }
     bool hasHighlighting() const final;
     AXTextMarkerRange textInputMarkedTextMarkerRange() const final;
@@ -436,7 +434,6 @@ public:
     // Only if isColorWell()
     SRGBA<uint8_t> colorValue() const override;
 
-    AccessibilityRole roleValue() const final { return m_role; }
     virtual AccessibilityRole determineAccessibilityRole() = 0;
     String rolePlatformString() const final;
     String roleDescription() const override;
@@ -494,7 +491,7 @@ public:
     RefPtr<Document> protectedDocument() const;
     LocalFrameView* documentFrameView() const override;
     LocalFrame* frame() const;
-    LocalFrame* mainFrame() const;
+    RefPtr<LocalFrame> localMainFrame() const;
     Document* topDocument() const;
     RenderView* topRenderer() const;
     ScrollView* scrollView() const override { return nullptr; }
@@ -945,7 +942,6 @@ private:
 protected: // FIXME: Make the data members private.
     AccessibilityChildrenVector m_children;
     mutable bool m_childrenInitialized { false };
-    AccessibilityRole m_role { AccessibilityRole::Unknown };
 private:
     OptionSet<AXAncestorFlag> m_ancestorFlags;
     AccessibilityObjectInclusion m_lastKnownIsIgnoredValue { AccessibilityObjectInclusion::DefaultBehavior };
@@ -1013,7 +1009,7 @@ PlatformRoleMap createPlatformRoleMap();
 String roleToPlatformString(AccessibilityRole);
 
 #if PLATFORM(IOS_FAMILY)
-WEBCORE_EXPORT NSData* newAccessibilityRemoteToken(NSString *);
+WEBCORE_EXPORT RetainPtr<NSData> newAccessibilityRemoteToken(NSString *);
 #endif
 } // namespace Accessibility
 

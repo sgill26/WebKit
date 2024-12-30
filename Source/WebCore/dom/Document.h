@@ -689,6 +689,7 @@ public:
     RefPtr<LocalFrameView> protectedView() const;
     inline Page* page() const; // Defined in Page.h.
     inline RefPtr<Page> protectedPage() const; // Defined in Page.h.
+    WEBCORE_EXPORT RefPtr<LocalFrame> localMainFrame() const;
     const Settings& settings() const { return m_settings.get(); }
     Ref<Settings> protectedSettings() const;
     EditingBehavior editingBehavior() const;
@@ -698,7 +699,6 @@ public:
 
     float deviceScaleFactor() const;
 
-    WEBCORE_EXPORT bool useSystemAppearance() const;
     WEBCORE_EXPORT bool useElevatedUserInterfaceLevel() const;
     WEBCORE_EXPORT bool useDarkAppearance(const RenderStyle*) const;
 
@@ -1224,6 +1224,8 @@ public:
     WEBCORE_EXPORT Document& topDocument() const;
     Ref<Document> protectedTopDocument() const { return topDocument(); }
     WEBCORE_EXPORT bool isTopDocument() const;
+
+    WEBCORE_EXPORT RefPtr<Document> localTopDocument() const;
 
     ScriptRunner* scriptRunnerIfExists() { return m_scriptRunner.get(); }
     inline ScriptRunner& scriptRunner();

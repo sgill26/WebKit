@@ -877,9 +877,9 @@ public:
     virtual int axRowIndex() const = 0;
 
     // Table column support.
-    virtual bool isTableColumn() const = 0;
+    bool isTableColumn() const { return roleValue() == AccessibilityRole::Column; }
     virtual unsigned columnIndex() const = 0;
-    virtual AXCoreObject* columnHeader() = 0;
+    AXCoreObject* columnHeader();
 
     // Table row support.
     virtual bool isTableRow() const = 0;
@@ -923,8 +923,6 @@ public:
 
     bool isButton() const;
     bool isMeter() const { return roleValue() == AccessibilityRole::Meter; }
-
-    virtual UncheckedKeyHashMap<String, AXEditingStyleValueVariant> resolvedEditingStyles() const = 0;
 
     bool isListItem() const { return roleValue() == AccessibilityRole::ListItem; }
     bool isCheckboxOrRadio() const { return isCheckbox() || isRadioButton(); }
@@ -976,8 +974,8 @@ public:
     virtual std::optional<SimpleRange> visibleCharacterRange() const = 0;
     virtual bool hasPlainText() const = 0;
     virtual bool hasSameFont(AXCoreObject&) = 0;
-    virtual bool hasSameFontColor(const AXCoreObject&) const = 0;
-    virtual bool hasSameStyle(const AXCoreObject&) const = 0;
+    virtual bool hasSameFontColor(AXCoreObject&) = 0;
+    virtual bool hasSameStyle(AXCoreObject&) = 0;
     bool isStaticText() const { return roleValue() == AccessibilityRole::StaticText; }
     virtual bool hasUnderline() const = 0;
     virtual bool hasHighlighting() const = 0;
@@ -1154,7 +1152,7 @@ public:
     // Only if isColorWell()
     virtual SRGBA<uint8_t> colorValue() const = 0;
 
-    virtual AccessibilityRole roleValue() const = 0;
+    AccessibilityRole roleValue() const { return m_role; }
     // Non-localized string associated with the object role.
     virtual String rolePlatformString() const = 0;
     // Localized string that describes the object's role.
@@ -1464,6 +1462,7 @@ protected:
     explicit AXCoreObject(AXID axID)
         : m_id(axID)
     { }
+    AccessibilityRole m_role { AccessibilityRole::Unknown };
 
 private:
     virtual String dbgInternal(bool, OptionSet<AXDebugStringOption>) const = 0;

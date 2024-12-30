@@ -804,10 +804,6 @@ static NSAttributedString *attributedStringForTextMarkerRange(const AXCoreObject
     if (!textMarkerRangeRef)
         return nil;
 
-#if ENABLE(AX_THREAD_TEXT_APIS)
-    if (AXObjectCache::useAXThreadTextApis())
-        return AXTextMarkerRange { textMarkerRangeRef }.toAttributedString(spellCheck).autorelease();
-#endif // ENABLE(AX_THREAD_TEXT_APIS)
     return object.attributedStringForTextMarkerRange({ textMarkerRangeRef }, spellCheck).autorelease();
 }
 
@@ -2216,9 +2212,6 @@ ALLOW_DEPRECATED_IMPLEMENTATIONS_END
     if ([attributeName isEqualToString:NSAccessibilityDOMClassListAttribute])
         return createNSArray(backingObject->classList()).autorelease();
 
-    if ([attributeName isEqualToString:@"AXResolvedEditingStyles"])
-        return [self baseAccessibilityResolvedEditingStyles];
-
     // This allows us to connect to a plugin that creates a shadow node for editing (like PDFs).
     if ([attributeName isEqualToString:@"_AXAssociatedPluginParent"])
         return [self _associatedPluginParentWith:backingObject];
@@ -2824,7 +2817,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
         }
     }
 
-    if (auto* localMainFrame = dynamicDowncast<LocalFrame>(page->mainFrame()))
+    if (RefPtr localMainFrame = page->localMainFrame())
         page->contextMenuController().showContextMenuAt(*localMainFrame, rect.center());
 }
 

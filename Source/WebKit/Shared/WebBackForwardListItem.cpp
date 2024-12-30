@@ -205,9 +205,9 @@ void WebBackForwardListItem::setRootFrameState(Ref<FrameState>&& mainFrameState)
     protectedRootFrameItem()->setFrameState(WTFMove(mainFrameState));
 }
 
-FrameState& WebBackForwardListItem::rootFrameState() const
+Ref<FrameState> WebBackForwardListItem::rootFrameState() const
 {
-    return m_rootFrameItem->frameState();
+    return m_rootFrameItem->copyFrameStateWithChildren();
 }
 
 const String& WebBackForwardListItem::originalURL() const
@@ -244,6 +244,19 @@ void WebBackForwardListItem::setWasRestoredFromSession()
 Ref<WebBackForwardListFrameItem> WebBackForwardListItem::protectedRootFrameItem()
 {
     return m_rootFrameItem.get();
+}
+
+void WebBackForwardListItem::setParentFromItem(WebBackForwardListItem* previousItem)
+{
+    if (!previousItem || !m_isRemoteFrameNavigation)
+        return;
+
+    auto frameID = m_rootFrameItem->frameID();
+    if (!frameID)
+        return;
+
+    if (RefPtr previousFrameItem = previousItem->rootFrameItem().childItemForFrameID(*frameID))
+        m_rootFrameItem->setParent(previousFrameItem->protectedParent().get());
 }
 
 #if !LOG_DISABLED

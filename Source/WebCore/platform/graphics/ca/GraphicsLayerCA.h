@@ -52,6 +52,10 @@ class Image;
 class NativeImage;
 class TransformState;
 
+#if ENABLE(MODEL_PROCESS)
+class ModelContext;
+#endif
+
 class GraphicsLayerCA : public GraphicsLayer, public PlatformCALayerClient {
     WTF_MAKE_TZONE_ALLOCATED_EXPORT(GraphicsLayerCA, WEBCORE_EXPORT);
 public:
@@ -106,6 +110,10 @@ public:
 #endif
 #endif
 
+#if HAVE(CORE_MATERIAL)
+    WEBCORE_EXPORT void setAppleVisualEffect(AppleVisualEffect) override;
+#endif
+
     WEBCORE_EXPORT void setBackgroundColor(const Color&) override;
 
     WEBCORE_EXPORT void setContentsOpaque(bool) override;
@@ -156,7 +164,9 @@ public:
 #endif
     WEBCORE_EXPORT void setContentsToPlatformLayer(PlatformLayer*, ContentsLayerPurpose) override;
     WEBCORE_EXPORT void setContentsToPlatformLayerHost(LayerHostingContextIdentifier) override;
-    WEBCORE_EXPORT void setContentsToRemotePlatformContext(LayerHostingContextIdentifier, ContentsLayerPurpose) override;
+#if ENABLE(MODEL_PROCESS)
+    WEBCORE_EXPORT void setContentsToModelContext(Ref<ModelContext>, ContentsLayerPurpose) override;
+#endif
     WEBCORE_EXPORT void setContentsToVideoElement(HTMLVideoElement&, ContentsLayerPurpose) override;
     WEBCORE_EXPORT void setContentsDisplayDelegate(RefPtr<GraphicsLayerContentsDisplayDelegate>&&, ContentsLayerPurpose) override;
     WEBCORE_EXPORT PlatformLayerIdentifier setContentsToAsyncDisplayDelegate(RefPtr<GraphicsLayerContentsDisplayDelegate>, ContentsLayerPurpose);
@@ -282,7 +292,9 @@ private:
 
     virtual Ref<PlatformCALayer> createPlatformCALayer(PlatformCALayer::LayerType, PlatformCALayerClient* owner);
     virtual Ref<PlatformCALayer> createPlatformCALayer(PlatformLayer*, PlatformCALayerClient* owner);
-    virtual Ref<PlatformCALayer> createPlatformCALayer(LayerHostingContextIdentifier, PlatformCALayerClient*);
+#if ENABLE(MODEL_PROCESS)
+    virtual Ref<PlatformCALayer> createPlatformCALayer(Ref<ModelContext>, PlatformCALayerClient*);
+#endif
 #if ENABLE(MODEL_ELEMENT)
     virtual Ref<PlatformCALayer> createPlatformCALayer(Ref<WebCore::Model>, PlatformCALayerClient* owner);
 #endif
@@ -514,6 +526,10 @@ private:
 #endif
     void updateContentsScalingFilters();
 
+#if HAVE(CORE_MATERIAL)
+    void updateAppleVisualEffect();
+#endif
+
     enum StructuralLayerPurpose {
         NoStructuralLayer = 0,
         StructuralLayerForPreserves3D,
@@ -627,6 +643,9 @@ private:
         ContentsScalingFiltersChanged           = 1LLU << 43,
         VideoGravityChanged                     = 1LLU << 44,
         BackdropRootChanged                     = 1LLU << 45,
+#if HAVE(CORE_MATERIAL)
+        AppleVisualEffectChanged                = 1LLU << 46,
+#endif
     };
     typedef uint64_t LayerChangeFlags;
     static ASCIILiteral layerChangeAsString(LayerChange);

@@ -89,7 +89,7 @@ RefPtr<SVGSVGElement> SVGImage::rootElement() const
     if (!m_page)
         return nullptr;
 
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return nullptr;
 
@@ -335,7 +335,7 @@ LocalFrameView* SVGImage::frameView() const
     if (!m_page)
         return nullptr;
 
-    auto* localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+    RefPtr localMainFrame = m_page->localMainFrame();
     if (!localMainFrame)
         return nullptr;
 
@@ -433,13 +433,13 @@ bool SVGImage::isAnimating() const
 
 void SVGImage::reportApproximateMemoryCost() const
 {
-    RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
-    if (!localMainFrame)
+    RefPtr localTopDocument = m_page->localTopDocument();
+    if (!localTopDocument)
         return;
-    RefPtr document = localMainFrame->document();
+
     size_t decodedImageMemoryCost = 0;
 
-    for (RefPtr<Node> node = document; node; node = NodeTraversal::next(*node))
+    for (RefPtr<Node> node = localTopDocument; node; node = NodeTraversal::next(*node))
         decodedImageMemoryCost += node->approximateMemoryCost();
 
     JSC::VM& vm = commonVM();
@@ -480,7 +480,7 @@ EncodedDataStatus SVGImage::dataChanged(bool allDataReceived)
             }
         }
 
-        RefPtr localMainFrame = dynamicDowncast<LocalFrame>(m_page->mainFrame());
+        RefPtr localMainFrame = m_page->localMainFrame();
         if (!localMainFrame)
             return EncodedDataStatus::Unknown;
 

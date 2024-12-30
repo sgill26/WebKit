@@ -5310,6 +5310,9 @@ enum class WebCore::ThirdPartyCookieBlockingMode : uint8_t {
     All,
     AllExceptBetweenAppBoundDomains,
     AllExceptManagedDomains,
+#if HAVE(ALLOW_ONLY_PARTITIONED_COOKIES)
+    AllExceptPartitioned,
+#endif
     AllOnSitesWithoutUserInteraction,
     OnlyAccordingToPerDomainPolicy
 };
@@ -7017,6 +7020,13 @@ struct WebCore::CookieChangeSubscription {
     URL url()
 }
 
+#if ENABLE(MODEL_PROCESS)
+[RefCounted] class WebCore::ModelContext {
+    WebCore::PlatformLayerIdentifier modelLayerIdentifier()
+    WebCore::LayerHostingContextIdentifier modelContentsLayerHostingContextIdentifier()
+};
+#endif
+
 #if PLATFORM(IOS_FAMILY)
 [Nested] enum class WebCore::InspectorOverlayLabel::Arrow::Direction : uint8_t {
     None,
@@ -7919,6 +7929,28 @@ header: <WebCore/SharedBuffer.h>
     WebCore::SourceAlpha
     WebCore::SourceGraphic
 }
+
+#if HAVE(CORE_MATERIAL)
+
+header: <WebCore/AppleVisualEffect.h>
+enum class WebCore::AppleVisualEffect : uint8_t {
+    None,
+    BlurUltraThinMaterial,
+    BlurThinMaterial,
+    BlurMaterial,
+    BlurThickMaterial,
+    BlurChromeMaterial,
+    VibrancyLabel,
+    VibrancySecondaryLabel,
+    VibrancyTertiaryLabel,
+    VibrancyQuaternaryLabel,
+    VibrancyFill,
+    VibrancySecondaryFill,
+    VibrancyTertiaryFill,
+    VibrancySeparator,
+};
+
+#endif
 
 #if ENABLE(MEDIA_SOURCE)
 

@@ -3047,6 +3047,34 @@ TEST(SiteIsolation, NavigateIframeSameOriginBackForward)
     EXPECT_WK_STREQ("https://webkit.org/destination", [webView objectByEvaluatingJavaScript:@"location.href" inFrame:childFrame.get()]);
 }
 
+TEST(SiteIsolation, DiscardUncachedBackItemForNavigatedOverIframe)
+{
+    HTTPServer server({
+        { "/example"_s, { "<iframe src='https://webkit.org/a'></iframe>"_s } },
+        { "/a"_s, { "<script> alert('a'); </script>"_s } },
+        { "/b"_s, { "<script> alert('b'); </script>"_s } },
+        { "/c"_s, { "<script> alert('c'); </script>"_s } }
+    }, HTTPServer::Protocol::HttpsProxy);
+    RetainPtr processPoolConfiguration = adoptNS([[_WKProcessPoolConfiguration alloc] init]);
+    processPoolConfiguration.get().pageCacheEnabled = NO;
+    RetainPtr processPool = adoptNS([[WKProcessPool alloc] _initWithConfiguration:processPoolConfiguration.get()]);
+    RetainPtr webViewConfiguration = server.httpsProxyConfiguration();
+    [webViewConfiguration setProcessPool:processPool.get()];
+
+    auto [webView, navigationDelegate] = siteIsolatedViewAndDelegate(webViewConfiguration.get());
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/example"]]];
+    EXPECT_WK_STREQ("a", [webView _test_waitForAlert]);
+
+    [webView evaluateJavaScript:@"location.href = 'https://webkit.org/b'" inFrame:[webView firstChildFrame] completionHandler:nil];
+    EXPECT_WK_STREQ("b", [webView _test_waitForAlert]);
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://apple.com/c"]]];
+    EXPECT_WK_STREQ("c", [webView _test_waitForAlert]);
+
+    [webView goBack];
+    EXPECT_WK_STREQ("a", [webView _test_waitForAlert]);
+}
+
 TEST(SiteIsolation, NavigateIframeCrossOriginBackForward)
 {
     HTTPServer server({
@@ -3687,6 +3715,29 @@ TEST(SiteIsolation, ProcessTerminationReason)
     kill([webView mainFrame].info._processIdentifier, 9);
     [navigationDelegate waitForDidFinishNavigation];
     EXPECT_EQ(server.totalRequests(), 4u);
+}
+
+TEST(SiteIsolation, FormSubmit)
+{
+    auto mainHTML = "<script>onload=()=>{onlyform.submit()}</script>"
+    "<iframe name='onlyiframe' src='https://webkit.org/iframe'></iframe>"
+    "<form action='alert_when_loaded' method='get' target='onlyiframe' id='onlyform'><input type='hidden' name='textname' value='textvalue'>"_s;
+
+    HTTPServer server({
+        { "/example"_s, { mainHTML } },
+        { "/iframe"_s, { "hi"_s } },
+        { "/alert_when_loaded?textname=textvalue"_s, { "<script>alert(window.location.search)</script>"_s } }
+    }, HTTPServer::Protocol::HttpsProxy);
+
+    auto [webView, navigationDelegate] = siteIsolatedViewAndDelegate(server);
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/example"]]];
+    EXPECT_WK_STREQ([webView _test_waitForAlert], "?textname=textvalue");
+    checkFrameTreesInProcesses(webView.get(), {
+        { "https://example.com"_s,
+            { { "https://example.com"_s } }
+        }
+    });
 }
 
 }

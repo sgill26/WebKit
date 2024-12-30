@@ -29,11 +29,11 @@
 #if ENABLE(WEB_RTC) && USE(LIBWEBRTC)
 
 #include <LibWebRTCMacros.h>
+#include <wtf/StdLibExtras.h>
+
 WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_BEGIN
 #include <webrtc/rtc_base/byte_order.h>
 WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_END
-
-WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 namespace WebCore {
 namespace WebRTC {
@@ -50,8 +50,8 @@ std::optional<STUNMessageLengths> getSTUNOrTURNMessageLengths(std::span<const ui
     if (data.size() < 4)
         return { };
 
-    auto messageType = be16toh(*reinterpret_cast<const uint16_t*>(data.data()));
-    auto messageLength = be16toh(*reinterpret_cast<const uint16_t*>(data.data() + 2));
+    auto messageType = be16toh(reinterpretCastSpanStartTo<const uint16_t>(data));
+    auto messageLength = be16toh(reinterpretCastSpanStartTo<const uint16_t>(data.subspan(2)));
 
     // STUN data message header is 20 bytes.
     if (isStunMessage(messageType)) {
@@ -76,7 +76,7 @@ static inline Vector<uint8_t> extractSTUNOrTURNMessages(Vector<uint8_t>&& buffer
             if (!data.size())
                 return { };
 
-            std::memcpy(buffered.data(), data.data(), data.size());
+            memcpySpan(buffered.mutableSpan(), data);
             buffered.resize(data.size());
             return WTFMove(buffered);
         }
@@ -89,30 +89,27 @@ static inline Vector<uint8_t> extractSTUNOrTURNMessages(Vector<uint8_t>&& buffer
 
 static inline Vector<uint8_t> extractDataMessages(Vector<uint8_t>&& buffered, const Function<void(std::span<const uint8_t> data)>& processMessage)
 {
-    constexpr size_t lengthFieldSize = 2; // number of bytes read by be16toh.
+    constexpr size_t lengthFieldSize = sizeof(uint16_t); // number of bytes read by be16toh.
 
-    auto* data = buffered.data();
-    size_t size = buffered.size();
+    auto data = buffered.span();
 
     while (true) {
-        bool canReadLength = size >= lengthFieldSize;
-        size_t length = canReadLength ? be16toh(*reinterpret_cast<const uint16_t*>(data)) : 0;
-        if (!canReadLength || length > size - lengthFieldSize) {
-            if (!size)
+        bool canReadLength = data.size() >= lengthFieldSize;
+        size_t length = canReadLength ? be16toh(reinterpretCastSpanStartTo<const uint16_t>(data)) : 0;
+        if (!canReadLength || length > data.size() - lengthFieldSize) {
+            if (data.empty())
                 return { };
 
-            std::memcpy(buffered.data(), data, size);
-            buffered.resize(size);
+            memcpySpan(buffered.mutableSpan(), data);
+            buffered.shrink(data.size());
             return WTFMove(buffered);
         }
 
-        data += lengthFieldSize;
-        size -= lengthFieldSize;
+        data = data.subspan(lengthFieldSize);
 
-        processMessage(std::span { data, length });
+        processMessage(data.first(length));
 
-        data += length;
-        size -= length;
+        data = data.subspan(length);
     }
 }
 
@@ -123,7 +120,5 @@ Vector<uint8_t> extractMessages(Vector<uint8_t>&& buffer, MessageType type, cons
 
 } // namespace WebRTC
 } // namespace WebCore
-
-WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 
 #endif // ENABLE(WEB_RTC) && USE(LIBWEBRTC)

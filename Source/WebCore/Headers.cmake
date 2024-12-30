@@ -557,11 +557,17 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
 
     Modules/push-api/PushCrypto.h
     Modules/push-api/PushDatabase.h
+    Modules/push-api/PushEncryptionKeyName.h
+    Modules/push-api/PushManager.h
     Modules/push-api/PushMessageCrypto.h
     Modules/push-api/PushPermissionState.h
     Modules/push-api/PushStrategy.h
+    Modules/push-api/PushSubscription.h
     Modules/push-api/PushSubscriptionData.h
     Modules/push-api/PushSubscriptionIdentifier.h
+    Modules/push-api/PushSubscriptionJSON.h
+    Modules/push-api/PushSubscriptionOptionsInit.h
+    Modules/push-api/PushSubscriptionOwner.h
 
     Modules/reporting/DeprecationReportBody.h
     Modules/reporting/Report.h
@@ -733,6 +739,8 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     animation/ViewTimelineOptions.h
     animation/WebAnimationTime.h
     animation/WebAnimationTypes.h
+
+    automation/AutomationInstrumentation.h
 
     bindings/IDLTypes.h
 
