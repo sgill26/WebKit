@@ -379,6 +379,15 @@ void RenderImage::repaintOrMarkForLayout(ImageSizeChangeType imageSizeChange, co
     LayoutSize newIntrinsicSize = imageResource().intrinsicSize(style().usedZoom());
     LayoutSize oldIntrinsicSize = intrinsicSize();
 
+    // Our intrinsicSize is empty if we're rendering generated images with relative width/height. Figure out the right intrinsic size to use.
+    if (newIntrinsicSize.isEmpty() && (imageResource().imageHasRelativeWidth() || imageResource().imageHasRelativeHeight())) {
+        auto* containingBlock = isOutOfFlowPositioned() ? container() : this->containingBlock();
+        if (auto* box = dynamicDowncast<RenderBox>(*containingBlock)) {
+            newIntrinsicSize.setWidth(box->availableLogicalWidth());
+            newIntrinsicSize.setHeight(box->availableLogicalHeight(AvailableLogicalHeightType::IncludeMarginBorderPadding));
+        }
+    }
+
     updateIntrinsicSizeIfNeeded(newIntrinsicSize);
 
     // In the case of generated image content using :before/:after/content, we might not be
@@ -895,15 +904,6 @@ void RenderImage::computeIntrinsicRatioInformation(FloatSize& intrinsicSize, Flo
 {
     ASSERT(!shouldApplySizeContainment());
     RenderReplaced::computeIntrinsicRatioInformation(intrinsicSize, intrinsicRatio);
-
-    // Our intrinsicSize is empty if we're rendering generated images with relative width/height. Figure out the right intrinsic size to use.
-    if (intrinsicSize.isEmpty() && (imageResource().imageHasRelativeWidth() || imageResource().imageHasRelativeHeight())) {
-        RenderObject* containingBlock = isOutOfFlowPositioned() ? container() : this->containingBlock();
-        if (auto* box = dynamicDowncast<RenderBox>(*containingBlock)) {
-            intrinsicSize.setWidth(box->availableLogicalWidth());
-            intrinsicSize.setHeight(box->availableLogicalHeight(AvailableLogicalHeightType::IncludeMarginBorderPadding));
-        }
-    }
 
     // Don't compute an intrinsic ratio to preserve historical WebKit behavior if we're painting alt text and/or a broken image.
     if (shouldDisplayBrokenImageIcon()) {
