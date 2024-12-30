@@ -2623,7 +2623,7 @@ void RenderBox::repaintOverhangingFloats(bool)
 void RenderBox::updateLogicalWidth()
 {
     LogicalExtentComputedValues computedValues;
-    computeLogicalWidthInFragment(computedValues);
+    computeLogicalWidth(computedValues);
 
     setLogicalWidth(computedValues.m_extent);
     setLogicalLeft(computedValues.m_position);
@@ -2639,7 +2639,7 @@ static LayoutUnit inlineSizeFromAspectRatio(LayoutUnit borderPaddingInlineSum, L
     return LayoutUnit((blockSize - borderPaddingBlockSum) * aspectRatio) + borderPaddingInlineSum;
 }
 
-void RenderBox::computeLogicalWidthInFragment(LogicalExtentComputedValues& computedValues, RenderFragmentContainer* fragment) const
+void RenderBox::computeLogicalWidth(LogicalExtentComputedValues& computedValues) const
 {
     computedValues.m_extent = logicalWidth();
     computedValues.m_position = logicalLeft();
@@ -2651,7 +2651,7 @@ void RenderBox::computeLogicalWidthInFragment(LogicalExtentComputedValues& compu
         ASSERT(!overridingLogicalWidthForFlexBasisComputation());
         // FIXME: This calculation is not patched for block-flow yet.
         // https://bugs.webkit.org/show_bug.cgi?id=46500
-        computePositionedLogicalWidth(computedValues, fragment);
+        computePositionedLogicalWidth(computedValues);
         return;
     }
 
@@ -2677,7 +2677,7 @@ void RenderBox::computeLogicalWidthInFragment(LogicalExtentComputedValues& compu
         return style().logicalWidth();
     }();
 
-    auto containerLogicalWidth = std::max(0_lu, containingBlockLogicalWidthForContentInFragment(fragment));
+    auto containerLogicalWidth = std::max(0_lu, containingBlockLogicalWidthForContentInFragment(nullptr));
     auto& styleToUse = style();
     if (isInline() && is<RenderReplaced>(*this)) {
         // just calculate margins
@@ -2697,11 +2697,11 @@ void RenderBox::computeLogicalWidthInFragment(LogicalExtentComputedValues& compu
         if (treatAsReplaced)
             return LayoutUnit { usedLogicalWidthLength.value() } + borderAndPaddingLogicalWidth();
         if (shouldComputeLogicalWidthFromAspectRatio() && style().logicalWidth().isAuto())
-            return computeLogicalWidthFromAspectRatio(fragment);
+            return computeLogicalWidthFromAspectRatio();
 
         auto containerWidthInInlineDirection = !hasPerpendicularContainingBlock ? containerLogicalWidth : perpendicularContainingBlockLogicalHeight();
-        auto preferredWidth = computeLogicalWidthInFragmentUsing(SizeType::MainOrPreferredSize, usedLogicalWidthLength, containerWidthInInlineDirection, containingBlock, fragment);
-        return constrainLogicalWidthInFragmentByMinMax(preferredWidth, containerWidthInInlineDirection, containingBlock, fragment);
+        auto preferredWidth = computeLogicalWidthInFragmentUsing(SizeType::MainOrPreferredSize, usedLogicalWidthLength, containerWidthInInlineDirection, containingBlock, nullptr);
+        return constrainLogicalWidthInFragmentByMinMax(preferredWidth, containerWidthInInlineDirection, containingBlock, nullptr);
     };
     computedValues.m_extent = logicalWidth();
 
@@ -2716,7 +2716,7 @@ void RenderBox::computeLogicalWidthInFragment(LogicalExtentComputedValues& compu
     } else {
         auto containerLogicalWidthForAutoMargins = containerLogicalWidth;
         if (avoidsFloats() && containingBlock.containsFloats())
-            containerLogicalWidthForAutoMargins = containingBlockAvailableLineWidthInFragment(fragment);
+            containerLogicalWidthForAutoMargins = containingBlockAvailableLineWidthInFragment(nullptr);
         bool hasInvertedDirection = containingBlock.writingMode().isInlineOpposing(writingMode());
         computeInlineDirectionMargins(containingBlock, containerLogicalWidth, containerLogicalWidthForAutoMargins, computedValues.m_extent,
             hasInvertedDirection ? computedValues.m_margins.m_end : computedValues.m_margins.m_start,
@@ -3858,7 +3858,7 @@ LayoutUnit RenderBox::constrainBlockMarginInAvailableSpaceOrTrim(const RenderBox
         : minimumValueForLength(style().marginAfter(containingBlock.writingMode()), availableSpace);
 }
 
-LayoutUnit RenderBox::containingBlockLogicalWidthForPositioned(const RenderBoxModelObject& containingBlock, RenderFragmentContainer* fragment, bool checkForPerpendicularWritingMode) const
+LayoutUnit RenderBox::containingBlockLogicalWidthForPositioned(const RenderBoxModelObject& containingBlock, bool checkForPerpendicularWritingMode) const
 {
     ASSERT(containingBlock.canContainAbsolutelyPositionedObjects() || containingBlock.canContainFixedPositionObjects());
 
@@ -3885,18 +3885,13 @@ LayoutUnit RenderBox::containingBlockLogicalWidthForPositioned(const RenderBoxMo
             return box->clientLogicalWidth();
 
         RenderBoxFragmentInfo* boxInfo = nullptr;
-        if (!fragment) {
-            if (auto* fragmentedFlow = dynamicDowncast<RenderFragmentedFlow>(containingBlock); fragmentedFlow && !checkForPerpendicularWritingMode)
-                return fragmentedFlow->contentLogicalWidthOfFirstFragment();
-            if (isWritingModeRoot()) {
-                LayoutUnit cbPageOffset = cb->offsetFromLogicalTopOfFirstPage();
-                RenderFragmentContainer* cbFragment = cb->fragmentAtBlockOffset(cbPageOffset);
-                if (cbFragment)
-                    boxInfo = cb->renderBoxFragmentInfo(cbFragment);
-            }
-        } else if (fragmentedFlow->isHorizontalWritingMode() == containingBlock.isHorizontalWritingMode()) {
-            RenderFragmentContainer* containingBlockFragment = cb->clampToStartAndEndFragments(fragment);
-            boxInfo = cb->renderBoxFragmentInfo(containingBlockFragment);
+        if (auto* fragmentedFlow = dynamicDowncast<RenderFragmentedFlow>(containingBlock); fragmentedFlow && !checkForPerpendicularWritingMode)
+            return fragmentedFlow->contentLogicalWidthOfFirstFragment();
+        if (isWritingModeRoot()) {
+            LayoutUnit cbPageOffset = cb->offsetFromLogicalTopOfFirstPage();
+            RenderFragmentContainer* cbFragment = cb->fragmentAtBlockOffset(cbPageOffset);
+            if (cbFragment)
+                boxInfo = cb->renderBoxFragmentInfo(cbFragment);
         }
         return (boxInfo) ? std::max<LayoutUnit>(0, cb->clientLogicalWidth() - (cb->logicalWidth() - boxInfo->logicalWidth())) : cb->clientLogicalWidth();
     }
@@ -3913,7 +3908,7 @@ LayoutUnit RenderBox::containingBlockLogicalHeightForPositioned(const RenderBoxM
     ASSERT(containingBlock.canContainAbsolutelyPositionedObjects() || containingBlock.canContainFixedPositionObjects());
 
     if (checkForPerpendicularWritingMode && containingBlock.isHorizontalWritingMode() != isHorizontalWritingMode())
-        return containingBlockLogicalWidthForPositioned(containingBlock, nullptr, false);
+        return containingBlockLogicalWidthForPositioned(containingBlock, false);
 
     if (auto overridingContainingBlockContentLogicalHeight = this->overridingContainingBlockContentLogicalHeight(); overridingContainingBlockContentLogicalHeight && *overridingContainingBlockContentLogicalHeight)
         return overridingContainingBlockContentLogicalHeight->value();
@@ -3944,7 +3939,7 @@ LayoutUnit RenderBox::containingBlockLogicalHeightForPositioned(const RenderBoxM
     return { };
 }
 
-static void computeInlineStaticDistance(Length& logicalLeft, Length& logicalRight, const RenderBox* child, const RenderBoxModelObject& containerBlock, LayoutUnit containerLogicalWidth, RenderFragmentContainer* fragment)
+static void computeInlineStaticDistance(Length& logicalLeft, Length& logicalRight, const RenderBox* child, const RenderBoxModelObject& containerBlock, LayoutUnit containerLogicalWidth)
 {
     if (!logicalLeft.isAuto() || !logicalRight.isAuto())
         return;
@@ -3974,13 +3969,6 @@ static void computeInlineStaticDistance(Length& logicalLeft, Length& logicalRigh
             staticPosition += isOrthogonal(*child, *parent) ? renderBox->logicalTop() : renderBox->logicalLeft();
             if (renderBox->isInFlowPositioned())
                 staticPosition += renderBox->isHorizontalWritingMode() ? renderBox->offsetForInFlowPosition().width() : renderBox->offsetForInFlowPosition().height();
-            if (fragment) {
-                if (CheckedPtr currentBlock = dynamicDowncast<RenderBlock>(*current)) {
-                    fragment = currentBlock->clampToStartAndEndFragments(fragment);
-                    if (auto* boxInfo = currentBlock->renderBoxFragmentInfo(fragment))
-                        staticPosition += boxInfo->logicalLeft();
-                }
-            }
         }
         logicalLeft.setValue(LengthType::Fixed, staticPosition);
     } else {
@@ -4002,18 +3990,6 @@ static void computeInlineStaticDistance(Length& logicalLeft, Length& logicalRigh
                 if (renderBox->isInFlowPositioned())
                     staticPosition -= renderBox->isHorizontalWritingMode() ? renderBox->offsetForInFlowPosition().width() : renderBox->offsetForInFlowPosition().height();
             }
-            if (fragment) {
-                if (CheckedPtr currentBlock = dynamicDowncast<RenderBlock>(*current)) {
-                    fragment = currentBlock->clampToStartAndEndFragments(fragment);
-                    RenderBoxFragmentInfo* boxInfo = currentBlock->renderBoxFragmentInfo(fragment);
-                    if (boxInfo) {
-                        if (current != &containerBlock)
-                            staticPosition -= currentBlock->logicalWidth() - (boxInfo->logicalLeft() + boxInfo->logicalWidth());
-                        if (current == &enclosingBox)
-                            staticPosition += enclosingBox.logicalWidth() - boxInfo->logicalWidth();
-                    }
-                }
-            }
             if (current == &containerBlock)
                 break;
         }
@@ -4021,11 +3997,9 @@ static void computeInlineStaticDistance(Length& logicalLeft, Length& logicalRigh
     }
 }
 
-void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& computedValues, RenderFragmentContainer* fragment) const
+void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& computedValues) const
 {
     if (isReplacedOrAtomicInline()) {
-        // FIXME: Positioned replaced elements inside a flow thread are not working properly
-        // with variable width fragments (see https://bugs.webkit.org/show_bug.cgi?id=69896 ).
         computePositionedLogicalWidthReplaced(computedValues);
         return;
     }
@@ -4050,7 +4024,7 @@ void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& compu
     // relative positioned inline.
     const RenderBoxModelObject& containerBlock = downcast<RenderBoxModelObject>(*container());
     
-    const LayoutUnit containerLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, fragment);
+    const LayoutUnit containerLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock);
 
     // Use the container block's direction except when calculating the static distance
     // This conforms with the reference results for abspos-replaced-width-margin-000.htm
@@ -4106,7 +4080,7 @@ void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& compu
 
     // see FIXME 1
     // Calculate the static distance if needed.
-    computeInlineStaticDistance(logicalLeftLength, logicalRightLength, this, containerBlock, containerLogicalWidth, fragment);
+    computeInlineStaticDistance(logicalLeftLength, logicalRightLength, this, containerBlock, containerLogicalWidth);
     
     // Calculate constraint equation values for 'width' case.
     computePositionedLogicalWidthUsing(SizeType::MainOrPreferredSize, style().logicalWidth(), containerBlock, containerWritingMode,
@@ -4175,7 +4149,7 @@ void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& compu
     // Adjust logicalLeft if we need to for the flipped version of our writing mode in fragments.
     // FIXME: Add support for other types of objects as containerBlock, not only RenderBlock.
     RenderFragmentedFlow* fragmentedFlow = enclosingFragmentedFlow();
-    if (fragmentedFlow && !fragment && isWritingModeRoot() && isHorizontalWritingMode() == containerBlock.isHorizontalWritingMode()) {
+    if (fragmentedFlow && isWritingModeRoot() && isHorizontalWritingMode() == containerBlock.isHorizontalWritingMode()) {
         if (CheckedPtr renderBlock = dynamicDowncast<RenderBlock>(containerBlock)) {
             ASSERT(containerBlock.canHaveBoxInfoInFragment());
             LayoutUnit logicalLeftPos = computedValues.m_position;
@@ -4263,7 +4237,7 @@ void RenderBox::computePositionedLogicalWidthUsing(SizeType widthType, Length lo
 
     LayoutUnit logicalLeftValue;
 
-    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, nullptr, false);
+    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, false);
 
     bool logicalWidthIsAuto = logicalWidth.isIntrinsicOrAuto() && !shouldComputeLogicalWidthFromAspectRatio();
     bool logicalLeftIsAuto = logicalLeft.isAuto();
@@ -4667,7 +4641,7 @@ void RenderBox::computePositionedLogicalHeightUsing(SizeType heightType, Length 
     LayoutUnit logicalHeightValue;
     LayoutUnit contentLogicalHeight = logicalHeight - bordersPlusPadding;
 
-    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, nullptr, false);
+    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, false);
 
     LayoutUnit logicalTopValue;
 
@@ -4812,7 +4786,7 @@ void RenderBox::computePositionedLogicalWidthReplaced(LogicalExtentComputedValue
     const RenderBoxModelObject& containerBlock = downcast<RenderBoxModelObject>(*container());
 
     const LayoutUnit containerLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock);
-    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, nullptr, false);
+    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, false);
 
     // To match WinIE, in quirks mode use the parent's 'direction' property
     // instead of the container block's.
@@ -4849,7 +4823,7 @@ void RenderBox::computePositionedLogicalWidthReplaced(LogicalExtentComputedValue
      *    else if 'direction' is 'rtl', set 'right' to the static position.
     \*-----------------------------------------------------------------------*/
     // see FIXME 1
-    computeInlineStaticDistance(logicalLeft, logicalRight, this, containerBlock, containerLogicalWidth, nullptr); // FIXME: Pass the fragment.
+    computeInlineStaticDistance(logicalLeft, logicalRight, this, containerBlock, containerLogicalWidth);
 
     /*-----------------------------------------------------------------------*\
      * 3. If 'left' or 'right' are 'auto', replace any 'auto' on 'margin-left'
@@ -4981,7 +4955,7 @@ void RenderBox::computePositionedLogicalHeightReplaced(LogicalExtentComputedValu
     const RenderBoxModelObject& containerBlock = downcast<RenderBoxModelObject>(*container());
 
     const LayoutUnit containerLogicalHeight = containingBlockLogicalHeightForPositioned(containerBlock);
-    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, nullptr, false);
+    const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, false);
 
     // Variables to solve.
     Length marginBefore = style().marginBefore();
