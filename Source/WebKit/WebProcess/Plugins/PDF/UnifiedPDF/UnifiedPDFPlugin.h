@@ -451,9 +451,7 @@ private:
     float pageScaleFactor() const override;
 
     void paintPDFContent(const WebCore::GraphicsLayer*, WebCore::GraphicsContext&, const WebCore::FloatRect& clipRect, const std::optional<PDFLayoutRow>& = { }, AsyncPDFRenderer* = nullptr);
-#if ENABLE(UNIFIED_PDF_SELECTION_LAYER)
     void paintPDFSelection(const WebCore::GraphicsLayer*, WebCore::GraphicsContext&, const WebCore::FloatRect& clipRect, std::optional<PDFLayoutRow> = { });
-#endif
 
     void willChangeVisibleRow();
     void didChangeVisibleRow();
@@ -462,7 +460,6 @@ private:
     void updateLayerHierarchy();
 
     void incrementalLoadingRepaintTimerFired();
-    void repaintForIncrementalLoad();
 
     void didChangeScrollOffset() override;
     void didChangeIsInWindow() override;
@@ -537,8 +534,8 @@ private:
     RefPtr<WebCore::GraphicsLayer> createGraphicsLayer(GraphicsLayerClient&, WebCore::GraphicsLayer::Type);
     RefPtr<WebCore::GraphicsLayer> createGraphicsLayer(const String& name, WebCore::GraphicsLayer::Type);
 
+    void setNeedsRepaintForIncrementalLoad();
     void setNeedsRepaintForAnnotation(PDFAnnotation *, RepaintRequirements);
-    void setNeedsRepaintInDocumentRect(RepaintRequirements, const WebCore::FloatRect&, std::optional<PDFLayoutRow>);
 
     // "Up" is inside-out.
     template <typename T>

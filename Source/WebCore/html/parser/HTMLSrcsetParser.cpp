@@ -34,9 +34,9 @@
 
 #include "Element.h"
 #include "HTMLParserIdioms.h"
-#include "ParsingUtilities.h"
 #include <wtf/ListHashSet.h>
 #include <wtf/URL.h>
+#include <wtf/text/ParsingUtilities.h>
 #include <wtf/text/StringBuilder.h>
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
@@ -77,7 +77,7 @@ static void tokenizeDescriptors(std::span<const CharType>& position, Vector<Stri
     DescriptorTokenizerState state = Initial;
     const CharType* descriptorsStart = position.data();
     const CharType* currentDescriptorStart = descriptorsStart;
-    for (; ; position = position.subspan(1)) {
+    for (; ; skip(position, 1)) {
         switch (state) {
         case Initial:
             if (position.empty()) {
@@ -86,7 +86,7 @@ static void tokenizeDescriptors(std::span<const CharType>& position, Vector<Stri
             }
             if (isComma(position.front())) {
                 appendDescriptorAndReset(currentDescriptorStart, position.data(), descriptors);
-                position = position.subspan(1);
+                skip(position, 1);
                 return;
             }
             if (isASCIIWhitespace(position.front())) {

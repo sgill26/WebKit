@@ -1926,7 +1926,7 @@ void WebsiteDataStore::propagateSettingUpdates()
 
 #if HAVE(ALLOW_ONLY_PARTITIONED_COOKIES)
     enabled = isOptInCookiePartitioningEnabled();
-    if (m_isOptInCookiePartitioningEnabled != enabled) {
+    if (m_isOptInCookiePartitioningEnabled != enabled && trackingPreventionEnabled()) {
         m_isOptInCookiePartitioningEnabled = enabled;
         networkProcess->send(Messages::NetworkProcess::SetOptInCookiePartitioningEnabled(sessionID(), enabled), 0);
 
@@ -2733,5 +2733,19 @@ void WebsiteDataStore::restoreLocalStorage(HashMap<WebCore::ClientOrigin, HashMa
 {
     protectedNetworkProcess()->restoreLocalStorage(m_sessionID, WTFMove(localStorage), WTFMove(completionHandler));
 }
+
+#if ENABLE(WEB_PUSH_NOTIFICATIONS)
+bool WebsiteDataStore::builtInNotificationsEnabled() const
+{
+    if (!m_pages.computeSize())
+        return defaultBuiltInNotificationsEnabled();
+
+    for (Ref page : m_pages) {
+        if (page->preferences().builtInNotificationsEnabled())
+            return true;
+    }
+    return false;
+}
+#endif
 
 } // namespace WebKit

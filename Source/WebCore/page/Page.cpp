@@ -559,7 +559,7 @@ void Page::clearPreviousItemFromAllPages(BackForwardItemIdentifier itemID)
             return;
 
         CheckedRef controller = localMainFrame->loader().history();
-        if (controller->previousItem() && controller->previousItem()->identifier() == itemID) {
+        if (controller->previousItem() && controller->previousItem()->itemID() == itemID) {
             controller->clearPreviousItem();
             return;
         }
@@ -935,18 +935,16 @@ void Page::goToItem(LocalFrame& frame, HistoryItem& item, FrameLoadType type, Sh
     // being deref()-ed. Make sure we can still use it with HistoryController::goToItem later.
     Ref protectedItem { item };
 
-    ASSERT(frame.isRootFrame());
     if (frame.loader().checkedHistory()->shouldStopLoadingForHistoryItem(item))
         frame.protectedLoader()->stopAllLoadersAndCheckCompleteness();
     frame.loader().checkedHistory()->goToItem(item, type, shouldTreatAsContinuingLoad);
 }
 
-void Page::goToItemForNavigationAPI(LocalFrame& frame, HistoryItem& item, FrameLoadType type, const String& targetNavigationEntryKey)
+void Page::goToItemForNavigationAPI(LocalFrame& frame, HistoryItem& item, FrameLoadType type, LocalFrame& triggeringFrame, NavigationAPIMethodTracker* tracker)
 {
-    ASSERT(frame.isRootFrame());
     if (frame.loader().checkedHistory()->shouldStopLoadingForHistoryItem(item))
         frame.protectedLoader()->stopAllLoadersAndCheckCompleteness();
-    frame.loader().checkedHistory()->goToItemForNavigationAPI(item, type, targetNavigationEntryKey);
+    frame.loader().checkedHistory()->goToItemForNavigationAPI(item, type, triggeringFrame, tracker);
 }
 
 void Page::setGroupName(const String& name)

@@ -340,18 +340,32 @@ SubtreeLayoutStateMaintainer::~SubtreeLayoutStateMaintainer()
     }
 }
 
-ContentVisibilityForceLayoutScope::ContentVisibilityForceLayoutScope(RenderView& layoutRoot, const Element* context)
+FlexPercentResolveDisabler::FlexPercentResolveDisabler(LocalFrameViewLayoutContext& layoutContext, const RenderBox& flexItem)
+    : m_layoutContext(layoutContext)
+    , m_flexItem(flexItem)
 {
-    if (context) {
-        m_context = &layoutRoot.frameView().layoutContext();
-        m_context->setNeedsSkippedContentLayout(true);
-    }
+    m_layoutContext->disablePercentHeightResolveFor(flexItem);
+}
+
+FlexPercentResolveDisabler::~FlexPercentResolveDisabler()
+{
+    m_layoutContext->enablePercentHeightResolveFor(m_flexItem);
+}
+
+ContentVisibilityForceLayoutScope::ContentVisibilityForceLayoutScope(LocalFrameViewLayoutContext& layoutContext, const Element* element)
+    : m_layoutContext(layoutContext)
+    , m_element(element)
+{
+    if (element)
+        m_layoutContext->setNeedsSkippedContentLayout(true);
 }
 
 ContentVisibilityForceLayoutScope::~ContentVisibilityForceLayoutScope()
 {
-    if (m_context)
-        m_context->setNeedsSkippedContentLayout(false);
+    if (m_element) {
+        ASSERT(m_layoutContext->needsSkippedContentLayout());
+        m_layoutContext->setNeedsSkippedContentLayout(false);
+    }
 }
 
 } // namespace WebCore

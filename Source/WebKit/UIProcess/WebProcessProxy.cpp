@@ -641,7 +641,7 @@ bool WebProcessProxy::shouldSendPendingMessage(const PendingMessage& message)
             weakThis->send(Messages::WebPage::GoToBackForwardItem(WTFMove(*parameters)), destinationID);
         };
         if (RefPtr page = WebProcessProxy::webPage(*pageID)) {
-            if (RefPtr item = WebBackForwardListItem::itemForID(*frameState->identifier))
+            if (RefPtr item = WebBackForwardListItem::itemForID(*frameState->itemID))
                 page->maybeInitializeSandboxExtensionHandle(static_cast<WebProcessProxy&>(*this), URL { item->url() }, item->resourceDirectoryURL(), true, WTFMove(completionHandler));
         } else
             completionHandler(std::nullopt);
@@ -1099,50 +1099,6 @@ bool WebProcessProxy::shouldDisableJITCage() const
     return false;
 }
 #endif // !PLATFORM(COCOA)
-
-bool WebProcessProxy::hasProvisionalPageWithID(WebPageProxyIdentifier pageID) const
-{
-    for (Ref provisionalPage : m_provisionalPages) {
-        if (provisionalPage->page() && provisionalPage->page()->identifier() == pageID)
-            return true;
-    }
-    return false;
-}
-
-bool WebProcessProxy::isAllowedToUpdateBackForwardItem(WebBackForwardListItem& item) const
-{
-    if (m_pageMap.contains(item.pageID()))
-        return true;
-
-    if (hasProvisionalPageWithID(item.pageID()))
-        return true;
-
-    RefPtr suspendedPage = item.suspendedPage();
-    if (suspendedPage && suspendedPage->page() && suspendedPage->page()->identifier() == item.pageID() && &suspendedPage->process() == this)
-        return true;
-
-    return false;
-}
-
-void WebProcessProxy::updateBackForwardItem(Ref<FrameState>&& frameState)
-{
-    RefPtr frameItem = frameState->identifier ? WebBackForwardListFrameItem::itemForID(*frameState->identifier) : nullptr;
-    if (!frameItem)
-        return;
-
-    RefPtr item = frameItem->backForwardListItem();
-    if (!item || !isAllowedToUpdateBackForwardItem(*item))
-        return;
-
-    if (!!item->backForwardCacheEntry() != frameState->hasCachedPage) {
-        if (frameState->hasCachedPage)
-            protectedProcessPool()->protectedBackForwardCache()->addEntry(*item, coreProcessIdentifier());
-        else if (!item->suspendedPage())
-            protectedProcessPool()->protectedBackForwardCache()->removeEntry(*item);
-    }
-
-    frameItem->setFrameState(WTFMove(frameState));
-}
 
 void WebProcessProxy::getNetworkProcessConnection(CompletionHandler<void(NetworkProcessConnectionInfo&&)>&& reply)
 {

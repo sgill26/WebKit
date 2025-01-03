@@ -549,6 +549,41 @@ static VisibleSelection expandSelectionToRespectSelectOnMouseDown(Node& targetNo
     return newSelection;
 }
 
+static bool shouldAvoidExtendingSelectionOnClick(const Node& targetNode, const VisibleSelection& selection)
+{
+    if (is<Text>(targetNode))
+        return false;
+
+    if (selection.isContentEditable())
+        return false;
+
+    auto range = selection.toNormalizedRange();
+    if (!range)
+        return false;
+
+    if (range->collapsed())
+        return false;
+
+    static constexpr OptionSet plainTextOptions {
+        TextIteratorBehavior::EmitsObjectReplacementCharacters,
+        TextIteratorBehavior::EntersTextControls,
+    };
+
+    if (hasAnyPlainText(*range, plainTextOptions, IgnoreCollapsedRanges::Yes))
+        return false;
+
+    return true;
+}
+
+bool EventHandler::expandAndUpdateSelectionForMouseDownIfNeeded(Node& targetNode, const VisibleSelection& selection, TextGranularity granularity)
+{
+    auto expandedSelection = expandSelectionToRespectSelectOnMouseDown(targetNode, selection);
+    if (shouldAvoidExtendingSelectionOnClick(targetNode, expandedSelection))
+        return false;
+
+    return updateSelectionForMouseDownDispatchingSelectStart(&targetNode, expandedSelection, granularity);
+}
+
 bool EventHandler::updateSelectionForMouseDownDispatchingSelectStart(Node* targetNode, const VisibleSelection& selection, TextGranularity granularity)
 {
     if (Position::nodeIsUserSelectNone(targetNode))
@@ -594,7 +629,7 @@ void EventHandler::selectClosestWordFromHitTestResult(const HitTestResult& resul
         if (appendTrailingWhitespace == ShouldAppendTrailingWhitespace && newSelection.isRange())
             newSelection.appendTrailingWhitespace();
 
-        updateSelectionForMouseDownDispatchingSelectStart(targetNode.get(), expandSelectionToRespectSelectOnMouseDown(*targetNode, newSelection), TextGranularity::WordGranularity);
+        expandAndUpdateSelectionForMouseDownIfNeeded(*targetNode, newSelection, TextGranularity::WordGranularity);
     }
 }
 
@@ -700,7 +735,7 @@ bool EventHandler::handleMousePressEventTripleClick(const MouseEventWithHitTestR
         newSelection.expandUsingGranularity(TextGranularity::ParagraphGranularity);
     }
 
-    return updateSelectionForMouseDownDispatchingSelectStart(targetNode.get(), expandSelectionToRespectSelectOnMouseDown(*targetNode, newSelection), TextGranularity::ParagraphGranularity);
+    return expandAndUpdateSelectionForMouseDownIfNeeded(*targetNode, newSelection, TextGranularity::ParagraphGranularity);
 }
 
 static uint64_t textDistance(const Position& start, const Position& end)
@@ -5023,14 +5058,13 @@ HandleUserInputEventResult EventHandler::handleTouchEvent(const PlatformTouchEve
 
     // Array of touches per state, used to assemble the 'changedTouches' list in the JS event.
     typedef HashSet<RefPtr<EventTarget>> EventTargetSet;
-    WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
-    struct {
+    struct Touches {
         // The touches corresponding to the particular change state this struct instance represents.
         RefPtr<TouchList> m_touches;
         // Set of targets involved in m_touches.
         EventTargetSet m_targets;
-    } changedTouches[PlatformTouchPoint::TouchStateEnd];
-    WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
+    };
+    std::array<Touches, PlatformTouchPoint::TouchStateEnd> changedTouches;
 
     const Vector<PlatformTouchPoint>& points = event.touchPoints();
 

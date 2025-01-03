@@ -512,6 +512,7 @@ Modules/webtransport/WebTransportReceiveStream.cpp
 Modules/webtransport/WebTransportReceiveStreamSource.cpp
 Modules/webtransport/WebTransportSendStream.cpp
 Modules/webtransport/WebTransportSession.cpp
+Modules/webtransport/WorkerWebTransportSession.cpp
 Modules/webxr/NavigatorWebXR.cpp
 Modules/webxr/WebXRBoundedReferenceSpace.cpp
 Modules/webxr/WebXRFrame.cpp
@@ -1226,6 +1227,7 @@ dom/DOMQuad.cpp
 dom/DOMRectList.cpp
 dom/DOMRectReadOnly.cpp
 dom/DOMStringList.cpp
+dom/DOMTZoneImpls.cpp
 dom/DataTransfer.cpp
 dom/DataTransferItem.cpp
 dom/DataTransferItemList.cpp
@@ -2308,6 +2310,7 @@ platform/PlatformSpeechSynthesisUtterance.cpp
 platform/PlatformSpeechSynthesisVoice.cpp
 platform/PlatformSpeechSynthesizer.cpp
 platform/PlatformStrategies.cpp
+platform/PlatformTZoneImpls.cpp
 platform/PlatformWheelEvent.cpp
 platform/PreviewConverter.cpp
 platform/ProcessCapabilities.cpp
@@ -2360,6 +2363,7 @@ platform/VideoDecoder.cpp
 platform/VideoFrame.cpp
 platform/VideoPixelFormat.cpp
 platform/WebCoreCrossThreadCopier.cpp
+platform/WebCoreHeapSupport.cpp
 platform/WebCorePersistentCoders.cpp
 platform/Widget.cpp
 platform/animation/AcceleratedEffect.cpp
@@ -2493,6 +2497,7 @@ platform/graphics/GraphicsLayer.cpp
 platform/graphics/GraphicsLayerContentsDisplayDelegate.cpp
 platform/graphics/GraphicsLayerTransform.cpp
 platform/graphics/GraphicsStyle.cpp
+platform/graphics/GraphicsTZoneImpls.cpp
 platform/graphics/GraphicsTypes.cpp
 platform/graphics/HEVCUtilities.cpp
 platform/graphics/Icon.cpp
@@ -3283,6 +3288,7 @@ svg/SVGStringList.cpp
 svg/SVGStyleElement.cpp
 svg/SVGSwitchElement.cpp
 svg/SVGSymbolElement.cpp
+svg/SVGTZoneImpls.cpp
 svg/SVGTRefElement.cpp
 svg/SVGTSpanElement.cpp
 svg/SVGTests.cpp

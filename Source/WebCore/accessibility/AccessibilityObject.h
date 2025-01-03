@@ -279,7 +279,6 @@ public:
 
     bool supportsARIARoleDescription() const;
     bool supportsARIAOwns() const override { return false; }
-    bool isActiveDescendantOfFocusedContainer() const;
 
     String popupValue() const final;
     bool hasDatalist() const;
@@ -557,8 +556,6 @@ public:
 #endif
     bool isDetachedFromParent() override { return false; }
 
-    bool canHaveSelectedChildren() const;
-    std::optional<AccessibilityChildrenVector> selectedChildren() override;
     void setSelectedChildren(const AccessibilityChildrenVector&) override { }
     AccessibilityChildrenVector visibleChildren() override { return { }; }
     bool shouldFocusActiveDescendant() const;
@@ -635,9 +632,6 @@ public:
     virtual String secureFieldValue() const { return String(); }
     bool isValueAutofillAvailable() const final;
     AutoFillButtonType valueAutofillButtonType() const final;
-
-    // Used by an ARIA tree to get all its rows.
-    AccessibilityChildrenVector ariaTreeRows() final;
 
     // ARIA live-region features.
     AccessibilityObject* liveRegionAncestor(bool excludeIfOff = true) const final { return Accessibility::liveRegionAncestor(*this, excludeIfOff); }
@@ -931,10 +925,6 @@ private:
     // Note that "withoutCache" refers to the lack of referencing AXComputedObjectAttributeCache in the function, not the AXObjectCache parameter we pass in here.
     bool isIgnoredWithoutCache(AXObjectCache*) const;
     void setLastKnownIsIgnoredValue(bool);
-    void ariaTreeRows(AccessibilityChildrenVector& rows, AccessibilityChildrenVector& ancestors);
-    AccessibilityChildrenVector ariaListboxSelectedChildren();
-    AccessibilityChildrenVector ariaSelectedRows();
-    AccessibilityChildrenVector selectedListItems();
 
     // Special handling of click point for links.
     IntPoint linkClickPoint();

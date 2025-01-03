@@ -2233,6 +2233,21 @@ void RenderLayerCompositor::layerStyleChanged(StyleDifference diff, RenderLayer&
     if (!backing)
         return;
 
+#if HAVE(CORE_ANIMATION_SEPARATED_LAYERS)
+    auto styleChangeAffectsSeparatedProperties = [](const RenderStyle* oldStyle, const RenderStyle& newStyle) {
+        if (!oldStyle)
+            return newStyle.usedTransformStyle3D() == TransformStyle3D::Separated;
+
+        return oldStyle->usedTransformStyle3D() != newStyle.usedTransformStyle3D()
+            && (oldStyle->usedTransformStyle3D() == TransformStyle3D::Separated
+                || newStyle.usedTransformStyle3D() == TransformStyle3D::Separated);
+    };
+
+    // We need a full compositing configuration update since this also impacts the clipping strategy.
+    if (styleChangeAffectsSeparatedProperties(oldStyle, newStyle))
+        layer.setNeedsCompositingConfigurationUpdate();
+#endif
+
     backing->updateConfigurationAfterStyleChange();
 
     if (diff >= StyleDifference::Repaint) {
@@ -3486,7 +3501,7 @@ static bool canUseDescendantClippingLayer(const RenderLayer& layer)
     // the border box, because of interactions with border-radius clipping and compositing.
     if (auto* renderer = layer.renderBox(); renderer && renderer->hasClip()) {
         auto borderBoxRect = renderer->borderBoxRect();
-        auto clipRect = renderer->clipRect({ }, nullptr);
+        auto clipRect = renderer->clipRect({ });
         
         bool clipRectInsideBorderRect = intersection(borderBoxRect, clipRect) == clipRect;
         return clipRectInsideBorderRect;

@@ -180,7 +180,7 @@ private:
     AXIsolatedObject* cellForColumnAndRow(unsigned, unsigned) final;
     AccessibilityChildrenVector rowHeaders() final;
     AccessibilityChildrenVector visibleRows() final { return tree()->objectsForIDs(vectorAttributeValue<AXID>(AXProperty::VisibleRows)); }
-    AXIsolatedObject* headerContainer() final { return objectAttributeValue(AXProperty::HeaderContainer); }
+    AXIsolatedObject* headerContainer() final;
     int axColumnCount() const final { return intAttributeValue(AXProperty::AXColumnCount); }
     int axRowCount() const final { return intAttributeValue(AXProperty::AXRowCount); }
 
@@ -297,7 +297,6 @@ private:
     String computedRoleString() const final;
     bool isValueAutofillAvailable() const final { return boolAttributeValue(AXProperty::IsValueAutofillAvailable); }
     AutoFillButtonType valueAutofillButtonType() const final { return static_cast<AutoFillButtonType>(intAttributeValue(AXProperty::ValueAutofillButtonType)); }
-    AccessibilityChildrenVector ariaTreeRows() final { return tree()->objectsForIDs(vectorAttributeValue<AXID>(AXProperty::ARIATreeRows)); }
     URL url() const final { return urlAttributeValue(AXProperty::URL); }
     String accessKey() const final { return stringAttributeValueNullIfMissing(AXProperty::AccessKey); }
     String localizedActionVerb() const final { return stringAttributeValue(AXProperty::LocalizedActionVerb); }
@@ -342,7 +341,6 @@ private:
     AccessibilityOrientation orientation() const final { return static_cast<AccessibilityOrientation>(intAttributeValue(AXProperty::Orientation)); }
     unsigned hierarchicalLevel() const final { return unsignedAttributeValue(AXProperty::HierarchicalLevel); }
     String language() const final { return stringAttributeValue(AXProperty::Language); }
-    std::optional<AccessibilityChildrenVector> selectedChildren() final;
     void setSelectedChildren(const AccessibilityChildrenVector&) final;
     AccessibilityChildrenVector visibleChildren() final { return tree()->objectsForIDs(vectorAttributeValue<AXID>(AXProperty::VisibleChildren)); }
     void setChildrenIDs(Vector<AXID>&&);
