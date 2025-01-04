@@ -26,8 +26,19 @@ import Foundation
 
 @MainActor
 final class NavigationDecider: NavigationDeciding {
+    weak var owner: BrowserViewModel? = nil
+
     func decidePolicy(for action: WebPage_v0.NavigationAction, preferences: inout WebPage_v0.NavigationPreferences) async -> WKNavigationActionPolicy {
-        action.shouldPerformDownload ? .download : .allow
+        if action.shouldPerformDownload {
+            return .download
+        }
+
+        if action.modifierFlags.contains(.command) {
+            owner?.currentOpenRequest = .init(request: action.request)
+            return .cancel
+        }
+
+        return .allow
     }
 
     func decidePolicy(for response: WebPage_v0.NavigationResponse) async -> WKNavigationResponsePolicy {

@@ -11404,8 +11404,12 @@ WebPageCreationParameters WebPageProxy::creationParameters(WebProcessProxy& proc
 
 #if HAVE(STATIC_FONT_REGISTRY)
     if (preferences->shouldAllowUserInstalledFonts()) {
+#if ENABLE(REMOVE_XPC_AND_MACH_SANDBOX_EXTENSIONS_IN_WEBCONTENT)
+        process.protectedProcessPool()->registerUserInstalledFonts(process);
+#else
         if (auto handles = process.fontdMachExtensionHandles())
             parameters.fontMachExtensionHandles = WTFMove(*handles);
+#endif
     }
 #endif
 #if HAVE(APP_ACCENT_COLORS)
@@ -15866,6 +15870,14 @@ void WebPageProxy::setPresentingApplicationAuditToken(const audit_token_t& prese
 
     if (RefPtr gpuProcess = GPUProcessProxy::singletonIfCreated())
         gpuProcess->setPresentingApplicationAuditToken(protectedLegacyMainFrameProcess()->coreProcessIdentifier(), m_webPageID, presentingApplicationAuditToken);
+}
+#endif
+
+#if ENABLE(CONTENT_EXTENSIONS)
+void WebPageProxy::shouldOffloadIFrameForHost(const String& host, CompletionHandler<void(bool)>&& completionHandler) const
+{
+    bool wasGranted = protectedWebsiteDataStore()->resourceMonitorThrottler().tryAccess(host);
+    completionHandler(wasGranted);
 }
 #endif
 
