@@ -2264,7 +2264,7 @@ LayoutUnit RenderBox::containingBlockLogicalWidthForContent() const
     }
 
     if (auto* containingBlock = this->containingBlock())
-        return isOutOfFlowPositioned() ? containingBlock->clientLogicalWidth() : containingBlock->availableLogicalWidth();
+        return isOutOfFlowPositioned() ? containingBlock->clientLogicalWidth() : containingBlock->contentLogicalWidth();
 
     ASSERT_NOT_REACHED();
     return 0_lu;
@@ -3415,6 +3415,11 @@ std::optional<LayoutUnit> RenderBox::computePercentageLogicalHeight(const Length
     if (updateDescendants == UpdatePercentageHeightDescendants::Yes)
         containingBlock->addPercentHeightDescendant(const_cast<RenderBox&>(*this));
 
+    if (is<RenderView>(containingBlock) && view().frameView().isAutoSizeEnabled()) {
+        // Dynamic height units like percentage don't play well with autosizing when we don't have a definite viewport size. Let's treat percentage as auto instead.
+        return { };
+    }
+
     if (isFlexItem() && view().frameView().layoutContext().isPercentHeightResolveDisabledFor(*this))
         return { };
 
@@ -3568,7 +3573,7 @@ void RenderBox::computePreferredLogicalWidths(const Length& minLogicalWidth, con
             if (!shouldComputePreferredLogicalWidthsFromStyle())
                 return m_minPreferredLogicalWidth;
 
-            return computeIntrinsicLogicalWidthUsing(maxLogicalWidth, availableLogicalWidth(), { });
+            return computeIntrinsicLogicalWidthUsing(maxLogicalWidth, contentLogicalWidth(), { });
         }
         return LayoutUnit::max();
     }();
@@ -3832,6 +3837,17 @@ LayoutUnit RenderBox::containingBlockLogicalWidthForPositioned(const RenderBoxMo
     if (is<RenderGrid>(containingBlock)) {
         if (auto containingBlockContentLogicalWidth = gridAreaContentLogicalWidth(); containingBlockContentLogicalWidth && *containingBlockContentLogicalWidth)
             return containingBlockContentLogicalWidth->value();
+    }
+
+    if (CheckedPtr inlineBox = containingBlock.inlineContinuation()) {
+        auto relativelyPositionedInlineBoxAncestor = [&] {
+            // Since we stop splitting inlines over 200 nested boxes (see RenderTreeBuilder::Inline::splitInlines), we may not be able to find the real containing block here.
+            CheckedPtr<RenderElement> ancestor = inlineBox;
+            for (; ancestor && !ancestor->isRelativelyPositioned(); ancestor = ancestor->parent()) { }
+            return ancestor;
+        };
+        if (auto containingBlock = relativelyPositionedInlineBoxAncestor(); containingBlock && is<RenderInline>(*containingBlock))
+            return containingBlockLogicalWidthForPositioned(*dynamicDowncast<RenderInline>(*containingBlock), checkForPerpendicularWritingMode);
     }
 
     if (auto* box = dynamicDowncast<RenderBox>(containingBlock)) {
@@ -5130,10 +5146,10 @@ VisiblePosition RenderBox::positionForPoint(const LayoutPoint& point, HitTestSou
 
 bool RenderBox::shrinkToAvoidFloats() const
 {
-    // Floating objects don't shrink.  Objects that don't avoid floats don't shrink.  Marquees don't shrink.
-    if ((isInline() && !isHTMLMarquee()) || !avoidsFloats() || isFloating())
+    // Floating objects don't shrink. Objects that don't avoid floats don't shrink. Non-inline box type of inline level elements don't shrink.
+    if (isInline() || isFloating() || !avoidsFloats())
         return false;
-    
+
     // Only auto width objects can possibly shrink to avoid floats.
     return style().width().isAuto();
 }

@@ -37,8 +37,10 @@
 #include "CSSFontSelector.h"
 #include "CSSMarkup.h"
 #include "CSSParser.h"
+#include "CSSPrimitiveNumericTypes+Serialization.h"
 #include "CSSPropertyNames.h"
-#include "CSSPropertyParserConsumer+Length.h"
+#include "CSSPropertyParserConsumer+LengthDefinitions.h"
+#include "CSSPropertyParserConsumer+MetaConsumer.h"
 #include "CSSStyleImageValue.h"
 #include "CSSTokenizer.h"
 #include "CachedImage.h"
@@ -72,6 +74,7 @@
 #include "ScriptDisallowedScope.h"
 #include "SecurityOrigin.h"
 #include "Settings.h"
+#include "StyleLengthResolution.h"
 #include "StyleProperties.h"
 #include "StyleResolver.h"
 #include "TextMetrics.h"
@@ -2948,13 +2951,13 @@ Ref<TextMetrics> CanvasRenderingContext2DBase::measureTextInternal(const TextRun
     metrics->setWidth(fontWidth);
 
     FloatPoint offset = textOffset(fontWidth, textRun.direction());
-    int ascent = fontMetrics.intAscent();
-    int descent = fontMetrics.intDescent();
+    auto ascent = fontMetrics.ascent();
+    auto descent = fontMetrics.descent();
 
     metrics->setActualBoundingBoxAscent(glyphOverflow.top - offset.y());
     metrics->setActualBoundingBoxDescent(glyphOverflow.bottom + offset.y());
-    metrics->setFontBoundingBoxAscent(ascent - offset.y());
-    metrics->setFontBoundingBoxDescent(descent + offset.y());
+    metrics->setFontBoundingBoxAscent(fontMetrics.intAscent() - offset.y());
+    metrics->setFontBoundingBoxDescent(fontMetrics.intDescent() + offset.y());
     metrics->setEmHeightAscent(ascent - offset.y());
     metrics->setEmHeightDescent(descent + offset.y());
     metrics->setHangingBaseline(ascent - offset.y());
@@ -3048,6 +3051,71 @@ std::optional<CanvasRenderingContext2DBase::RenderingMode> CanvasRenderingContex
     return std::nullopt;
 }
 
+// FIXME: The HTML spec currently doesn't define how <length> units should be resolved, so we only
+// allow units where the resolution is straightforward. See https://github.com/whatwg/html/issues/10893.
+static bool unitAllowedForSpacing(CSS::LengthUnit lenghtUnit)
+{
+    using enum CSS::LengthUnit;
+
+    switch (lenghtUnit) {
+    case Px:
+    case Cm:
+    case Mm:
+    case Q:
+    case In:
+    case Pt:
+    case Pc:
+    case Em:
+    case QuirkyEm:
+    case Ex:
+    case Cap:
+    case Ch:
+    case Ic:
+    case Rcap:
+    case Rch:
+    case Rem:
+    case Rex:
+    case Ric:
+        return true;
+
+    case Lh:
+    case Rlh:
+    case Vw:
+    case Vh:
+    case Vmin:
+    case Vmax:
+    case Vb:
+    case Vi:
+    case Svw:
+    case Svh:
+    case Svmin:
+    case Svmax:
+    case Svb:
+    case Svi:
+    case Lvw:
+    case Lvh:
+    case Lvmin:
+    case Lvmax:
+    case Lvb:
+    case Lvi:
+    case Dvw:
+    case Dvh:
+    case Dvmin:
+    case Dvmax:
+    case Dvb:
+    case Dvi:
+    case Cqw:
+    case Cqh:
+    case Cqi:
+    case Cqb:
+    case Cqmin:
+    case Cqmax:
+        return false;
+    }
+
+    RELEASE_ASSERT_NOT_REACHED();
+}
+
 void CanvasRenderingContext2DBase::setLetterSpacing(const String& letterSpacing)
 {
     if (state().letterSpacing == letterSpacing)
@@ -3056,12 +3124,20 @@ void CanvasRenderingContext2DBase::setLetterSpacing(const String& letterSpacing)
     CSSTokenizer tokenizer(letterSpacing);
     auto tokenRange = tokenizer.tokenRange();
     tokenRange.consumeWhitespace();
-    RefPtr parsedValue = CSSPropertyParserHelpers::consumeLength(tokenRange, HTMLStandardMode);
+
+    auto parsedValue = CSSPropertyParserHelpers::MetaConsumer<CSS::Length<>>::consume(tokenRange, HTMLStandardMode, { }, { .unitlessZero = UnitlessZeroQuirk::Allow });
     if (!parsedValue)
         return;
-    modifiableState().letterSpacing = parsedValue->cssText();
+    auto rawLength = parsedValue->raw();
+    if (!rawLength)
+        return;
+    if (!unitAllowedForSpacing(rawLength->unit))
+        return;
+
     auto& fontCascade = fontProxy()->fontCascade();
-    double pixels = CSSPrimitiveValue::computeUnzoomedNonCalcLengthDouble(parsedValue->primitiveType(), parsedValue->valueNoConversionDataRequired(), CSSPropertyLetterSpacing, &fontCascade);
+    double pixels = Style::computeUnzoomedNonCalcLengthDouble(rawLength->value, rawLength->unit, CSSPropertyLetterSpacing, &fontCascade);
+
+    modifiableState().letterSpacing = CSS::serializationForCSS(*rawLength);
     modifiableState().font.setLetterSpacing(Length(pixels, LengthType::Fixed));
 }
 
@@ -3073,12 +3149,20 @@ void CanvasRenderingContext2DBase::setWordSpacing(const String& wordSpacing)
     CSSTokenizer tokenizer(wordSpacing);
     auto tokenRange = tokenizer.tokenRange();
     tokenRange.consumeWhitespace();
-    RefPtr parsedValue = CSSPropertyParserHelpers::consumeLength(tokenRange, HTMLStandardMode);
+
+    auto parsedValue = CSSPropertyParserHelpers::MetaConsumer<CSS::Length<>>::consume(tokenRange, HTMLStandardMode, { }, { .unitlessZero = UnitlessZeroQuirk::Allow });
     if (!parsedValue)
         return;
-    modifiableState().wordSpacing = parsedValue->cssText();
+    auto rawLength = parsedValue->raw();
+    if (!rawLength)
+        return;
+    if (!unitAllowedForSpacing(rawLength->unit))
+        return;
+
     auto& fontCascade = fontProxy()->fontCascade();
-    double pixels = CSSPrimitiveValue::computeUnzoomedNonCalcLengthDouble(parsedValue->primitiveType(), parsedValue->valueNoConversionDataRequired(), CSSPropertyWordSpacing, &fontCascade);
+    double pixels = Style::computeUnzoomedNonCalcLengthDouble(rawLength->value, rawLength->unit, CSSPropertyWordSpacing, &fontCascade);
+
+    modifiableState().wordSpacing = CSS::serializationForCSS(*rawLength);
     modifiableState().font.setWordSpacing(Length(pixels, LengthType::Fixed));
 }
 

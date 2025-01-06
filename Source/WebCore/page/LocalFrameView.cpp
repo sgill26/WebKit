@@ -663,7 +663,7 @@ void LocalFrameView::applyPaginationToViewport()
         if (!columnGapLength.isNormal()) {
             auto* renderBox = dynamicDowncast<RenderBox>(documentOrBodyRenderer);
             if (auto* containerForPaginationGap = renderBox ? renderBox : documentOrBodyRenderer->containingBlock())
-                pagination.gap = valueForLength(columnGapLength.length(), containerForPaginationGap->availableLogicalWidth()).toUnsigned();
+                pagination.gap = valueForLength(columnGapLength.length(), containerForPaginationGap->contentLogicalWidth()).toUnsigned();
         }
     }
     setPagination(pagination);
@@ -5706,7 +5706,7 @@ void LocalFrameView::willRemoveWidgetFromRenderTree(Widget& widget)
     m_widgetsInRenderTree.remove(widget);
 }
 
-static Vector<Ref<Widget>> collectAndProtectWidgets(const HashSet<SingleThreadWeakRef<Widget>>& set)
+static Vector<Ref<Widget>> collectAndProtectWidgets(const UncheckedKeyHashSet<SingleThreadWeakRef<Widget>>& set)
 {
     return WTF::map(set, [](auto& widget) -> Ref<Widget> {
         return widget.get();

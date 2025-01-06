@@ -913,7 +913,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     css/CSSToLengthConversionData.h
     css/CSSTransformListValue.h
     css/CSSUnits.h
-    css/CSSUnknownRule.h
     css/CSSValue.h
     css/CSSValueList.h
     css/CSSVariableData.h
@@ -974,6 +973,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
 
     css/values/CSSNoConversionDataRequiredToken.h
     css/values/CSSValueAggregates.h
+    css/values/CSSValueConcepts.h
     css/values/CSSValueTypes.h
 
     css/values/backgrounds/CSSBorderRadius.h
@@ -993,9 +993,13 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
 
     css/values/primitives/CSSNone.h
     css/values/primitives/CSSPosition.h
+    css/values/primitives/CSSPrimitiveNumericConcepts.h
     css/values/primitives/CSSPrimitiveNumericRange.h
+    css/values/primitives/CSSPrimitiveNumericRaw.h
     css/values/primitives/CSSPrimitiveNumericTypes+EvaluateCalc.h
+    css/values/primitives/CSSPrimitiveNumericTypes+SymbolReplacement.h
     css/values/primitives/CSSPrimitiveNumericTypes.h
+    css/values/primitives/CSSPrimitiveNumericUnits.h
     css/values/primitives/CSSSymbol.h
     css/values/primitives/CSSUnevaluatedCalc.h
 
@@ -2662,6 +2666,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
 
     style/values/primitives/StyleNone.h
     style/values/primitives/StylePosition.h
+    style/values/primitives/StylePrimitiveNumericConcepts.h
     style/values/primitives/StylePrimitiveNumericTypes.h
     style/values/primitives/StyleUnevaluatedCalculation.h
 

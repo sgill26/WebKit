@@ -133,6 +133,8 @@ const unichar WebNextLineCharacter = 0x0085;
 static const CGFloat defaultFontSize = 12;
 static const CGFloat minimumFontSize = 1;
 
+using NodeSet = UncheckedKeyHashSet<Ref<Node>>;
+
 class HTMLConverterCaches {
     WTF_MAKE_TZONE_ALLOCATED(HTMLConverterCaches);
 public:
@@ -151,7 +153,7 @@ public:
 
 private:
     UncheckedKeyHashMap<Element*, std::unique_ptr<ComputedStyleExtractor>> m_computedStyles;
-    HashSet<Ref<Node>> m_ancestorsUnderCommonAncestor;
+    NodeSet m_ancestorsUnderCommonAncestor;
 };
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(HTMLConverterCaches);
@@ -2615,7 +2617,8 @@ AttributedString attributedString(const SimpleRange& range, IgnoreUserSelectNone
 }
 
 // This function uses TextIterator, which makes offsets in its result compatible with HTML editing.
-AttributedString editingAttributedString(const SimpleRange& range, OptionSet<IncludedElement> includedElements)
+enum class ReplaceAllNoBreakSpaces : bool { No, Yes };
+static AttributedString editingAttributedStringInternal(const SimpleRange& range, TextIteratorBehaviors behaviors, OptionSet<IncludedElement> includedElements, ReplaceAllNoBreakSpaces replaceAllNoBreakSpaces)
 {
     ElementCache<RefPtr<Element>> enclosingLinkCache;
     ElementCache<bool> elementQualifiesForWritingToolsPreservationCache;
@@ -2623,7 +2626,7 @@ AttributedString editingAttributedString(const SimpleRange& range, OptionSet<Inc
     RetainPtr string = adoptNS([[NSMutableAttributedString alloc] init]);
     RetainPtr attributes = adoptNS([[NSMutableDictionary alloc] init]);
     NSUInteger stringLength = 0;
-    for (TextIterator it(range); !it.atEnd(); it.advance()) {
+    for (TextIterator it { range, behaviors }; !it.atEnd(); it.advance()) {
         RefPtr node = it.node();
 
         if (RefPtr imageElement = dynamicDowncast<HTMLImageElement>(node.get()); imageElement && includedElements.contains(IncludedElement::Images)) {
@@ -2653,8 +2656,15 @@ AttributedString editingAttributedString(const SimpleRange& range, OptionSet<Inc
         else if (!includedElements.contains(IncludedElement::NonRenderedContent))
             continue;
 
+        bool replaceNoBreakSpaces = [&] {
+            if (replaceAllNoBreakSpaces == ReplaceAllNoBreakSpaces::Yes)
+                return true;
+
+            return renderer && renderer->style().nbspMode() == NBSPMode::Space;
+        }();
+
         RetainPtr<NSString> text;
-        if (!renderer || renderer->style().nbspMode() == NBSPMode::Normal)
+        if (!replaceNoBreakSpaces)
             text = it.text().createNSStringWithoutCopying();
         else
             text = makeStringByReplacingAll(it.text(), noBreakSpace, ' ');
@@ -2665,6 +2675,16 @@ AttributedString editingAttributedString(const SimpleRange& range, OptionSet<Inc
     }
 
     return AttributedString::fromNSAttributedString(WTFMove(string));
+}
+
+AttributedString editingAttributedString(const SimpleRange& range, OptionSet<IncludedElement> includedElements)
+{
+    return editingAttributedStringInternal(range, { }, includedElements, ReplaceAllNoBreakSpaces::No);
+}
+
+AttributedString editingAttributedStringReplacingNoBreakSpace(const SimpleRange& range, TextIteratorBehaviors behaviors, OptionSet<IncludedElement> includedElements)
+{
+    return editingAttributedStringInternal(range, behaviors, includedElements, ReplaceAllNoBreakSpaces::Yes);
 }
     
 }

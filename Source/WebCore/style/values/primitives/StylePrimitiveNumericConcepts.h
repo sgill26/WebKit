@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Samuel Weinig <sam@webkit.org>
+ * Copyright (C) 2025 Samuel Weinig <sam@webkit.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -22,18 +22,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "StylePrimitiveNumericTypes+Logging.h"
+#pragma once
 
-#include "CSSPrimitiveValue.h"
+#include "CSSPrimitiveNumericConcepts.h"
 
 namespace WebCore {
 namespace Style {
 
-WTF::TextStream& rawNumericLogging(WTF::TextStream& ts, double value, CSSUnitType unit)
-{
-    return ts << formatCSSNumberValue(value, CSSPrimitiveValue::unitTypeString(unit));
-}
+// Forward declaration of PrimitiveNumeric to needed to create a hard constraint for the Numeric concept below.
+template<CSS::Numeric> struct PrimitiveNumeric;
+
+// Concept for use in generic contexts to filter on numeric Style types.
+template<typename T> concept Numeric = std::derived_from<T, PrimitiveNumeric<typename T::CSS>>;
+
+// Concept for use in generic contexts to filter on dimension-percentage numeric Style types.
+template<typename T> concept DimensionPercentageNumeric = Numeric<T> && VariantLike<T> && CSS::DimensionPercentageNumeric<typename T::CSS>;
+
+// Forward declaration of UnevaluatedCalculation to needed to create a hard constraint for the Calc concept below.
+template<CSS::Numeric> struct UnevaluatedCalculation;
+
+// Concept for use in generic contexts to filter on UnevaluatedCalc Style types.
+template<typename T> concept Calc = std::same_as<T, UnevaluatedCalculation<typename T::CSS>>;
 
 } // namespace Style
 } // namespace WebCore
