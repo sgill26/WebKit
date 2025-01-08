@@ -3,6 +3,6 @@
 <link rel="help" href="https://drafts.csswg.org/css-flexbox/#transferred-size-suggestion">
 <link rel="match" href="aspect-ratio-intrinsic-size-007-ref.html">
 <meta name="assert" content="This checks that an automatic preferred physical width is always considered definite whenever computing the transferred size suggestion. That size will be used instead of the flex-item's intrinsic size.">
-<div style="display: flex; flex-direction: column;">
-      <img src="support/large-green-rectangle.svg"/>
+<div style="display: flex; flex-direction: column; min-height: 0px;">
+      <img style="min-height: 0px;" src="support/large-green-rectangle.svg"/>
 </div>

@@ -1156,8 +1156,6 @@ bool RenderFlexibleBox::flexItemCrossSizeShouldUseContainerCrossSize(const Rende
     // stretched flex items is the flex container's inner cross size (clamped to the flex item's min and max cross size)
     // and is considered definite.
     if (!isMultiline() && alignmentForFlexItem(flexItem) == ItemPosition::Stretch && !hasAutoMarginsInCrossAxis(flexItem) && crossSizeLengthForFlexItem(RenderBox::SizeType::MainOrPreferredSize, flexItem).isAuto()) {
-        if (crossAxisIsPhysicalWidth())
-            return true;
         // This must be kept in sync with computeMainSizeFromAspectRatioUsing().
         auto& crossSize = isHorizontalFlow() ? style().height() : style().width();
         return crossSize.isFixed() || (crossSize.isPercent() && availableLogicalHeightForPercentageComputation());  
@@ -1265,7 +1263,7 @@ LayoutUnit RenderFlexibleBox::computeFlexBaseSizeForFlexItem(RenderBox& flexItem
     // 9.2.3 E.
     LayoutUnit mainAxisExtent;
     if (!mainAxisIsFlexItemInlineAxis(flexItem)) {
-        ASSERT(!flexItem.needsLayout());
+        //ASSERT(!flexItem.needsLayout());
         ASSERT(m_intrinsicSizeAlongMainAxis.contains(flexItem));
         mainAxisExtent = m_intrinsicSizeAlongMainAxis.get(flexItem);
     } else {
@@ -1700,6 +1698,16 @@ void RenderFlexibleBox::maybeCacheFlexItemMainIntrinsicSize(RenderBox& flexItem,
 {
     if (!flexItemHasIntrinsicMainAxisSize(flexItem))
         return;
+
+    if (auto* renderReplaced = dynamicDowncast<RenderReplaced>(flexItem)) {
+        auto intrinsicSize = renderReplaced->intrinsicSize();
+        if (!intrinsicSize.isEmpty() && flexItemHasAspectRatio(flexItem)) {
+            m_intrinsicSizeAlongMainAxis.set(flexItem, flexItem.computeReplacedLogicalHeight(contentLogicalWidth()) + flexItem.borderAndPaddingLogicalHeight());
+            return;
+        }
+        m_intrinsicSizeAlongMainAxis.remove(flexItem);
+        flexItem.setNeedsLayout(MarkingBehavior::MarkOnlyThis);
+    }
 
     // If this condition is true, then computeMainAxisExtentForFlexItem will call
     // flexItem.intrinsicContentLogicalHeight() and flexItem.scrollbarLogicalHeight(),

@@ -92,7 +92,7 @@ bool LegacyRenderSVGRoot::hasIntrinsicAspectRatio() const
 
 FloatSize LegacyRenderSVGRoot::calculateIntrinsicSize() const
 {
-    return FloatSize(floatValueForLength(svgSVGElement().intrinsicWidth(), 0), floatValueForLength(svgSVGElement().intrinsicHeight(), 0));
+    return FloatSize(floatValueForLength(svgSVGElement().intrinsicWidth(), defaultWidth), floatValueForLength(svgSVGElement().intrinsicHeight(), defaultHeight));
 }
 
 void LegacyRenderSVGRoot::computeIntrinsicRatioInformation(FloatSize& intrinsicSize, FloatSize& intrinsicRatio) const
