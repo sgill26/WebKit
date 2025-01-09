@@ -39,7 +39,7 @@ public:
 
     bool setNeedsLayoutIfNeededAfterIntrinsicSizeChange();
 
-    LayoutSize intrinsicSize() const final;
+    LayoutSize intrinsicSize() const override;
     FloatSize intrinsicRatio() const;
     
     bool isContentLikelyVisibleInViewport();
@@ -77,6 +77,9 @@ protected:
     void willBeDestroyed() override;
 
     virtual void layoutShadowContent(const LayoutSize&);
+
+
+    mutable LayoutSize m_intrinsicSize;
 
 private:
     LayoutUnit computeConstrainedLogicalWidth() const;

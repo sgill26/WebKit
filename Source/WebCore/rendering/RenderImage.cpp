@@ -291,6 +291,27 @@ bool RenderImage::shouldCollapseToEmpty() const
     return document().inNoQuirksMode() || (style().logicalWidth().isAuto() && style().logicalHeight().isAuto());
 }
 
+LayoutSize RenderImage::intrinsicSize() const
+{
+    auto intrinsicSize = m_intrinsicSize;
+    // Our intrinsicSize is empty if we're rendering generated images with relative width/height. Figure out the right intrinsic size to use.
+    if (intrinsicSize.isEmpty() && (imageResource().imageHasRelativeWidth() || imageResource().imageHasRelativeHeight())) {
+        RenderObject* containingBlock = isOutOfFlowPositioned() ? container() : this->containingBlock();
+        if (auto* box = dynamicDowncast<RenderBox>(*containingBlock)) {
+            intrinsicSize.setWidth(box->contentBoxLogicalWidth());
+            intrinsicSize.setHeight(box->availableLogicalHeight(AvailableLogicalHeightType::IncludeMarginBorderPadding));
+        }
+    }
+
+    auto zoomValue = style().usedZoom();
+    if (isHorizontalWritingMode() ? shouldApplySizeOrInlineSizeContainment() : shouldApplySizeContainment())
+        intrinsicSize.setWidth(explicitIntrinsicInnerWidth().value_or(0) * zoomValue);
+    if (isHorizontalWritingMode() ? shouldApplySizeContainment() : shouldApplySizeOrInlineSizeContainment())
+        intrinsicSize.setHeight(explicitIntrinsicInnerHeight().value_or(0) * zoomValue);
+
+    return intrinsicSize;
+}
+
 LayoutUnit RenderImage::computeReplacedLogicalWidth(ShouldComputePreferred shouldComputePreferred) const
 {
     if (shouldCollapseToEmpty())
@@ -895,14 +916,6 @@ void RenderImage::computeIntrinsicRatioInformation(FloatSize& intrinsicSize, Flo
     ASSERT(!shouldApplySizeContainment());
     RenderReplaced::computeIntrinsicRatioInformation(intrinsicSize, intrinsicRatio);
 
-    // Our intrinsicSize is empty if we're rendering generated images with relative width/height. Figure out the right intrinsic size to use.
-    if (intrinsicSize.isEmpty() && (imageResource().imageHasRelativeWidth() || imageResource().imageHasRelativeHeight())) {
-        RenderObject* containingBlock = isOutOfFlowPositioned() ? container() : this->containingBlock();
-        if (auto* box = dynamicDowncast<RenderBox>(*containingBlock)) {
-            intrinsicSize.setWidth(box->contentBoxLogicalWidth());
-            intrinsicSize.setHeight(box->availableLogicalHeight(AvailableLogicalHeightType::IncludeMarginBorderPadding));
-        }
-    }
 
     // Don't compute an intrinsic ratio to preserve historical WebKit behavior if we're painting alt text and/or a broken image.
     if (shouldDisplayBrokenImageIcon()) {

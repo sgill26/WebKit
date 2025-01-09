@@ -107,6 +107,7 @@ protected:
     void paint(PaintInfo&, const LayoutPoint&) final;
     void layout() override;
 
+    LayoutSize intrinsicSize() const override;
     void intrinsicSizeChanged() override
     {
         imageChanged(imageResource().imagePtr());
