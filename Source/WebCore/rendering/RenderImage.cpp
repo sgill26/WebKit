@@ -27,7 +27,6 @@
 
 #include "config.h"
 #include "RenderImage.h"
-
 #include "AXObjectCache.h"
 #include "BitmapImage.h"
 #include "CachedImage.h"
@@ -48,6 +47,7 @@
 #include "InlineIteratorBoxInlines.h"
 #include "InlineIteratorInlineBox.h"
 #include "InlineIteratorLineBox.h"
+#include "LegacyRenderSVGRoot.h"
 #include "LineSelection.h"
 #include "LocalFrame.h"
 #include "Page.h"
@@ -397,8 +397,18 @@ void RenderImage::updateInnerContentRect()
 
 void RenderImage::repaintOrMarkForLayout(ImageSizeChangeType imageSizeChange, const IntRect* rect)
 {
-    LayoutSize newIntrinsicSize = imageResource().intrinsicSize(style().usedZoom());
-    LayoutSize oldIntrinsicSize = intrinsicSize();
+    auto newIntrinsicSize = [&] {
+        if (auto* svgRoot = dynamicDowncast<LegacyRenderSVGRoot>(embeddedContentBox())) {
+            auto intrinsicSize = LayoutSize(svgRoot->calculateIntrinsicSize());
+            if (!intrinsicSize.width())
+                intrinsicSize.setWidth(300);
+            if (!intrinsicSize.height())
+                intrinsicSize.setHeight(150);
+        }
+        return imageResource().intrinsicSize(style().usedZoom());
+    }();
+
+    auto oldIntrinsicSize = intrinsicSize();
 
     updateIntrinsicSizeIfNeeded(newIntrinsicSize);
 
@@ -411,7 +421,7 @@ void RenderImage::repaintOrMarkForLayout(ImageSizeChangeType imageSizeChange, co
 
     bool imageSourceHasChangedSize = oldIntrinsicSize != newIntrinsicSize || imageSizeChange != ImageSizeChangeNone;
 
-    if (imageSourceHasChangedSize && setNeedsLayoutIfNeededAfterIntrinsicSizeChange())
+    if ((imageSourceHasChangedSize || (newIntrinsicSize.isEmpty() && hasIntrinsicAspectRatio())) && setNeedsLayoutIfNeededAfterIntrinsicSizeChange())
         return;
 
     if (everHadLayout() && !selfNeedsLayout()) {

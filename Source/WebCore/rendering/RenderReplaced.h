@@ -109,7 +109,6 @@ private:
 
     bool hasReplacedLogicalHeight() const;
 
-    mutable LayoutSize m_intrinsicSize;
 };
 
 } // namespace WebCore

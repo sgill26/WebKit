@@ -66,6 +66,8 @@ public:
     // method during layout when they are invalidated by a filter.
     static void addResourceForClientInvalidation(LegacyRenderSVGResourceContainer*);
 
+    FloatSize calculateIntrinsicSize() const;
+
 private:
     void element() const = delete;
 
@@ -108,8 +110,6 @@ private:
     bool shouldApplyViewportClip() const;
     void updateCachedBoundaries();
     void buildLocalToBorderBoxTransform();
-
-    FloatSize calculateIntrinsicSize() const;
 
     IntSize m_containerSize;
     FloatRect m_objectBoundingBox;
