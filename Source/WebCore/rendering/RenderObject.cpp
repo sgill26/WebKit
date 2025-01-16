@@ -242,13 +242,7 @@ bool RenderObject::isBlockBox() const
 
 bool RenderObject::isBlockContainer() const
 {
-    auto display = style().display();
-    return (display == DisplayType::Block
-        || display == DisplayType::InlineBlock
-        || display == DisplayType::FlowRoot
-        || display == DisplayType::ListItem
-        || display == DisplayType::TableCell
-        || display == DisplayType::TableCaption) && !isRenderReplaced();
+    return style().doesDisplayGenerateBlockContainer() && !isRenderReplaced();
 }
 
 void RenderObject::setFragmentedFlowStateIncludingDescendants(FragmentedFlowState state, SkipDescendentFragmentedFlow skipDescendentFragmentedFlow)

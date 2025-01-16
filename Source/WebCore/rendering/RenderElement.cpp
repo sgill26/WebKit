@@ -2491,11 +2491,30 @@ bool RenderElement::createsNewFormattingContext() const
 bool RenderElement::establishesIndependentFormattingContext() const
 {
     auto& style = this->style();
-    return isFloatingOrOutOfFlowPositioned()
-        || (isBlockBox() && hasPotentiallyScrollableOverflow())
+    auto hasPaintContainment = [&] {
+        if (auto* element = this->element())
+            return style.usedContain().contains(Containment::Paint) && WebCore::shouldApplyPaintContainment(style, *element);
+        return false;
+    };
+
+    auto isBlockBoxWithPotentiallyScrollableOverflow = [&] {
+        if (auto* element = this->element()) {
+            return style.isDisplayBlockLevel()
+                && style.doesDisplayGenerateBlockContainer()
+                && !element->isReplaced(style)
+                && hasNonVisibleOverflow()
+                && style.overflowX() != Overflow::Clip
+                && style.overflowX() != Overflow::Visible;
+        }
+        return false;
+    };
+
+    return style.isFloating()
+        || style.hasOutOfFlowPosition()
+        || isBlockBoxWithPotentiallyScrollableOverflow()
         || style.containsLayout()
         || style.containerType() != ContainerType::Normal
-        || paintContainmentApplies()
+        || hasPaintContainment()
         || (style.isDisplayBlockLevel() && style.blockStepSize());
 }
 
