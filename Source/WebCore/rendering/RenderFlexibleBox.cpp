@@ -1700,13 +1700,8 @@ void RenderFlexibleBox::maybeCacheFlexItemMainIntrinsicSize(RenderBox& flexItem,
         return;
 
     if (auto* renderReplaced = dynamicDowncast<RenderReplaced>(flexItem)) {
-        auto intrinsicSize = renderReplaced->intrinsicSize();
-        if (!intrinsicSize.isEmpty() && flexItemHasAspectRatio(flexItem)) {
-            m_intrinsicSizeAlongMainAxis.set(flexItem, flexItem.computeReplacedLogicalHeight(contentLogicalWidth()) + flexItem.borderAndPaddingLogicalHeight());
-            return;
-        }
-        m_intrinsicSizeAlongMainAxis.remove(flexItem);
-        flexItem.setNeedsLayout(MarkingBehavior::MarkOnlyThis);
+        m_intrinsicSizeAlongMainAxis.set(flexItem, flexItem.computeReplacedLogicalHeight(renderReplaced->maxPreferredLogicalWidth()) + flexItem.borderAndPaddingLogicalHeight());
+        return;
     }
 
     // If this condition is true, then computeMainAxisExtentForFlexItem will call
