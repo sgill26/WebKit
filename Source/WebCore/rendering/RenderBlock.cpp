@@ -606,7 +606,7 @@ void RenderBlock::computeOverflow(LayoutUnit oldClientAfterEdge, bool)
                     auto childLogicalRight = logicalLeftForChild(child) + logicalWidthForChild(child) + std::max(0_lu, marginEndForChild(child));
                     contentLogicalRight = std::max(contentLogicalRight, childLogicalRight);
                 }
-                auto logicalRightWithPaddingEnd = contentLogicalRight + paddingEnd();
+                auto logicalRightWithPaddingEnd = contentLogicalRight;
                 // Use padding box as the reference box.
                 return logicalRightWithPaddingEnd - (isHorizontalWritingMode() ? borderLeft() : borderTop());
             };
