@@ -3482,6 +3482,19 @@ LayoutUnit RenderBox::computeReplacedLogicalWidth(ShouldComputePreferred shouldC
 
 LayoutUnit RenderBox::computeReplacedLogicalWidthRespectingMinMaxWidth(LayoutUnit logicalWidth, ShouldComputePreferred shouldComputePreferred) const
 {
+
+    if (style().logicalWidth().isAuto()) {
+        auto removeBorderAndPaddingFromMinMaxSizes = [](LayoutUnit& minSize, LayoutUnit &maxSize, LayoutUnit borderAndPadding) {
+            minSize = std::max(0_lu, minSize - borderAndPadding);
+            maxSize = std::max(0_lu, maxSize - borderAndPadding);
+        };
+
+        auto [transferredMinLogicalWidth, transferredMaxLogicalWidth] = computeMinMaxLogicalWidthFromAspectRatio();
+        removeBorderAndPaddingFromMinMaxSizes(transferredMinLogicalWidth, transferredMaxLogicalWidth, borderAndPaddingLogicalWidth());
+
+        logicalWidth = std::clamp(logicalWidth, transferredMinLogicalWidth, transferredMaxLogicalWidth);
+    }
+
     if (shouldIgnoreLogicalMinMaxWidthSizes())
         return logicalWidth;
 
@@ -3641,6 +3654,17 @@ bool RenderBox::replacedMinMaxLogicalHeightComputesAsNone(SizeType sizeType) con
 
 LayoutUnit RenderBox::computeReplacedLogicalHeightRespectingMinMaxHeight(LayoutUnit logicalHeight) const
 {
+
+    if (style().logicalHeight().isAuto()) {
+        auto removeBorderAndPaddingFromMinMaxSizes = [](LayoutUnit& minSize, LayoutUnit &maxSize, LayoutUnit borderAndPadding) {
+            minSize = std::max(0_lu, minSize - borderAndPadding);
+            maxSize = std::max(0_lu, maxSize - borderAndPadding);
+        };
+        auto [minLogicalHeight, maxLogicalHeight] = computeMinMaxLogicalHeightFromAspectRatio();
+        removeBorderAndPaddingFromMinMaxSizes(minLogicalHeight, maxLogicalHeight, borderAndPaddingLogicalHeight());
+        logicalHeight = std::clamp(logicalHeight, minLogicalHeight, maxLogicalHeight);
+    }
+
     LayoutUnit minLogicalHeight;
     if (!replacedMinMaxLogicalHeightComputesAsNone(SizeType::MinSize))
         minLogicalHeight = computeReplacedLogicalHeightUsing(SizeType::MinSize, style().logicalMinHeight());

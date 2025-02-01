@@ -437,9 +437,8 @@ static bool isVideoWithDefaultObjectSize(const RenderReplaced* maybeVideo)
     return false;
 } 
 
-void RenderReplaced::computeAspectRatioInformationForRenderBox(RenderBox* contentRenderer, FloatSize& constrainedSize, FloatSize& intrinsicRatio) const
+void RenderReplaced::computeAspectRatioInformationForRenderBox(RenderBox* contentRenderer, FloatSize& intrinsicSize, FloatSize& intrinsicRatio) const
 {
-    FloatSize intrinsicSize;
     if (shouldApplySizeOrInlineSizeContainment())
         RenderReplaced::computeIntrinsicRatioInformation(intrinsicSize, intrinsicRatio);
     else if (contentRenderer) {
@@ -469,32 +468,6 @@ void RenderReplaced::computeAspectRatioInformationForRenderBox(RenderBox* conten
         computeIntrinsicRatioInformation(intrinsicSize, intrinsicRatio);
         if (!intrinsicRatio.isEmpty() && !intrinsicSize.isZero())
             m_intrinsicSize = LayoutSize(isHorizontalWritingMode() ? intrinsicSize : intrinsicSize.transposedSize());
-    }
-    constrainedSize = intrinsicSize;
-}
-
-void RenderReplaced::computeIntrinsicSizesConstrainedByTransferredMinMaxSizes(RenderBox* contentRenderer, FloatSize& intrinsicSize, FloatSize& intrinsicRatio) const
-{
-    computeAspectRatioInformationForRenderBox(contentRenderer, intrinsicSize, intrinsicRatio);
-
-    // Now constrain the intrinsic size along each axis according to minimum and maximum width/heights along the
-    // opposite axis. So for example a maximum width that shrinks our width will result in the height we compute here
-    // having to shrink in order to preserve the aspect ratio. Because we compute these values independently along
-    // each axis, the final returned size may in fact not preserve the aspect ratio.
-    if (!intrinsicRatio.isZero() && style().logicalWidth().isAuto() && style().logicalHeight().isAuto()) {
-        auto removeBorderAndPaddingFromMinMaxSizes = [](LayoutUnit& minSize, LayoutUnit &maxSize, LayoutUnit borderAndPadding) {
-            minSize = std::max(0_lu, minSize - borderAndPadding);
-            maxSize = std::max(0_lu, maxSize - borderAndPadding);
-        };
-
-        auto [minLogicalWidth, maxLogicalWidth] = computeMinMaxLogicalWidthFromAspectRatio();
-        removeBorderAndPaddingFromMinMaxSizes(minLogicalWidth, maxLogicalWidth, borderAndPaddingLogicalWidth());
-
-        auto [minLogicalHeight, maxLogicalHeight] = computeMinMaxLogicalHeightFromAspectRatio();
-        removeBorderAndPaddingFromMinMaxSizes(minLogicalHeight, maxLogicalHeight, borderAndPaddingLogicalHeight());
-
-        intrinsicSize.setWidth(std::clamp(LayoutUnit { intrinsicSize.width() }, minLogicalWidth, maxLogicalWidth));
-        intrinsicSize.setHeight(std::clamp(LayoutUnit { intrinsicSize.height() }, minLogicalHeight, maxLogicalHeight));
     }
 }
 
@@ -606,13 +579,13 @@ LayoutUnit RenderReplaced::computeReplacedLogicalWidth(ShouldComputePreferred sh
 
     // 10.3.2 Inline, replaced elements: http://www.w3.org/TR/CSS21/visudet.html#inline-replaced-width
     FloatSize intrinsicRatio;
-    FloatSize constrainedSize;
-    computeIntrinsicSizesConstrainedByTransferredMinMaxSizes(contentRenderer, constrainedSize, intrinsicRatio);
+    FloatSize intrinsicSize;
+    computeAspectRatioInformationForRenderBox(contentRenderer, intrinsicSize, intrinsicRatio);
 
     if (style().logicalWidth().isAuto()) {
         bool computedHeightIsAuto = style().logicalHeight().isAuto();
-        bool hasIntrinsicWidth = constrainedSize.width() > 0 || shouldApplySizeOrInlineSizeContainment();
-        bool hasIntrinsicHeight = constrainedSize.height() > 0 || shouldApplySizeContainment();
+        bool hasIntrinsicWidth = intrinsicSize.width() > 0 || shouldApplySizeOrInlineSizeContainment();
+        bool hasIntrinsicHeight = intrinsicSize.height() > 0 || shouldApplySizeContainment();
 
         // For flex or grid items where the logical height has been overriden then we should use that size to compute the replaced width as long as the flex or
         // grid item has an intrinsic size. It is possible (indeed, common) for an SVG graphic to have an intrinsic aspect ratio but not to have an intrinsic
@@ -622,7 +595,7 @@ LayoutUnit RenderReplaced::computeReplacedLogicalWidth(ShouldComputePreferred sh
 
         // If 'height' and 'width' both have computed values of 'auto' and the element also has an intrinsic width, then that intrinsic width is the used value of 'width'.
         if (computedHeightIsAuto && hasIntrinsicWidth)
-            return computeReplacedLogicalWidthRespectingMinMaxWidth(constrainedSize.width(), shouldComputePreferred);
+            return computeReplacedLogicalWidthRespectingMinMaxWidth(intrinsicSize.width(), shouldComputePreferred);
 
         if (!intrinsicRatio.isEmpty()) {
             // If 'height' and 'width' both have computed values of 'auto' and the element has no intrinsic width, but does have an intrinsic height and intrinsic ratio;
@@ -631,7 +604,7 @@ LayoutUnit RenderReplaced::computeReplacedLogicalWidth(ShouldComputePreferred sh
             if (!computedHeightIsAuto || (!hasIntrinsicWidth && hasIntrinsicHeight)) {
                 auto estimatedUsedWidth = [&] {
                     if (hasIntrinsicWidth)
-                        return LayoutUnit(constrainedSize.width());
+                        return LayoutUnit(intrinsicSize.width());
 
                     if (shouldComputePreferred == ShouldComputePreferred::ComputePreferred)
                         return computeReplacedLogicalWidthRespectingMinMaxWidth(0_lu, ShouldComputePreferred::ComputePreferred);
@@ -663,7 +636,7 @@ LayoutUnit RenderReplaced::computeReplacedLogicalWidth(ShouldComputePreferred sh
 
         // Otherwise, if 'width' has a computed value of 'auto', and the element has an intrinsic width, then that intrinsic width is the used value of 'width'.
         if (hasIntrinsicWidth)
-            return computeReplacedLogicalWidthRespectingMinMaxWidth(constrainedSize.width(), shouldComputePreferred);
+            return computeReplacedLogicalWidthRespectingMinMaxWidth(intrinsicSize.width(), shouldComputePreferred);
 
         // Otherwise, if 'width' has a computed value of 'auto', but none of the conditions above are met, then the used value of 'width' becomes 300px. If 300px is too
         // wide to fit the device, UAs should use the width of the largest rectangle that has a 2:1 ratio and fits the device instead.
@@ -685,12 +658,12 @@ LayoutUnit RenderReplaced::computeReplacedLogicalHeight(std::optional<LayoutUnit
 
     // 10.6.2 Inline, replaced elements: http://www.w3.org/TR/CSS21/visudet.html#inline-replaced-height
     FloatSize intrinsicRatio;
-    FloatSize constrainedSize;
-    computeIntrinsicSizesConstrainedByTransferredMinMaxSizes(contentRenderer, constrainedSize, intrinsicRatio);
+    FloatSize intrinsicSize;
+    computeAspectRatioInformationForRenderBox(contentRenderer, intrinsicSize, intrinsicRatio);
 
     bool widthIsAuto = style().logicalWidth().isAuto();
-    bool hasIntrinsicHeight = constrainedSize.height() > 0 || shouldApplySizeContainment();
-    bool hasIntrinsicWidth = constrainedSize.width() > 0 || shouldApplySizeOrInlineSizeContainment();
+    bool hasIntrinsicHeight = intrinsicSize.height() > 0 || shouldApplySizeContainment();
+    bool hasIntrinsicWidth = intrinsicSize.width() > 0 || shouldApplySizeOrInlineSizeContainment();
 
     // See computeReplacedLogicalHeight() for a similar check for heights.
     if (auto overridinglogicalWidth = (!intrinsicRatio.isEmpty() && (isFlexItem() || isGridItem()) && hasIntrinsicSize(contentRenderer, hasIntrinsicWidth, hasIntrinsicHeight) ? overridingBorderBoxLogicalWidth() : std::nullopt))
@@ -698,7 +671,7 @@ LayoutUnit RenderReplaced::computeReplacedLogicalHeight(std::optional<LayoutUnit
 
     // If 'height' and 'width' both have computed values of 'auto' and the element also has an intrinsic height, then that intrinsic height is the used value of 'height'.
     if (widthIsAuto && hasIntrinsicHeight)
-        return computeReplacedLogicalHeightRespectingMinMaxHeight(constrainedSize.height());
+        return computeReplacedLogicalHeightRespectingMinMaxHeight(intrinsicSize.height());
 
     // Otherwise, if 'height' has a computed value of 'auto', and the element has an intrinsic ratio then the used value of 'height' is:
     // (used width) / (intrinsic ratio)
@@ -712,7 +685,7 @@ LayoutUnit RenderReplaced::computeReplacedLogicalHeight(std::optional<LayoutUnit
 
     // Otherwise, if 'height' has a computed value of 'auto', and the element has an intrinsic height, then that intrinsic height is the used value of 'height'.
     if (hasIntrinsicHeight)
-        return computeReplacedLogicalHeightRespectingMinMaxHeight(constrainedSize.height());
+        return computeReplacedLogicalHeightRespectingMinMaxHeight(intrinsicSize.height());
 
     // Otherwise, if 'height' has a computed value of 'auto', but none of the conditions above are met, then the used value of 'height' must be set to the height
     // of the largest rectangle that has a 2:1 ratio, has a height not greater than 150px, and has a width not greater than the device width.
@@ -926,8 +899,8 @@ void RenderReplaced::layoutShadowContent(const LayoutSize& oldSize)
 FloatSize RenderReplaced::intrinsicRatio() const
 {
     FloatSize intrinsicRatio;
-    FloatSize constrainedSize;
-    computeAspectRatioInformationForRenderBox(embeddedContentBox(), constrainedSize, intrinsicRatio);
+    FloatSize intrinsicSize;
+    computeAspectRatioInformationForRenderBox(embeddedContentBox(), intrinsicSize, intrinsicRatio);
     return intrinsicRatio;
 }
 
