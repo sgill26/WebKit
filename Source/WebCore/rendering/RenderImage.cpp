@@ -291,8 +291,15 @@ bool RenderImage::shouldCollapseToEmpty() const
     return document().inNoQuirksMode() || (style().logicalWidth().isAuto() && style().logicalHeight().isAuto());
 }
 
+
+// TODO: reduce code duplication with RenderRerplaced::intrinsicSize()
 LayoutSize RenderImage::intrinsicSize() const
 {
+    if (!view().frameView().layoutContext().isInRenderTreeLayout()) {
+        // 'contain' removes the natural aspect ratio / width / height only for the purposes of sizing and layout of the box.
+        return m_intrinsicSize;
+    }
+
     auto intrinsicSize = m_intrinsicSize;
     // Our intrinsicSize is empty if we're rendering generated images with relative width/height. Figure out the right intrinsic size to use.
     if (intrinsicSize.isEmpty() && (imageResource().imageHasRelativeWidth() || imageResource().imageHasRelativeHeight())) {
