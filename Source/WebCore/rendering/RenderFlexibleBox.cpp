@@ -1156,7 +1156,7 @@ bool RenderFlexibleBox::flexItemCrossSizeShouldUseContainerCrossSize(const Rende
     // stretched flex items is the flex container's inner cross size (clamped to the flex item's min and max cross size)
     // and is considered definite.
     if (!isMultiline() && alignmentForFlexItem(flexItem) == ItemPosition::Stretch && !hasAutoMarginsInCrossAxis(flexItem) && crossSizeLengthForFlexItem(RenderBox::SizeType::MainOrPreferredSize, flexItem).isAuto()) {
-        if (crossAxisIsPhysicalWidth())
+        if ((isHorizontalWritingMode() && crossAxisIsPhysicalWidth()) || (!isHorizontalWritingMode() && !crossAxisIsPhysicalWidth()))
             return true;
         // This must be kept in sync with computeMainSizeFromAspectRatioUsing().
         auto& crossSize = isHorizontalFlow() ? style().height() : style().width();
@@ -1992,8 +1992,8 @@ bool RenderFlexibleBox::setStaticPositionForPositionedLayout(const RenderBox& fl
 // This refers to https://drafts.csswg.org/css-flexbox-1/#definite-sizes, section 1).
 LayoutUnit RenderFlexibleBox::computeCrossSizeForFlexItemUsingContainerCrossSize(const RenderBox& flexItem) const
 {
-    if (crossAxisIsPhysicalWidth())
-        return contentBoxWidth();
+    if ((isHorizontalWritingMode() && crossAxisIsPhysicalWidth()) || (!isHorizontalWritingMode() && !crossAxisIsPhysicalWidth()))
+        return contentBoxLogicalWidth();
 
     // Keep this sync'ed with flexItemCrossSizeShouldUseContainerCrossSize().
     auto definiteSizeValue = [&] {
