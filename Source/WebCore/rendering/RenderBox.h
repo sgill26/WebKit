@@ -608,6 +608,7 @@ public:
 
     virtual void adjustBorderBoxRectForPainting(LayoutRect&) { };
 
+    bool shouldComputeLogicalWidthFromAspectRatio() const;
     bool shouldComputeLogicalHeightFromAspectRatio() const;
 
     bool shouldIgnoreLogicalMinMaxWidthSizes() const;
@@ -680,7 +681,6 @@ protected:
     std::optional<double> resolveAspectRatio() const;
     bool shouldIgnoreAspectRatio() const;
     bool isRenderReplacedWithIntrinsicRatio() const;
-    bool shouldComputeLogicalWidthFromAspectRatio() const;
     LayoutUnit computeLogicalWidthFromAspectRatioInternal() const;
     LayoutUnit computeLogicalWidthFromAspectRatio() const;
     std::pair<LayoutUnit, LayoutUnit> computeMinMaxLogicalWidthFromAspectRatio() const;

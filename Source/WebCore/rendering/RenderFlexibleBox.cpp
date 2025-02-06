@@ -1271,7 +1271,14 @@ LayoutUnit RenderFlexibleBox::computeFlexBaseSizeForFlexItem(RenderBox& flexItem
     } else {
         // We don't need to add scrollbarLogicalWidth here because the preferred
         // width includes the scrollbar, even for overflow: auto.
-        mainAxisExtent = flexItem.maxPreferredLogicalWidth();
+        mainAxisExtent = [&] {
+            // what to even return?
+            if (tryIterativePreferredLogicalWidths(flexItem)) {
+                WTF_ALWAYS_LOG("sgill26: " << *this << " found subtree that works!");
+            }
+            return flexItem.maxPreferredLogicalWidth();
+        }();
+        
     }
     return mainAxisExtent - mainAxisBorderAndPadding;
 }

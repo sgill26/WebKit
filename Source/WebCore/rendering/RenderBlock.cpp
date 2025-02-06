@@ -76,6 +76,7 @@
 #include "ShadowRoot.h"
 #include "ShapeOutsideInfo.h"
 #include "TransformState.h"
+#include "rendering/RenderDescendantIterator.h"
 #include <wtf/NeverDestroyed.h>
 #include <wtf/SetForScope.h>
 #include <wtf/StackStats.h>
@@ -2296,9 +2297,58 @@ void RenderBlock::computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, Lay
     minLogicalWidth += scrollbarWidth;
 }
 
+
+using PreferredLogicalWidthsRendererStack = Vector<RenderBox*>;
+
+static bool isRendererEligibleForIterativePreferredLogicalWidths(const RenderBox& renderer)
+{
+    auto lengthToUse = renderer.overridingLogicalWidthForFlexBasisComputation().value_or(renderer.style().logicalWidth());
+    bool firstCondition = !(!renderer.isRenderTableCell() && lengthToUse.isFixed() && lengthToUse.value() >= 0 && !(renderer.isDeprecatedFlexItem() && !lengthToUse.intValue()));
+    bool secondCondition = !(renderer.shouldComputeLogicalWidthFromAspectRatio());
+
+    if (!renderer.isRenderBlockFlow() && !renderer.isRenderFlexibleBox() && !renderer.isRenderReplaced()) {
+        return false;
+    }
+
+    if (firstCondition && secondCondition && renderer.isHorizontalWritingMode() == renderer.containingBlock()->isHorizontalWritingMode())
+        return true;
+    
+    return false;
+}
+
+static PreferredLogicalWidthsRendererStack computePreferredLogicalWidthsRendererStackForSubtree(RenderBox& subtreeRoot)
+{
+    ASSERT(isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot));
+    if (!isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))    
+        return { };
+
+
+    PreferredLogicalWidthsRendererStack rendererStack;
+    rendererStack.append(&subtreeRoot);
+
+    for (auto& descendant : descendantsOfTypePostOrder<RenderBox>(subtreeRoot)) {
+        if (!isRendererEligibleForIterativePreferredLogicalWidths(descendant))
+            return { };
+        rendererStack.append(&descendant);
+    }
+    WTF_ALWAYS_LOG("sgill26:" << " subtree size " << rendererStack.size());
+    return rendererStack;
+}
+
+bool RenderBlock::tryIterativePreferredLogicalWidths(RenderBox& subtreeRoot) const
+{
+    PreferredLogicalWidthsRendererStack preferredLogicalWidthsRendererStack = computePreferredLogicalWidthsRendererStackForSubtree(subtreeRoot);
+    if (preferredLogicalWidthsRendererStack.isEmpty())
+        return false;
+    return true;
+}
+
 void RenderBlock::computePreferredLogicalWidths()
 {
     ASSERT(preferredLogicalWidthsDirty());
+
+    isRendererEligibleForIterativePreferredLogicalWidths(*this);
+    s_preferredLogicalWidthsCount++;
 
     m_minPreferredLogicalWidth = 0;
     m_maxPreferredLogicalWidth = 0;

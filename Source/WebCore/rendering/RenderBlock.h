@@ -279,6 +279,7 @@ protected:
 
     void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
     void computePreferredLogicalWidths() override;
+    bool tryIterativePreferredLogicalWidths(RenderBox& subtreeRoot) const;
     
     std::optional<LayoutUnit> firstLineBaseline() const override;
     std::optional<LayoutUnit> lastLineBaseline() const override;
@@ -435,7 +436,8 @@ protected:
 
 protected:
     bool recomputeLogicalWidth();
-    
+
+    static uint32_t s_preferredLogicalWidthsCount;
 public:
     LayoutUnit offsetFromLogicalTopOfFirstPage() const override;
     RenderFragmentContainer* fragmentAtBlockOffset(LayoutUnit) const;
