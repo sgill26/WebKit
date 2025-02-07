@@ -2300,27 +2300,28 @@ void RenderBlock::computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, Lay
 
 using PreferredLogicalWidthsRendererStack = Vector<RenderBox*>;
 
-static bool isRendererEligibleForIterativePreferredLogicalWidths(const RenderBox& renderer)
+std::optional<IterativePreferredLogicalWidthsBailReason> isRendererEligibleForIterativePreferredLogicalWidths(const RenderBox& renderer)
 {
     auto lengthToUse = renderer.overridingLogicalWidthForFlexBasisComputation().value_or(renderer.style().logicalWidth());
-    bool firstCondition = !(!renderer.isRenderTableCell() && lengthToUse.isFixed() && lengthToUse.value() >= 0 && !(renderer.isDeprecatedFlexItem() && !lengthToUse.intValue()));
-    bool secondCondition = !(renderer.shouldComputeLogicalWidthFromAspectRatio());
+    bool hasFixedPreferredLogicalWidth = !renderer.isRenderTableCell() && lengthToUse.isFixed() && lengthToUse.value() >= 0 && !(renderer.isDeprecatedFlexItem() && !lengthToUse.intValue());
+    bool hasPreferredLogicalWidthComputedFromAspectRatio = renderer.shouldComputeLogicalWidthFromAspectRatio();
 
-    if (!renderer.isRenderBlockFlow() && !renderer.isRenderFlexibleBox() && !renderer.isRenderReplaced()) {
-        return false;
-    }
-
-    if (firstCondition && secondCondition && renderer.isHorizontalWritingMode() == renderer.containingBlock()->isHorizontalWritingMode())
-        return true;
-    
-    return false;
+    if (!renderer.isRenderBlockFlow() && !renderer.isRenderFlexibleBox())
+        return IterativePreferredLogicalWidthsBailReason::UnsupportedRendererType;
+    if (hasFixedPreferredLogicalWidth)
+        return IterativePreferredLogicalWidthsBailReason::HasFixedPreferredLogicalWidth;
+    if (hasPreferredLogicalWidthComputedFromAspectRatio)
+        return IterativePreferredLogicalWidthsBailReason::HasPreferredLogiclWithComputedFromAspectRatio;
+    if (renderer.isHorizontalWritingMode() != renderer.containingBlock()->isHorizontalWritingMode())
+        return IterativePreferredLogicalWidthsBailReason::IsOrthogonalWritingMode;
+    return { };
 }
 
-static PreferredLogicalWidthsRendererStack computePreferredLogicalWidthsRendererStackForSubtree(RenderBox& subtreeRoot)
+static std::variant<IterativePreferredLogicalWidthsBailReason, PreferredLogicalWidthsRendererStack> computePreferredLogicalWidthsRendererStackForSubtree(RenderBox& subtreeRoot)
 {
     ASSERT(isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot));
-    if (!isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))    
-        return { };
+    if (auto bailReason = isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))    
+        return *bailReason;
 
 
     PreferredLogicalWidthsRendererStack rendererStack;
@@ -2337,9 +2338,14 @@ static PreferredLogicalWidthsRendererStack computePreferredLogicalWidthsRenderer
 
 bool RenderBlock::tryIterativePreferredLogicalWidths(RenderBox& subtreeRoot) const
 {
-    PreferredLogicalWidthsRendererStack preferredLogicalWidthsRendererStack = computePreferredLogicalWidthsRendererStackForSubtree(subtreeRoot);
-    if (preferredLogicalWidthsRendererStack.isEmpty())
+    if (!isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))
         return false;
+    
+    auto preferredLogicalWidthsRendererStackComputationResult = computePreferredLogicalWidthsRendererStackForSubtree(subtreeRoot);
+    if (std::holds_alternative<IterativePreferredLogicalWidthsBailReason>(preferredLogicalWidthsRendererStackComputationResult))
+        return false;
+
+    auto preferredLogicalWidthsRendererStack = std::get<PreferredLogicalWidthsRendererStack>(preferredLogicalWidthsRendererStackComputationResult);
     return true;
 }
 
@@ -3700,6 +3706,20 @@ void RenderBlock::updateDescendantTransformsAfterLayout()
     for (auto& box : boxes) {
         if (box && box->hasLayer())
             box->layer()->updateTransform();
+    }
+}
+
+TextStream& operator<<(TextStream& ts, IterativePreferredLogicalWidthsBailReason bailReason)
+{
+    switch(bailReason) {
+    case IterativePreferredLogicalWidthsBailReason::UnsupportedRendererType:
+        return ts << "UnsuppportedRendererType";
+    case IterativePreferredLogicalWidthsBailReason::HasFixedPreferredLogicalWidth:
+        return ts <<"HasFixedPreferredLogicalWidth";
+    case IterativePreferredLogicalWidthsBailReason::HasPreferredLogiclWithComputedFromAspectRatio:
+        return ts << "HasPreferredLogicalWidthComputedFromAspectRatio";
+    case IterativePreferredLogicalWidthsBailReason::IsOrthogonalWritingMode:
+        return ts << "IsOrthogonalWritingMode";
     }
 }
 

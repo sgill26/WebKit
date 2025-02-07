@@ -51,6 +51,13 @@ enum TextRunFlag {
     RespectDirectionOverride = 1 << 1
 };
 
+enum class IterativePreferredLogicalWidthsBailReason : uint8_t { 
+    UnsupportedRendererType,
+    HasFixedPreferredLogicalWidth,
+    HasPreferredLogiclWithComputedFromAspectRatio,
+    IsOrthogonalWritingMode
+};
+
 typedef unsigned TextRunFlags;
 
 class RenderBlock : public RenderBox {
@@ -279,6 +286,8 @@ protected:
 
     void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
     void computePreferredLogicalWidths() override;
+
+
     bool tryIterativePreferredLogicalWidths(RenderBox& subtreeRoot) const;
     
     std::optional<LayoutUnit> firstLineBaseline() const override;
@@ -471,6 +480,9 @@ inline RenderPtr<RenderBlock> RenderBlock::createAnonymousBlock(DisplayType disp
 {
     return createAnonymousBlockWithStyleAndDisplay(document(), style(), display);
 }
+
+std::optional<IterativePreferredLogicalWidthsBailReason> isRendererEligibleForIterativePreferredLogicalWidths(const RenderBox& renderer);
+WTF::TextStream& operator<<(WTF::TextStream&, IterativePreferredLogicalWidthsBailReason); 
 
 } // namespace WebCore
 
