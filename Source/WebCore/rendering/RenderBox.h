@@ -270,6 +270,7 @@ public:
 
     LayoutUnit minPreferredLogicalWidth() const override;
     LayoutUnit maxPreferredLogicalWidth() const override;
+    void setPreferredLogicalWidths(LayoutUnit minPreferredLogicalWidth, LayoutUnit maxPreferredLogicalWidth);
     virtual void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const = 0;
 
     std::optional<LayoutUnit> overridingBorderBoxLogicalWidth() const;

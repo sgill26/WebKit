@@ -408,13 +408,13 @@ public:
 
     std::optional<LayoutUnit> lowestInitialLetterLogicalBottom() const;
 
+    void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
+
 protected:
     bool isChildEligibleForMarginTrim(MarginTrimType, const RenderBox&) const final;
 
     bool shouldResetLogicalHeightBeforeLayout() const override { return true; }
 
-    void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
-    
     bool pushToNextPageWithMinimumLogicalHeight(LayoutUnit& adjustment, LayoutUnit logicalOffset, LayoutUnit minimumLogicalHeight) const;
 
     // If the child is unsplittable and can't fit on the current page, return the top of the next page/column.

@@ -2319,8 +2319,7 @@ std::optional<IterativePreferredLogicalWidthsBailReason> isRendererEligibleForIt
 
 static std::variant<IterativePreferredLogicalWidthsBailReason, PreferredLogicalWidthsRendererStack> computePreferredLogicalWidthsRendererStackForSubtree(RenderBox& subtreeRoot)
 {
-    ASSERT(isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot));
-    if (auto bailReason = isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))    
+    if (auto bailReason = isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))
         return *bailReason;
 
 
@@ -2328,17 +2327,16 @@ static std::variant<IterativePreferredLogicalWidthsBailReason, PreferredLogicalW
     rendererStack.append(&subtreeRoot);
 
     for (auto& descendant : descendantsOfTypePostOrder<RenderBox>(subtreeRoot)) {
-        if (!isRendererEligibleForIterativePreferredLogicalWidths(descendant))
-            return { };
+        if (auto bailReason = isRendererEligibleForIterativePreferredLogicalWidths(descendant))
+            return *bailReason;
         rendererStack.append(&descendant);
     }
-    WTF_ALWAYS_LOG("sgill26:" << " subtree size " << rendererStack.size());
     return rendererStack;
 }
 
 bool RenderBlock::tryIterativePreferredLogicalWidths(RenderBox& subtreeRoot) const
 {
-    if (!isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))
+    if (auto bailReason = isRendererEligibleForIterativePreferredLogicalWidths(subtreeRoot))
         return false;
     
     auto preferredLogicalWidthsRendererStackComputationResult = computePreferredLogicalWidthsRendererStackForSubtree(subtreeRoot);
@@ -2346,15 +2344,26 @@ bool RenderBlock::tryIterativePreferredLogicalWidths(RenderBox& subtreeRoot) con
         return false;
 
     auto preferredLogicalWidthsRendererStack = std::get<PreferredLogicalWidthsRendererStack>(preferredLogicalWidthsRendererStackComputationResult);
+
+
+    while (!preferredLogicalWidthsRendererStack.isEmpty()) {
+        auto renderer = preferredLogicalWidthsRendererStack.takeLast();
+        LayoutUnit minPreferredLogicalWidth, maxPreferredLogicalWidth = { };
+
+        if (renderer->isFlexItem()) {
+            auto& flexbox = downcast<RenderFlexibleBox>(*renderer->containingBlock());
+            flexbox.computeChildIntrinsicLogicalWidths(*renderer, minPreferredLogicalWidth, maxPreferredLogicalWidth);
+        } else if (renderer->isRenderBlockFlow())
+            downcast<RenderBlockFlow>(renderer)->computeIntrinsicLogicalWidths(minPreferredLogicalWidth, maxPreferredLogicalWidth);
+        else if (renderer->isRenderFlexibleBox())
+            downcast<RenderFlexibleBox>(renderer)->computeIntrinsicLogicalWidths(minPreferredLogicalWidth, maxPreferredLogicalWidth);
+    }
     return true;
 }
 
 void RenderBlock::computePreferredLogicalWidths()
 {
     ASSERT(preferredLogicalWidthsDirty());
-
-    isRendererEligibleForIterativePreferredLogicalWidths(*this);
-    s_preferredLogicalWidthsCount++;
 
     m_minPreferredLogicalWidth = 0;
     m_maxPreferredLogicalWidth = 0;

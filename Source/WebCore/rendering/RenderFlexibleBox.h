@@ -92,6 +92,8 @@ public:
         }
     }
 
+    void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
+    void computeChildIntrinsicLogicalWidths(RenderBox&, LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
     const OrderIterator& orderIterator() const { return m_orderIterator; }
 
     LayoutOptionalOutsets allowedLayoutOverflow() const override;
@@ -130,7 +132,6 @@ public:
     bool hasModernLayout() const { return m_hasFlexFormattingContextLayout && *m_hasFlexFormattingContextLayout; }
 
 protected:
-    void computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
 
     bool shouldResetChildLogicalHeightBeforeLayout(const RenderBox&) const override { return m_shouldResetFlexItemLogicalHeightBeforeLayout; }
 
@@ -193,7 +194,6 @@ private:
     bool crossAxisIsPhysicalWidth() const;
     bool flexItemCrossSizeShouldUseContainerCrossSize(const RenderBox& flexItem) const;
     LayoutUnit computeCrossSizeForFlexItemUsingContainerCrossSize(const RenderBox& flexItem) const;
-    void computeChildIntrinsicLogicalWidths(RenderBox&, LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const override;
     LayoutUnit computeMainSizeFromAspectRatioUsing(const RenderBox& flexItem, Length crossSizeLength) const;
     void setFlowAwareLocationForFlexItem(RenderBox& flexItem, const LayoutPoint&);
     LayoutUnit computeFlexBaseSizeForFlexItem(RenderBox& flexItem, LayoutUnit mainAxisBorderAndPadding, bool relayoutChildren);

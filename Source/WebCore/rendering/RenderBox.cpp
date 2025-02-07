@@ -1243,6 +1243,13 @@ bool RenderBox::applyCachedClipAndScrollPosition(RepaintRects& rects, const Rend
     return intersects;
 }
 
+void RenderBox::setPreferredLogicalWidths(LayoutUnit minPreferredLogicalWidth, LayoutUnit maxPreferredLogicalWidth)
+{
+    m_minPreferredLogicalWidth = minPreferredLogicalWidth;
+    m_maxPreferredLogicalWidth = maxPreferredLogicalWidth;
+    setPreferredLogicalWidthsDirty(false);
+}
+
 LayoutUnit RenderBox::minPreferredLogicalWidth() const
 {
     if (preferredLogicalWidthsDirty()) {
