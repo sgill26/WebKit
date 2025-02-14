@@ -26,6 +26,8 @@
 #include "LegacyLineLayout.h"
 #include "LineWidth.h"
 #include "RenderBlock.h"
+#include "rendering/LayoutRepainter.h"
+#include "rendering/RenderLayoutState.h"
 #include <memory>
 #include <wtf/TZoneMalloc.h>
 
@@ -41,6 +43,7 @@ template<> struct IsDeprecatedWeakRefSmartPointerException<WebCore::RenderBlockF
 namespace WebCore {
 
 class FloatingObjects;
+class LayoutRepainter;
 class LineBreaker;
 class RenderMultiColumnFlow;
 
@@ -126,7 +129,10 @@ public:
     RenderBlockFlow(Type, Element&, RenderStyle&&, OptionSet<BlockFlowFlag> = { });
     RenderBlockFlow(Type, Document&, RenderStyle&&, OptionSet<BlockFlowFlag> = { });
     virtual ~RenderBlockFlow();
-        
+
+
+
+    void layoutBlockIterative(bool relayoutChildren, RenderBox& subtreeRoot);
     void layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeight = 0_lu) override;
 
 protected:
@@ -235,11 +241,58 @@ public:
         LayoutUnit margin() const { return m_positiveMargin - m_negativeMargin; }
     };
 
+
+
+    enum class SizingPhase : uint8_t {
+        Init,
+        MarginCollapsingEstimate,
+        MarginCollapsing,
+        Positioning
+    };
+
+    enum class ChildLayoutState { DidFirstPassLayout, DidSecondPassLayout };
+
+
+    struct ContentSizingState {
+        RenderBox* currentChild = { nullptr };
+        std::optional<ChildLayoutState> childLayoutState;
+        LayoutUnit oldPosMarginBefore { };
+        LayoutUnit oldNegMarginBefore { };
+        LayoutRect oldRect { };
+        LayoutUnit oldLogicalTop { };
+        bool childHadLayout { false };
+        bool childNeededLayout { false };
+        bool atBeforeSideOfBlock { false };
+        LayoutUnit logicalTopBeforeClear { };
+        LayoutUnit logicalTopAfterClear { };
+        LayoutUnit logicalTopEstimate { };
+    };
+
+    struct BlockContainerLayoutState {
+        CheckedRef<RenderBlockFlow> blockContainer;
+        LayoutUnit beforeEdge { };
+        LayoutUnit afterEdge { };
+        LayoutUnit repaintLogicalTop { };
+        LayoutUnit repaintLogicalBottom { };
+        bool relayoutChildren { false };
+        std::optional<MarginInfo> marginInfo;
+        LayoutUnit previousFloatLogicalBottom { };
+        LayoutUnit maxFloatLogicalBottom { };
+        LayoutUnit previousHeight { };
+        ContentSizingState contentSizingState { };
+        std::optional<LayoutRepainter>  layoutRepainter { };
+    };
+
     bool shouldTrimChildMargin(MarginTrimType, const RenderBox&) const;
     void performBlockStepSizing(RenderBox& child, LayoutUnit blockStepSizeForChild) const;
 
     void layoutBlockChild(RenderBox& child, MarginInfo&, LayoutUnit& previousFloatLogicalBottom, LayoutUnit& maxFloatLogicalBottom);
     void adjustPositionedBlock(RenderBox& child, const MarginInfo&);
+    void estimateMarginCollapsing(BlockContainerLayoutState&);
+    void performMarginCollapsing(BlockContainerLayoutState&);
+    void positionAndRepaintChild(BlockContainerLayoutState&);
+    void updateBlockContainerAfterContentSizing(BlockContainerLayoutState&);
+
     void adjustFloatingBlock(const MarginInfo&);
 
     void trimBlockEndChildrenMargins();
